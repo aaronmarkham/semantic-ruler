@@ -19,6 +19,9 @@ go learn that, and end up with several lines of investigation open.
 - `chain.py` starts at one page and follows every prerequisite whose steps are
   on another page, printing the tree of pages a reader ends up with open.
 - `reorder.py` turns the saved extractions into front-loaded checklists.
+- `stability.py` repeats the extraction and measures agreement between runs.
+- `join_intents.py` joins the result to the permission facts and rulers of
+  `aws_intents`.
 
 Prompts contain fetched doc text, so they go through
 `semantic_ruler.llm_plain.PlainTextProvider`, which runs the model with no
@@ -33,7 +36,7 @@ Definitions: a prerequisite is a **surprise** when the page mentions it only at
 the block where it is needed, later, or never. It is **off-page** when the page
 sends the reader elsewhere for the steps.
 
-## Results (2026-11-21, one extraction run)
+## Results (2026-11-21, extraction run 1; see Stability for runs 2 and 3)
 
 60 pages from 42 services were analysed. 52 were step-by-step procedures with
 216 prerequisites between them, 4.2 per page.
@@ -121,6 +124,86 @@ An earlier measure, prerequisites first mentioned after the main procedure
 begins, was dropped because the extracted start block is often the top of the
 page.
 
+## Stability across three extraction runs
+
+`stability.py` ran the extraction twice more on the same 60 pages and compared
+every pair of runs. Prerequisites are matched between runs by type and word
+overlap, so item-level agreement is measured on the items both runs found.
+
+| Field | Agreement between two runs |
+|---|---|
+| Page is a procedure | 0.94 |
+| Share of prerequisites found by both runs | 0.88 |
+| Steps on page / other page / none | 0.94 |
+| Same link, when both say other page | 1.00 |
+| Introduced-at block, within 3 | 0.92 |
+| Needed-at block, within 3 | 0.86 |
+| Surprise or not | 0.92 |
+
+| Measure, procedure pages | Run 1 | Run 2 | Run 3 |
+|---|---|---|---|
+| Pages / prerequisites | 52 / 216 | 54 / 237 | 52 / 220 |
+| Surprises | 31% | 32% | 26% |
+| Steps on another page | 24% | 26% | 25% |
+| No steps | 40% | 41% | 38% |
+| Detours | 23% | 24% | 19% |
+| Pages that send the reader elsewhere | 34 | 37 | 32 |
+
+223 prerequisites were found by all three runs. Of the 206 on procedure pages,
+49 are surprises in every run, 132 in none and 25 are split, so the surprise
+rate among agreed items is between 24% and 36%.
+
+The headline rates hold to within about six points. Where steps live is the
+most repeatable field and "needed at" the least. The per-type surprise rates
+do not hold: identity policies came out at 34%, 32% and 15%, and the KMS rows
+have 12 to 15 items each. Read the by-type table above for its off-page and
+no-steps columns only.
+
+## Joining ordering to permission mechanisms
+
+Question: do surprises concentrate on pages whose permission mechanism differs
+from that of similar-looking pages in other services? `join_intents.py` takes
+each page's mechanism from its policy JSON (S: bucket policy names a service
+principal, A: bucket policy names an account or role, I: identity policy, P:
+public read), finds its 5 most similar pages from other services by raw
+embedding, and scores mismatch two ways: by the facts (Jaccard distance
+between mechanism sets) and by a ruler (distance along the S-vs-I direction
+built from other services' real sections). The outcome is the page's count of
+permission prerequisites that are detours, averaged over the three runs.
+
+```bash
+python experiments/doc_ordering/join_intents.py . 5
+```
+
+48 procedure pages could be joined. Spearman correlations:
+
+| Predictor | vs permission detours | 95% interval |
+|---|---|---|
+| Mechanism differs from neighbours (facts) | -0.13 | -0.41 to +0.19 |
+| Mechanism differs from neighbours (ruler) | -0.20 | -0.48 to +0.11 |
+| Similarity to neighbours (control) | +0.08 | -0.21 to +0.34 |
+
+**The hypothesis is not supported.** No mismatch measure predicts detours,
+surprises or off-page steps, at 5 or 10 neighbours, and the point estimates
+lean the other way. With 48 pages the intervals still allow a moderate effect
+in either direction.
+
+Two things did show up, both exploratory (16 tests were run, and these were
+not the ones planned):
+
+- Pages that use more than one mechanism send the reader off-page for more of
+  their permission prerequisites: 28% of them on the 10 multi-mechanism pages
+  against 15% on the 28 single-mechanism pages (Spearman 0.41 on the rate,
+  permutation p = 0.01).
+- The mechanism itself seems to matter more than how it compares to
+  neighbours. None of the 9 service-principal pages sends the reader away for
+  a permission prerequisite; 4 of 22 identity-policy pages and 2 of 4
+  account-principal pages do. These counts are too small to test.
+
+One check passed: the page-level ruler, built without the page's own service,
+orders S-only pages above I-only pages with AUC 0.94 across 192 pages, so the
+null result is not because the ruler fails to read the mechanism.
+
 ## Checks on the extraction
 
 - No block number was out of range.
@@ -135,9 +218,9 @@ page.
 - The prerequisite lists are an LLM's reading with no independent ground
   truth beyond the checks above. One page checked by reading is not a
   validation sample.
-- The extraction is not stable on judgement calls. Run twice, the WAF S3 page
-  was classed once as a reference page and once as a procedure, and its bucket
-  policy once as "steps on this page" and once as "steps on another page".
+- Three runs agree on most fields (see Stability), but single pages still
+  flip: the WAF S3 page was classed once as a reference page and once as a
+  procedure. The chain trace and the checklist come from one run each.
 - "Needed at" is the hardest field. On reference pages it coincides with
   "introduced at" almost by construction, so the surprise rate is reported for
   procedure pages only.

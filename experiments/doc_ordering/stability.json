@@ -1,0 +1,2281 @@
+{
+ "runs": [
+  "1",
+  "2",
+  "3"
+ ],
+ "agreement": {
+  "page: is_procedure": {
+   "mean": 0.9444444444444444,
+   "n": 180
+  },
+  "page: main_procedure_block within 3": {
+   "mean": 0.9222222222222223,
+   "n": 180
+  },
+  "page: share of prerequisites found by both runs": {
+   "mean": 0.8783577164442807,
+   "n": 176
+  },
+  "item: instructions (on page / other page / none)": {
+   "mean": 0.9417040358744395,
+   "n": 669
+  },
+  "item: off-page or not": {
+   "mean": 0.9476831091180867,
+   "n": 669
+  },
+  "item: has steps anywhere or not": {
+   "mean": 0.968609865470852,
+   "n": 669
+  },
+  "item: needed_at within 3 blocks": {
+   "mean": 0.8609865470852018,
+   "n": 669
+  },
+  "item: introduced_at within 3 blocks": {
+   "mean": 0.9237668161434978,
+   "n": 669
+  },
+  "item: surprise or not": {
+   "mean": 0.9162929745889388,
+   "n": 669
+  },
+  "item: same link, when both say other page": {
+   "mean": 1.0,
+   "n": 159
+  }
+ },
+ "per_run": {
+  "1": {
+   "procedure_pages": 52,
+   "prerequisites": 216,
+   "surprise": 0.3148148148148148,
+   "off_page": 0.24074074074074073,
+   "no_steps": 0.4027777777777778,
+   "detour": 0.22685185185185186,
+   "pages_sent_elsewhere": 34
+  },
+  "2": {
+   "procedure_pages": 54,
+   "prerequisites": 237,
+   "surprise": 0.3206751054852321,
+   "off_page": 0.2616033755274262,
+   "no_steps": 0.4050632911392405,
+   "detour": 0.24050632911392406,
+   "pages_sent_elsewhere": 37
+  },
+  "3": {
+   "procedure_pages": 52,
+   "prerequisites": 220,
+   "surprise": 0.2590909090909091,
+   "off_page": 0.25,
+   "no_steps": 0.37727272727272726,
+   "detour": 0.18636363636363637,
+   "pages_sent_elsewhere": 32
+  }
+ },
+ "consensus": {
+  "https://docs.aws.amazon.com/elasticloadbalancing/latest/application/enable-access-logging.html": {
+   "id": "alb-access-logs",
+   "service": "Elastic Load Balancing",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "S3 bucket in the same Region as the load balancer, using SSE-S3 encryption, to store the access logs",
+     "type": "s3_bucket",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Bucket policy on the S3 bucket granting the Elastic Load Balancing log delivery service permission to write access logs",
+     "type": "bucket_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/waf/latest/developerguide/logging-s3.html": {
+   "id": "waf-logs",
+   "service": "WAF",
+   "procedure_votes": 2,
+   "items": [
+    {
+     "what": "Amazon S3 bucket for log delivery, in the same account that manages the protection pack (web ACL), with a name starting with aws-waf-logs-",
+     "type": "s3_bucket",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "Identity-based permissions for the user managing AWS WAF to change the logging configuration and configure log delivery (wafv2, logs and s3 actions), provided by AWSWAFConsoleFullAccess or AWSWAFFullAccess or set manually",
+     "type": "iam_identity_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": false,
+     "surprise_votes": 2,
+     "runs": 3
+    },
+    {
+     "what": "S3 bucket policy allowing the log delivery service (delivery.logs.amazonaws.com) to publish logs to the bucket; added automatically if the log creator owns the bucket and has GetBucketPolicy/PutBucketPolicy, otherwise the bucket owner must add it manually",
+     "type": "bucket_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 2,
+     "runs": 3
+    },
+    {
+     "what": "KMS key policy allowing AWS WAF logging to use the customer managed KMS key, required only when the bucket uses SSE-KMS with a customer managed key",
+     "type": "kms_key_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-restricting-access-to-s3.html": {
+   "id": "cloudfront-oac-origin",
+   "service": "CloudFront",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "CloudFront distribution with a regular (non-website-endpoint) S3 bucket origin",
+     "type": "other_aws_resource",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "S3 bucket policy allowing the CloudFront service principal (cloudfront.amazonaws.com) to access the bucket, conditioned on the distribution",
+     "type": "bucket_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "KMS key policy statement allowing the CloudFront distribution to use the KMS key (only if bucket objects use SSE-KMS)",
+     "type": "kms_key_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "S3 Object Ownership set to Bucket owner enforced (or Bucket owner preferred if ACLs are needed) on the bucket",
+     "type": "account_or_service_setting",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/amplify/latest/userguide/deploy-with-sdks.html": {
+   "id": "amplify/latest/userguide/deploy-with-sdks.html",
+   "service": "Amplify",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "S3 bucket (with optional prefix) containing the static website files, to which the policy is attached",
+     "type": "s3_bucket",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 2,
+     "runs": 3
+    },
+    {
+     "what": "Amplify application (app ID and branch name) located in a specific AWS Region, whose values are substituted into the policy",
+     "type": "other_aws_resource",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/AmazonS3/latest/userguide/HostingWebsiteOnS3Setup.html": {
+   "id": "static-website-tutorial",
+   "service": "S3",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "Bucket-level S3 Block Public Access turned off for the website bucket so a public bucket policy can be saved",
+     "type": "account_or_service_setting",
+     "instructions": "on_page",
+     "instructions_unanimous": false,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Account-level S3 Block Public Access settings turned off, if they are on, so that a public bucket policy can be added",
+     "type": "account_or_service_setting",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/mgn/latest/ug/export-main.html": {
+   "id": "mgn/latest/ug/export-main.html",
+   "service": "Application Migration",
+   "procedure_votes": 2,
+   "items": [
+    {
+     "what": "IAM role with the AWSApplicationMigrationReadOnlyAccess managed policy for the user or process running the export",
+     "type": "iam_role",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "Additional IAM identity policy attached to the export role (policy shown in the code example)",
+     "type": "iam_identity_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "Destination S3 bucket for the export, which must not be public or Requester Pays (needed only for exports to S3)",
+     "type": "s3_bucket",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "Bucket policy on the destination S3 bucket allowing AWS Transform MGN to write export files (and cross-account access if the bucket is owned by another account)",
+     "type": "bucket_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "Access for the exporting role or user to decrypt with the AWS KMS key, if the S3 objects are SSE-KMS encrypted",
+     "type": "kms_key_policy",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "KMS key policy allowing MGN to use the customer managed key (via the exporting user or role) that encrypts the destination bucket; the key must be in the same Region as the bucket",
+     "type": "kms_key_policy",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/athena/latest/ug/cross-account-permissions.html": {
+   "id": "athena-cross-account",
+   "service": "Athena",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "Customer managed AWS KMS key in Account A that encrypts the S3 bucket",
+     "type": "kms_key",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "IAM role in Account B, assumed by the querying user, to which bucket and key permissions are attached",
+     "type": "iam_role",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "S3 bucket policy in Account A that allows access from Account B (or its role)",
+     "type": "bucket_policy",
+     "instructions": "other_page",
+     "instructions_unanimous": false,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "KMS key policy in Account A that grants Account B's role the kms:Encrypt, Decrypt, ReEncrypt*, GenerateDataKey* and DescribeKey permissions",
+     "type": "kms_key_policy",
+     "instructions": "other_page",
+     "instructions_unanimous": false,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "IAM identity policy on Account B's role granting access to the S3 bucket",
+     "type": "iam_identity_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "IAM identity policy on Account B's role granting access to the KMS key in Account A",
+     "type": "iam_identity_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/athena/latest/ug/athena-catalog-access.html": {
+   "id": "athena/latest/ug/athena-catalog-access.html",
+   "service": "Athena",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "An IAM role with the identity-based policy that grants the cloudformation, ec2, ecr, glue, iam, lambda, s3, secretsmanager and serverlessrepo permissions, used to call CreateDataCatalog",
+     "type": "iam_role",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/AuroraMySQL.Integrating.Authorizing.IAM.S3CreatePolicy.html": {
+   "id": "AmazonRDS/latest/AuroraUserGuide/AuroraMySQL.Integrating.Authorizing.IAM.S3CreatePolicy.html",
+   "service": "Aurora",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "An existing Amazon S3 bucket whose ARN is specified in the policy's Resource entries",
+     "type": "s3_bucket",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 2,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/audit-manager/latest/userguide/security_iam_id-based-policy-examples.html": {
+   "id": "audit-manager/latest/userguide/security_iam_id-based-policy-examples.html",
+   "service": "Audit Manager",
+   "procedure_votes": 0,
+   "items": [
+    {
+     "what": "S3 bucket to use as the assessment report destination (named in the Example 2 policy)",
+     "type": "s3_bucket",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "KMS key used to encrypt assessment reports (named in the Example 2 policy)",
+     "type": "kms_key",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Existing Amazon SNS topic that Audit Manager will send notifications to",
+     "type": "other_aws_resource",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "KMS key attached to the SNS topic for server-side encryption (only if the topic is encrypted)",
+     "type": "kms_key",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/USER_PostgreSQL.S3Import.AccessPermission.html": {
+   "id": "AmazonRDS/latest/AuroraUserGuide/USER_PostgreSQL.S3Import.AccessPermission.html",
+   "service": "Aurora",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "Network path from the Aurora DB cluster to Amazon S3 (e.g., S3 gateway VPC endpoint if the cluster is in a private subnet, or other outbound access)",
+     "type": "other_aws_resource",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Existing Amazon S3 bucket containing the file(s) to import (referenced by ARN in the IAM policy)",
+     "type": "s3_bucket",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Aurora PostgreSQL DB cluster that is not Aurora Serverless v1 (IAM roles cannot be associated with Serverless v1)",
+     "type": "other_aws_resource",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/audit-manager/latest/userguide/settings-destination.html": {
+   "id": "audit-manager/latest/userguide/settings-destination.html",
+   "service": "Audit Manager",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "S3 bucket policy on a cross-account destination bucket allowing Audit Manager to publish reports. Only needed if the bucket is in another account, which requires the CLI or SDK.",
+     "type": "bucket_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/aws-backup/latest/devguide/backup-access-points.html": {
+   "id": "aws-backup/latest/devguide/backup-access-points.html",
+   "service": "Backup",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "IAM role/identity permissions for AWS Backup and S3 access point actions (backup:CreateBackupAccessPoint, DescribeBackupAccessPoint, DeleteBackupAccessPoint, ListBackupAccessPoints, ListBackupAccessPointsByRecoveryPoint, s3:GetAccessPoint, s3:CreateAccessPoint, s3:DeleteAccessPoint, s3:PutAccessPointPolicy), e.g. via managed policy AWSBackupAccessPointOperatorAccess",
+     "type": "iam_identity_policy",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "An existing S3 recovery point in a usable state (AVAILABLE, STOPPED, or COMPLETED) to create the access point for",
+     "type": "other_aws_resource",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/batch/latest/userguide/batch-host-logs-configure-iam.html": {
+   "id": "batch/latest/userguide/batch-host-logs-configure-iam.html",
+   "service": "Batch",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "Amazon S3 bucket for host-level logs (with the Fluent Bit configuration under the fluent-bit/ prefix), whose name replaces host-level-logs-bucket in the policy",
+     "type": "s3_bucket",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 2,
+     "runs": 3
+    },
+    {
+     "what": "Existing EC2 instance role (ecsInstanceRole) to which the policy is attached",
+     "type": "iam_role",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cfn-console-create-stack.html": {
+   "id": "cloudformation-stacksets-template",
+   "service": "CloudFormation",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "A CloudFormation stack template (created beforehand, or built with Template studio)",
+     "type": "other_aws_resource",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/bedrock/latest/userguide/advanced-prompt-optimization-prereqs.html": {
+   "id": "bedrock/latest/userguide/advanced-prompt-optimization-prereqs.html",
+   "service": "Bedrock",
+   "procedure_votes": 2,
+   "items": [
+    {
+     "what": "IAM identity policy granting bedrock Advanced Prompt Optimization job API actions (Create/Get/List/Stop/BatchDelete) to the calling user or role",
+     "type": "iam_identity_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "IAM permissions to invoke the target foundation models (InvokeModel / InvokeModelWithResponseStream on models, inference profiles, application inference profiles)",
+     "type": "iam_identity_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Model access enabled in the account for the target models",
+     "type": "account_or_service_setting",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "S3 bucket in the same Region as the job holding the input dataset and output location",
+     "type": "s3_bucket",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "IAM permissions for read access to the input dataset and write access to the output location in S3",
+     "type": "iam_identity_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "AWS KMS customer-managed key for job output encryption or SSE-KMS S3 bucket (optional)",
+     "type": "kms_key",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "IAM permissions for KMS actions (Encrypt, GenerateDataKey, DescribeKey, Decrypt) on the CMK (optional)",
+     "type": "iam_identity_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Custom evaluation Lambda function (optional)",
+     "type": "other_aws_resource",
+     "instructions": "none",
+     "instructions_unanimous": false,
+     "surprise_votes": 0,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/aws-backup/latest/devguide/s3-backups.html": {
+   "id": "backup-s3",
+   "service": "Backup",
+   "procedure_votes": 0,
+   "items": [
+    {
+     "what": "IAM role(s) used for backup and restore with the AWSBackupServiceRolePolicyForS3Backup and AWSBackupServiceRolePolicyForS3Restore managed policies attached",
+     "type": "iam_identity_policy",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "S3 Versioning enabled on each S3 bucket to be backed up",
+     "type": "account_or_service_setting",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "Amazon EventBridge notification setting enabled on the S3 bucket (needed for continuous backups)",
+     "type": "account_or_service_setting",
+     "instructions": "on_page",
+     "instructions_unanimous": false,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "Backup vault to hold the S3 recovery points (continuous and periodic backups must be in the same vault)",
+     "type": "other_aws_resource",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 1,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/bedrock/latest/userguide/kb-permissions.html": {
+   "id": "bedrock-kb-s3",
+   "service": "Bedrock",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "Amazon S3 bucket that holds the data source content, which the role's S3 access policy refers to",
+     "type": "s3_bucket",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 1,
+     "runs": 3
+    },
+    {
+     "what": "AWS KMS key used to encrypt the S3 data source (only if the data is encrypted), which the role needs permission to decrypt",
+     "type": "kms_key",
+     "instructions": "none",
+     "instructions_unanimous": false,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Amazon OpenSearch Serverless collection used as the vector database (if used)",
+     "type": "other_aws_resource",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Amazon OpenSearch Managed Cluster domain used as the vector database (if used)",
+     "type": "other_aws_resource",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 1,
+     "runs": 3
+    },
+    {
+     "what": "Amazon Aurora DB cluster used as the vector database, in the same account as the knowledge base (if used)",
+     "type": "other_aws_resource",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Amazon Kendra GenAI index used for the knowledge base (if used)",
+     "type": "other_aws_resource",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 1,
+     "runs": 3
+    },
+    {
+     "what": "AWS Secrets Manager secret holding credentials for a Pinecone or Redis Enterprise Cloud vector database (if used)",
+     "type": "other_aws_resource",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 2,
+     "runs": 3
+    },
+    {
+     "what": "AWS Secrets Manager secret holding credentials for a third-party data source such as Confluence, SharePoint, Salesforce, Web Crawler, OneDrive or Google Drive (if used)",
+     "type": "other_aws_resource",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "S3 bucket for the multimodal storage destination (if configured)",
+     "type": "s3_bucket",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 1,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-restricting-access-to-s3-mrap.html": {
+   "id": "AmazonCloudFront/latest/DeveloperGuide/private-content-restricting-access-to-s3-mrap.html",
+   "service": "CloudFront",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "CloudFront distribution with an S3 Multi-Region Access Point origin (origin domain name in the MRAP hostname format)",
+     "type": "other_aws_resource",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "S3 Multi-Region Access Point (with underlying buckets in Regions enabled by default)",
+     "type": "other_aws_resource",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Multi-Region Access Point policy allowing the CloudFront service principal, conditioned on the distribution",
+     "type": "bucket_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": false,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Bucket policy on every underlying S3 bucket granting CloudFront access (or delegating access to the Multi-Region Access Point)",
+     "type": "bucket_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "KMS key policy statement allowing the CloudFront distribution to use the KMS key in every Region where an underlying bucket uses SSE-KMS (only if SSE-KMS is used)",
+     "type": "kms_key_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/awscloudtrail/latest/userguide/security_iam_id-based-policy-examples.html": {
+   "id": "awscloudtrail/latest/userguide/security_iam_id-based-policy-examples.html",
+   "service": "CloudTrail",
+   "procedure_votes": 1,
+   "items": [
+    {
+     "what": "An existing CloudTrail trail (for example Example-Trail or My-First-Trail) that the example policies reference by ARN",
+     "type": "other_aws_resource",
+     "instructions": "other_page",
+     "instructions_unanimous": false,
+     "surprise_votes": 1,
+     "runs": 3
+    },
+    {
+     "what": "An IAM group (the developer group) to attach the example policies to",
+     "type": "other_aws_resource",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 2,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/codeartifact/latest/ug/create-s3-gateway-endpoint.html": {
+   "id": "codeartifact/latest/ug/create-s3-gateway-endpoint.html",
+   "service": "CodeArtifact",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "A VPC (with route tables) in which to create the S3 gateway endpoint",
+     "type": "other_aws_resource",
+     "instructions": "other_page",
+     "instructions_unanimous": false,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "AWS CLI access with permission to run the Amazon EC2 create-vpc-endpoint command",
+     "type": "tool_or_access",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/data-protection-policy-permissions.html": {
+   "id": "AmazonCloudWatch/latest/logs/data-protection-policy-permissions.html",
+   "service": "CloudWatch Logs",
+   "procedure_votes": 0,
+   "items": [
+    {
+     "what": "Amazon S3 bucket to receive audit findings (only if S3 is the audit destination)",
+     "type": "s3_bucket",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Bucket resource policy on the audit destination bucket granting delivery.logs.amazonaws.com s3:PutObject and s3:GetBucketAcl (must be added manually for a cross-account bucket or if you manage the policy yourself)",
+     "type": "bucket_policy",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 2,
+     "runs": 3
+    },
+    {
+     "what": "Firehose delivery stream to receive audit findings (only if Firehose is the audit destination)",
+     "type": "other_aws_resource",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/S3ExportTasksConsole.html": {
+   "id": "AmazonCloudWatch/latest/logs/S3ExportTasksConsole.html",
+   "service": "CloudWatch Logs",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "Destination Amazon S3 bucket in the same Region as the log data (new or existing)",
+     "type": "s3_bucket",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "S3 bucket policy that allows CloudWatch Logs to write exported log data to the bucket, listing the permitted source accounts",
+     "type": "bucket_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Signed-in identity with AmazonS3ReadOnlyAccess and the logs permissions CreateExportTask, CancelExportTask, DescribeExportTasks, DescribeLogStreams and DescribeLogGroups",
+     "type": "iam_identity_policy",
+     "instructions": "other_page",
+     "instructions_unanimous": false,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Symmetric KMS key for SSE-KMS default encryption of the destination bucket (only if exporting to an SSE-KMS bucket)",
+     "type": "kms_key",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "KMS key policy statement allowing CloudWatch Logs to use the key (only if exporting to an SSE-KMS bucket)",
+     "type": "kms_key_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "IAM policy granting s3:PutObject (plus KMS actions or s3:PutObjectAcl as needed) on the destination bucket, for cross-account export",
+     "type": "iam_identity_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/codebuild/latest/userguide/sample-fastlane.html": {
+   "id": "codebuild/latest/userguide/sample-fastlane.html",
+   "service": "CodeBuild",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "An AWS account",
+     "type": "tool_or_access",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "An Apple Developer account",
+     "type": "tool_or_access",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "An S3 bucket for storing certificates and provisioning profiles",
+     "type": "s3_bucket",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "fastlane installed in the project",
+     "type": "tool_or_access",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Secrets Manager secrets for FASTLANE_SESSION and MATCH_PASSWORD, with names prefixed /CodeBuild/",
+     "type": "other_aws_resource",
+     "instructions": "other_page",
+     "instructions_unanimous": false,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "CodeBuild macOS compute fleet (reserved capacity)",
+     "type": "other_aws_resource",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "IAM policy on the CodeBuild service role granting access to the S3 certificate bucket",
+     "type": "iam_identity_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/codedeploy/latest/userguide/getting-started-create-iam-instance-profile.html": {
+   "id": "codedeploy/latest/userguide/getting-started-create-iam-instance-profile.html",
+   "service": "CodeDeploy",
+   "procedure_votes": 3,
+   "items": []
+  },
+  "https://docs.aws.amazon.com/codedeploy/latest/userguide/getting-started-policy.html": {
+   "id": "codedeploy/latest/userguide/getting-started-policy.html",
+   "service": "CodeDeploy",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "CodeDeploy administrative user created in IAM Identity Center (from Step 1: Setting up)",
+     "type": "other_aws_resource",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "CodeDeploy service role (created in Step 2), whose ARN must be substituted into the inline policy",
+     "type": "iam_role",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/codepipeline/latest/userguide/S3-artifact-encryption.html": {
+   "id": "codepipeline-artifacts",
+   "service": "CodePipeline",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "An existing pipeline (created with the Create Pipeline wizard) so that the artifact bucket and the aws/s3 AWS managed key exist and can be viewed",
+     "type": "other_aws_resource",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Customer managed symmetric KMS key to encrypt artifacts in the S3 bucket (for pipelines created with CloudFormation or the AWS CLI, or for cross-account pipelines)",
+     "type": "kms_key",
+     "instructions": "other_page",
+     "instructions_unanimous": false,
+     "surprise_votes": 3,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/codepipeline/latest/userguide/security_iam_id-based-policy-examples.html": {
+   "id": "codepipeline/latest/userguide/security_iam_id-based-policy-examples.html",
+   "service": "CodePipeline",
+   "procedure_votes": 1,
+   "items": []
+  },
+  "https://docs.aws.amazon.com/comprehend/latest/dg/tutorial-reviews-create-role.html": {
+   "id": "comprehend/latest/dg/tutorial-reviews-create-role.html",
+   "service": "Comprehend",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "S3 bucket containing the sample dataset (created and populated in Step 1), which the access policy grants Comprehend access to",
+     "type": "s3_bucket",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Code or text editor to save JSON policy files and keep track of ARNs",
+     "type": "tool_or_access",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "AWS CLI installed and configured with permissions to create IAM roles and policies",
+     "type": "tool_or_access",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/connect/latest/adminguide/setup-prompts-s3.html": {
+   "id": "connect/latest/adminguide/setup-prompts-s3.html",
+   "service": "Connect",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "An S3 bucket containing the voice prompt files, in the same Region as the Connect Customer instance for opt-in Regions",
+     "type": "s3_bucket",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Prompt audio files in .wav format (8KHz, mono, U-Law encoding), under 50MB and five minutes long, uploaded to the bucket",
+     "type": "other_aws_resource",
+     "instructions": "other_page",
+     "instructions_unanimous": false,
+     "surprise_votes": 2,
+     "runs": 3
+    },
+    {
+     "what": "Customer managed KMS key whose key policy allows the connect.amazonaws.com service principal, required if the bucket is encrypted (an AWS managed key on the bucket prevents prompt playback)",
+     "type": "kms_key",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/controltower/latest/userguide/custom-logging-bucket.html": {
+   "id": "controltower/latest/userguide/custom-logging-bucket.html",
+   "service": "Control Tower",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "Landing zone at version 4.0 or later",
+     "type": "account_or_service_setting",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "An existing S3 bucket in the landing zone's home Region, owned by a member account in the organization (not the management account), with a standard bucket ARN and a name not starting with aws-controltower-",
+     "type": "s3_bucket",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Bucket policy on the custom logging bucket granting AWS CloudTrail and AWS Config log delivery access (with organization ID and bucket name substituted)",
+     "type": "bucket_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/cur/latest/userguide/cur-s3.html": {
+   "id": "cur/latest/userguide/cur-s3.html",
+   "service": "Cost and Usage Reports",
+   "procedure_votes": 0,
+   "items": []
+  },
+  "https://docs.aws.amazon.com/cur/latest/userguide/dataexports-s3-bucket.html": {
+   "id": "cur/latest/userguide/dataexports-s3-bucket.html",
+   "service": "Cost and Usage Reports",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "An Amazon S3 bucket (owned by the reader or by a designated destination account) to receive the data exports",
+     "type": "s3_bucket",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "S3 bucket policy granting the Data Exports service principal (bcm-data-exports.amazonaws.com) s3:PutObject permission, with aws:SourceArn and aws:SourceAccount conditions",
+     "type": "bucket_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/datasync/latest/userguide/s3-cross-account-transfer.html": {
+   "id": "datasync/latest/userguide/s3-cross-account-transfer.html",
+   "service": "DataSync",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "Source account user permissions (IAM role/policy with datasync, iam, s3 actions) to create DataSync locations and tasks",
+     "type": "iam_identity_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": false,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Destination account user permissions allowing the user to update the destination bucket policy and disable ACLs",
+     "type": "iam_identity_policy",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Destination S3 bucket in the destination account to receive the data",
+     "type": "s3_bucket",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "On-premises storage system to transfer data from (source location)",
+     "type": "other_aws_resource",
+     "instructions": "other_page",
+     "instructions_unanimous": false,
+     "surprise_votes": 0,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/dms/latest/userguide/CHAP_Source.S3.html": {
+   "id": "dms/latest/userguide/CHAP_Source.S3.html",
+   "service": "DMS",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "Source S3 bucket containing the data files (named schemaName/tableName/ convention), in the same AWS Region as the DMS replication instance",
+     "type": "s3_bucket",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "DMS replication instance in the same Region as the source bucket",
+     "type": "other_aws_resource",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "IAM permissions (S3 read access to the source bucket) for the role/user account that creates the migration task",
+     "type": "iam_identity_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 2,
+     "runs": 3
+    },
+    {
+     "what": "Additional IAM S3 permissions required if versioning is enabled on the bucket",
+     "type": "iam_identity_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 2,
+     "runs": 3
+    },
+    {
+     "what": "VPC endpoint or public route allowing DMS to access the source bucket (DMS 3.4.7 and higher)",
+     "type": "other_aws_resource",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 2,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/datasync/latest/userguide/create-s3-location.html": {
+   "id": "datasync-s3-location",
+   "service": "DataSync",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "The Amazon S3 bucket that DataSync will transfer to or from (the role's permissions policy is written against this bucket)",
+     "type": "s3_bucket",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "If the bucket uses SSE-KMS or DSSE-KMS encryption with a customer managed key, a KMS key policy that includes the IAM role DataSync uses",
+     "type": "kms_key_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "If the bucket normally denies all access, a bucket policy that allows the DataSync role and your location-creating role for the transfer",
+     "type": "bucket_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "If the bucket restricts access to specific VPCs or VPC endpoints, a bucket policy updated to allow the DataSync location IAM role (by ARN or tag)",
+     "type": "bucket_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/dms/latest/userguide/CHAP_Target.S3.html": {
+   "id": "dms/latest/userguide/CHAP_Target.S3.html",
+   "service": "DMS",
+   "procedure_votes": 0,
+   "items": [
+    {
+     "what": "DMS replication instance in the same AWS Region as the target S3 bucket",
+     "type": "other_aws_resource",
+     "instructions": "none",
+     "instructions_unanimous": false,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "IAM role with write, delete and tagging access to the target bucket, with dms.amazonaws.com as a trusted entity, used to create the target endpoint",
+     "type": "iam_role",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "IAM identity-based policy granting the S3 permissions the role needs on the target bucket, including s3:PutObjectAcl if canned ACLs are used",
+     "type": "iam_identity_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 2,
+     "runs": 3
+    },
+    {
+     "what": "VPC endpoint or public route that lets DMS reach the S3 bucket (AWS DMS 3.4.7 and higher)",
+     "type": "other_aws_resource",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/detective/latest/userguide/iam-permissions.html": {
+   "id": "detective/latest/userguide/iam-permissions.html",
+   "service": "Detective",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "An IAM identity (role) to which the inline policy can be attached, with permission to attach policies to it",
+     "type": "iam_role",
+     "instructions": "none",
+     "instructions_unanimous": false,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Optional: your own Amazon S3 bucket for storing Athena query results (its name replaces athena-results-bucket in the policy); otherwise remove S3ObjectPermissions so Detective generates one",
+     "type": "s3_bucket",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/S3DataExport_Requesting.html": {
+   "id": "dynamodb-export-s3",
+   "service": "DynamoDB",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "Point-in-time recovery (PITR) enabled on the source table",
+     "type": "account_or_service_setting",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Destination S3 bucket that you can write to (not requester-pays; may be in another Region or account)",
+     "type": "s3_bucket",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "IAM identity policy allowing s3:AbortMultipartUpload, s3:PutObject, s3:PutObjectAcl and dynamodb:ExportTableToPointInTime for the exporting user/role",
+     "type": "iam_identity_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Bucket policy on the destination S3 bucket allowing the exporter to write, required if the bucket is in another account or you lack write permission",
+     "type": "bucket_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "IAM role in the table's account to make the export request when the table is owned by another account",
+     "type": "iam_role",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Customer managed KMS key whose key policy permits use by the exporting IAM user/role, required if the table or bucket is encrypted with a customer managed key (key must be in same Region as the destination bucket)",
+     "type": "kms_key_policy",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/cm-set-up-s3-export.html": {
+   "id": "AWSEC2/latest/UserGuide/cm-set-up-s3-export.html",
+   "service": "EC2",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "An Amazon S3 bucket in the reader's AWS account to receive and store Capacity Manager export files (existing or newly created)",
+     "type": "s3_bucket",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/eks/latest/userguide/ack-permissions.html": {
+   "id": "eks/latest/userguide/ack-permissions.html",
+   "service": "EKS",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "ACK capability with its Capability Role (IAM role provided when creating the ACK capability), which must be able to be modified to add sts:AssumeRole and sts:TagSession permissions",
+     "type": "iam_role",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Service-specific IAM role (with service permissions such as S3 and a trust policy allowing the Capability Role to assume it) that the IAMRoleSelector maps to a namespace",
+     "type": "iam_role",
+     "instructions": "on_page",
+     "instructions_unanimous": false,
+     "surprise_votes": 1,
+     "runs": 3
+    },
+    {
+     "what": "Cross-account IAM role in the target account (444455556666) trusting the source account's Capability Role, with service-specific permissions attached",
+     "type": "iam_role",
+     "instructions": "on_page",
+     "instructions_unanimous": false,
+     "surprise_votes": 1,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-emrfs-iam-roles.html": {
+   "id": "emr-emrfs-roles",
+   "service": "EMR",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "Trust policy on each EMRFS role allowing the cluster's EMR role for EC2 (EMR_EC2_DefaultRole) to assume it",
+     "type": "iam_role",
+     "instructions": "other_page",
+     "instructions_unanimous": false,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Role added as a key user in the KMS key policy, if the role accesses S3 locations encrypted with an AWS KMS key",
+     "type": "kms_key_policy",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Amazon EMR role for EC2 (instance profile) for the cluster, ideally a custom one restricting S3 permissions, used as fallback",
+     "type": "iam_role",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/emr/latest/EMR-Serverless-UserGuide/lake-formation-unfiltered-access.html": {
+   "id": "emr/latest/EMR-Serverless-UserGuide/lake-formation-unfiltered-access.html",
+   "service": "EMR Serverless",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "Lake Formation setting allowing third-party query engines to access data without IAM session tag validation (full table access application integration), enabled in both producer and consumer accounts/regions for cross-account or cross-region access",
+     "type": "account_or_service_setting",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 2,
+     "runs": 3
+    },
+    {
+     "what": "Job runtime role (user-defined IAM role, not a service-linked role) for the EMR Serverless job",
+     "type": "iam_role",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 2,
+     "runs": 3
+    },
+    {
+     "what": "IAM identity policy on the job runtime role granting lakeformation:GetDataAccess, Glue API permissions, and S3 access for the script and logs",
+     "type": "iam_identity_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 2,
+     "runs": 3
+    },
+    {
+     "what": "Lake Formation permissions granted to the job runtime role on the tables (SELECT for reads, ALL/SUPER for writes/deletes, DESCRIBE/ALTER/DROP for catalog operations)",
+     "type": "other_aws_resource",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 2,
+     "runs": 3
+    },
+    {
+     "what": "AWS Glue Data Catalog configured as the metastore for EMR Serverless",
+     "type": "other_aws_resource",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 2,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/emr/latest/EMR-Serverless-UserGuide/jobs-s3-access.html": {
+   "id": "emr/latest/EMR-Serverless-UserGuide/jobs-s3-access.html",
+   "service": "EMR Serverless",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "An Amazon EMR Serverless application in AccountA where the jobs will run",
+     "type": "other_aws_resource",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "A job execution (runtime) role in AccountA with the permissions required to run jobs in the application (referred to as Job-Execution-Role-A)",
+     "type": "iam_role",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "An S3 bucket in AccountB containing the data the EMR Serverless jobs will access",
+     "type": "s3_bucket",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/AmazonElastiCache/latest/dg/backups-exporting.html": {
+   "id": "AmazonElastiCache/latest/dg/backups-exporting.html",
+   "service": "ElastiCache",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "Amazon S3 bucket in the same AWS Region as the backup, to receive the exported backup",
+     "type": "s3_bucket",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "S3 bucket policy granting the ElastiCache service access to the bucket (object read/write and permissions read)",
+     "type": "bucket_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "IAM identity policy for the caller allowing elasticache:CopySnapshot and the required S3 actions (including s3:ListAllMyBuckets on all resources) on the target bucket",
+     "type": "iam_identity_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "An existing ElastiCache backup (snapshot) to export, from a cluster not using data tiering and not a node-based Memcached cluster",
+     "type": "other_aws_resource",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-plan-debugging.html": {
+   "id": "emr-logs",
+   "service": "EMR",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "Amazon S3 bucket (and path) to receive the archived cluster logs",
+     "type": "s3_bucket",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "Default Amazon EMR service role and EC2 instance profile (create with aws emr create-default-roles if they don't exist), needed for the CLI create-cluster command",
+     "type": "iam_role",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "EC2 key pair whose name replaces myKey in the CLI create-cluster command",
+     "type": "other_aws_resource",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 1,
+     "runs": 3
+    },
+    {
+     "what": "AWS KMS customer managed key for encrypting logs (optional, only for log encryption; EMR 5.30.0+ excluding 6.0.0)",
+     "type": "kms_key",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "KMS key policy/key users: EC2 instance profile and Amazon EMR role added as key users of the key (for log encryption)",
+     "type": "kms_key_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "KMS key policy allowing the elasticmapreduce.amazonaws.com and persistentappui.elasticmapreduce.amazonaws.com service principals to use kms:GenerateDataKey, kms:GenerateDataKeyWithoutPlaintext and kms:Decrypt (for log encryption)",
+     "type": "kms_key_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "IAM permission for the EC2 instance profile to use kms:GenerateDataKey (for log encryption)",
+     "type": "iam_identity_policy",
+     "instructions": "other_page",
+     "instructions_unanimous": false,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "IAM permission for the Amazon EMR role to use kms:DescribeKey (for log encryption)",
+     "type": "iam_identity_policy",
+     "instructions": "other_page",
+     "instructions_unanimous": false,
+     "surprise_votes": 3,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/elasticloadbalancing/latest/application/enable-connection-logging.html": {
+   "id": "elasticloadbalancing/latest/application/enable-connection-logging.html",
+   "service": "Elastic Load Balancing",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "S3 bucket in the same Region as the load balancer, using SSE-S3 (Amazon S3-managed keys) default encryption, to store the connection logs",
+     "type": "s3_bucket",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Bucket policy on the S3 bucket granting Elastic Load Balancing (the log delivery service) permission to write connection logs, with the resource ARN including the load balancer's account ID and matching the prefix choice",
+     "type": "bucket_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/entityresolution/latest/userguide/create-workflow-job-role.html": {
+   "id": "entityresolution/latest/userguide/create-workflow-job-role.html",
+   "service": "Entity Resolution",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "IAM permissions (administrator account with CreateRole permissions) to create roles and policies in the IAM console",
+     "type": "tool_or_access",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Amazon S3 input buckets containing the underlying data objects of the AWS Glue tables that Entity Resolution reads from",
+     "type": "s3_bucket",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "Amazon S3 output buckets where Entity Resolution writes output data",
+     "type": "s3_bucket",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "AWS Glue input databases (and tables) that Entity Resolution reads from",
+     "type": "other_aws_resource",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "AWS KMS key(s) used to encrypt the input S3 data (only if the input is encrypted with a customer managed key)",
+     "type": "kms_key",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "AWS KMS key(s) used to encrypt the output S3 data (only if output must be encrypted)",
+     "type": "kms_key",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "AWS Data Exchange subscription with a provider service, with dataset, revision and asset IDs (only for provider service-based workflows)",
+     "type": "other_aws_resource",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/forecast/latest/dg/aws-forecast-iam-roles.html": {
+   "id": "forecast/latest/dg/aws-forecast-iam-roles.html",
+   "service": "Forecast",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "An existing Amazon S3 bucket holding the Forecast data, whose name is substituted for bucket-name in the policy",
+     "type": "s3_bucket",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/global-accelerator/latest/dg/monitoring-global-accelerator.flow-logs.html": {
+   "id": "global-accelerator/latest/dg/monitoring-global-accelerator.flow-logs.html",
+   "service": "Global Accelerator",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "Amazon S3 bucket in the account to receive the flow logs",
+     "type": "s3_bucket",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "IAM policy for the user or role enabling flow logs, with globalaccelerator, logs and s3 permissions",
+     "type": "iam_identity_policy",
+     "instructions": "other_page",
+     "instructions_unanimous": false,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "S3 bucket policy allowing the log delivery service to publish flow logs (added automatically if the creator owns the bucket and has GetBucketPolicy/PutBucketPolicy; otherwise the bucket owner must add it manually)",
+     "type": "bucket_policy",
+     "instructions": "other_page",
+     "instructions_unanimous": false,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "KMS customer-managed key policy statement allowing flow logs to write to an SSE-KMS encrypted bucket (only if the bucket uses SSE-KMS with a customer-managed key)",
+     "type": "kms_key_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/glue/latest/dg/create-an-iam-role.html": {
+   "id": "glue-crawler-role",
+   "service": "Glue",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "IAM policy granting access to the Amazon S3 sources and targets (s3:ListBucket, s3:GetObject for sources; s3:ListBucket, s3:PutObject, s3:DeleteObject for targets), such as a custom policy for specific S3 resources, in place of AmazonS3FullAccess",
+     "type": "iam_identity_policy",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 2,
+     "runs": 3
+    },
+    {
+     "what": "IAM policy allowing AWS Glue crawlers, jobs, and development endpoints to decrypt data in SSE-KMS encrypted S3 sources and targets (only if using SSE-KMS)",
+     "type": "iam_identity_policy",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "Policy granting iam:PassRole for the role, needed if the role name does not start with AWSGlueServiceRole, or when the role is used with notebooks and interactive sessions",
+     "type": "iam_identity_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/glue/latest/dg/set-up-iam.html": {
+   "id": "glue/latest/dg/set-up-iam.html",
+   "service": "Glue",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "IAM users or roles (identities) to which AWS Glue permissions will be granted",
+     "type": "other_aws_resource",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "Amazon S3 locations (buckets/prefixes) to grant the identities access to",
+     "type": "s3_bucket",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "If choosing an existing IAM role as the default service role: that role must already be configured for use as an AWS Glue service role (with the Glue service policy and trust relationship)",
+     "type": "iam_role",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "If choosing an existing IAM role as the default service role: an IAM policy for the AWS Glue service attached to that role",
+     "type": "iam_identity_policy",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "Access to the AWS Management Console with permissions to sign in and modify IAM permissions for identities and roles",
+     "type": "tool_or_access",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/omics/latest/dev/read-set-exports.html": {
+   "id": "omics/latest/dev/read-set-exports.html",
+   "service": "HealthOmics",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "Destination Amazon S3 bucket to receive the exported read sets",
+     "type": "s3_bucket",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "IAM identity-based policy granting write access (s3 actions) to the destination bucket",
+     "type": "iam_identity_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "IAM role for HealthOmics to assume (service principal trust policy via sts:AssumeRole) with the S3 write policy attached, whose ARN is passed to the export job",
+     "type": "iam_role",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 1,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/guardduty/latest/ug/guardduty_exportfindings.html": {
+   "id": "guardduty-export",
+   "service": "GuardDuty",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "Destination Amazon S3 bucket in the same Region as the KMS key, in a Region supported for export from where the findings are generated",
+     "type": "s3_bucket",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "AWS KMS key in the same Region as the S3 bucket, used to encrypt exported findings",
+     "type": "kms_key",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "KMS key policy statement granting GuardDuty permission to use the key to encrypt exported findings",
+     "type": "kms_key_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "S3 bucket policy granting GuardDuty permission to upload objects (and related actions) to the bucket",
+     "type": "bucket_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "IAM permissions for the user configuring the export (s3:GetBucketLocation, s3:PutObject, and s3:GetObject and s3:ListBucket if using a prefix) in addition to GuardDuty permissions",
+     "type": "iam_identity_policy",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Prefix/folder path in the S3 bucket (including /AWSLogs/account-ID/GuardDuty/Region) that must already exist, since GuardDuty does not create folders",
+     "type": "other_aws_resource",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/inspector/latest/user/findings-managing-exporting-reports.html": {
+   "id": "inspector/latest/user/findings-managing-exporting-reports.html",
+   "service": "Inspector",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "IAM permissions for Amazon Inspector, AWS KMS and Amazon S3 actions needed to export reports and configure the bucket and key (e.g. inspector2:CreateFindingsReport, kms:PutKeyPolicy, s3:PutBucketPolicy)",
+     "type": "iam_identity_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Amazon S3 bucket in the same Region as the findings data, to store the report (existing or newly created)",
+     "type": "s3_bucket",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "S3 bucket policy statement allowing Amazon Inspector to add objects (PutObject) to the bucket",
+     "type": "bucket_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Customer managed symmetric encryption AWS KMS key in the same Region as the S3 bucket (existing or newly created)",
+     "type": "kms_key",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "KMS key policy statement allowing Amazon Inspector to use the key to encrypt reports",
+     "type": "kms_key_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/iot-sitewise/latest/userguide/CreateBulkImportJob.html": {
+   "id": "iot-sitewise/latest/userguide/CreateBulkImportJob.html",
+   "service": "IoT SiteWise",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "AWS IoT SiteWise warm tier or cold tier storage enabled",
+     "type": "account_or_service_setting",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Amazon S3 data bucket containing the data (CSV file object) to import",
+     "type": "s3_bucket",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "Amazon S3 bucket (with prefix) to receive errors from the bulk import job",
+     "type": "s3_bucket",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "IAM role that AWS IoT SiteWise assumes to read the S3 data and write errors (job-role-arn)",
+     "type": "iam_role",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "IAM identity-based policy on the role granting S3 access to the data bucket and error bucket",
+     "type": "iam_identity_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "Bulk import job configuration file (JSON) with the job settings",
+     "type": "tool_or_access",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/iot-sitewise/latest/userguide/sd-bulk-import.html": {
+   "id": "iot-sitewise/latest/userguide/sd-bulk-import.html",
+   "service": "IoT SiteWise",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "S3 bucket(s) holding the source data files and an S3 location for error reports (can be the same bucket)",
+     "type": "s3_bucket",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "IAM role that AWS IoT SiteWise assumes (jobRoleArn), with a trust policy allowing iotsitewise.amazonaws.com to assume it",
+     "type": "iam_role",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Permission policy on the job role granting AWS IoT SiteWise S3 access to read source objects and write error reports",
+     "type": "iam_identity_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Caller IAM permission policy allowing the iotsitewise API call, S3 access, and iam:PassRole on the job role (with iam:PassedToService condition)",
+     "type": "iam_identity_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Caller IAM role (for application workloads on EC2, ECS, or Lambda) with a trust policy allowing the workload service to assume it",
+     "type": "iam_role",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Existing Scenario Discovery dataset (datasetId) and workspace (workspaceName)",
+     "type": "other_aws_resource",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/lambda/latest/dg/with-s3-example.html": {
+   "id": "lambda-s3-trigger",
+   "service": "Lambda",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "Amazon S3 bucket to act as the trigger event source (in the same Region as the function)",
+     "type": "s3_bucket",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "IAM permissions policy (s3-trigger-tutorial) allowing s3 GetObject and CloudWatch Logs writes",
+     "type": "iam_identity_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Lambda execution role (lambda-s3-trigger-role) with the permissions policy attached",
+     "type": "iam_role",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/iot/latest/developerguide/accessing-cross-account-resources-using-rules.html": {
+   "id": "iot/latest/developerguide/accessing-cross-account-resources-using-rules.html",
+   "service": "IoT",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "AWS CLI installed",
+     "type": "tool_or_access",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Account A IAM user with iot:CreateTopicRule (on the rule ARN) and iam:PassRole (on the role ARN) permissions",
+     "type": "iam_identity_policy",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Account B's Amazon SQS queue (ExampleQueue) that receives the messages",
+     "type": "other_aws_resource",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "IAM role in Account A that trusts the AWS IoT rules engine and has a policy allowing access to Account B's SQS queue",
+     "type": "iam_role",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Account B's Amazon SNS topic (ExampleTopic) that receives the messages",
+     "type": "other_aws_resource",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "IAM role in Account A that trusts the AWS IoT rules engine and has a policy allowing access to Account B's SNS topic",
+     "type": "iam_role",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Account B's Amazon S3 bucket that receives the messages",
+     "type": "s3_bucket",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "IAM role in Account A that trusts the AWS IoT rules engine and has a policy allowing access to Account B's S3 bucket",
+     "type": "iam_role",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Correct S3 Block all public access settings on Account B's bucket so cross-account access works",
+     "type": "account_or_service_setting",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 3,
+     "runs": 3
+    },
+    {
+     "what": "Account B's AWS Lambda function (example-function) that is invoked with the messages",
+     "type": "other_aws_resource",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Account B IAM user with lambda:AddPermission permission",
+     "type": "iam_identity_policy",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 1,
+     "runs": 3
+    }
+   ]
+  },
+  "https://docs.aws.amazon.com/lambda/latest/dg/with-s3-tutorial.html": {
+   "id": "lambda-s3-tutorial",
+   "service": "Lambda",
+   "procedure_votes": 3,
+   "items": [
+    {
+     "what": "AWS CLI installed (only if completing the tutorial via the CLI)",
+     "type": "tool_or_access",
+     "instructions": "other_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Language support tools and package manager for Node.js or Python (npm/pip) to build the deployment package",
+     "type": "tool_or_access",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Command line terminal or shell (with zip support; WSL on Windows) to run commands and build the .zip package",
+     "type": "tool_or_access",
+     "instructions": "none",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Source S3 bucket for uploading images",
+     "type": "s3_bucket",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Destination S3 bucket named <source-bucket>-resized for thumbnails",
+     "type": "s3_bucket",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Permissions policy LambdaS3Policy (S3 read/write and CloudWatch Logs)",
+     "type": "iam_identity_policy",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    },
+    {
+     "what": "Lambda execution role LambdaS3Role with the permissions policy attached",
+     "type": "iam_role",
+     "instructions": "on_page",
+     "instructions_unanimous": true,
+     "surprise_votes": 0,
+     "runs": 3
+    }
+   ]
+  }
+ }
+}
