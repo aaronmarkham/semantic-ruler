@@ -27,12 +27,12 @@ Requirements:
 - The two variants of a pair should be of similar length (within 10-15%), in a professional and neutral tone.
 - They should differ strictly in {dimensions}.
 - Avoid superficial marketing terminology; all statements must be concrete, technical, and operational.
-- Each pair must cover a different component and production scenario from the other pairs.
+- Each pair must cover a different scenario from the other pairs.
 
 Constraints:
 - Each description must be 7-10 sentences long.
 - Context: {context}
-- Use realistic but generic technical details appropriate for the domain.
+- Use realistic but generic details appropriate for the domain.
 
 Respond with JSON only, in exactly this shape:
 {{"pairs": [{{"neg": "...", "pos": "..."}}]}}
@@ -46,7 +46,7 @@ on a scale where 0.0 = {neg_label} and 1.0 = {pos_label}.
 Requirements:
 - Each description must be 7-10 sentences long, in a professional and neutral tone.
 - Concrete, technical, and operational statements only; no marketing terminology.
-- Each description must cover a different component and production scenario.
+- Each description must cover a different scenario.
 - Do not mention lambda, the scale, or any numeric rating in the text.
 
 Respond with JSON only, in exactly this shape:
