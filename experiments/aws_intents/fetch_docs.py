@@ -56,6 +56,33 @@ JOBS = [
     ("transcribe-s3", "Transcribe", f"{D}/transcribe/latest/dg/security_iam_id-based-policy-examples.html"),
     ("cloudformation-stacksets-template", "CloudFormation", f"{D}/AWSCloudFormation/latest/UserGuide/cfn-console-create-stack.html"),
     ("kinesis-video-or-iot", "IoT", f"{D}/iot/latest/developerguide/s3-rule-action.html"),
+    # added for the same-service variants test
+    ("cloudfront-origin-types", "CloudFront", f"{D}/AmazonCloudFront/latest/DeveloperGuide/DownloadDistS3AndCustomOrigins.html"),
+    ("athena-cross-account", "Athena", f"{D}/athena/latest/ug/cross-account-permissions.html"),
+    ("redshift-copy-permissions", "Redshift", f"{D}/redshift/latest/dg/copy-usage_notes-access-permissions.html"),
+    ("redshift-authorize-service", "Redshift", f"{D}/redshift/latest/mgmt/authorizing-redshift-service.html"),
+    ("lambda-s3-tutorial", "Lambda", f"{D}/lambda/latest/dg/with-s3-tutorial.html"),
+    ("vpc-flow-logs-permissions", "VPC", f"{D}/vpc/latest/userguide/flow-logs-s3-permissions.html"),
+    ("cloudtrail-multi-account", "CloudTrail", f"{D}/awscloudtrail/latest/userguide/cloudtrail-set-bucket-policy-for-multiple-accounts.html"),
+    ("cloudtrail-org-trail", "CloudTrail", f"{D}/awscloudtrail/latest/userguide/creating-an-organizational-trail-prepare.html"),
+    ("s3-replication-same-account", "S3", f"{D}/AmazonS3/latest/userguide/replication-walkthrough1.html"),
+    ("s3-replication-cross-account", "S3", f"{D}/AmazonS3/latest/userguide/replication-walkthrough-2.html"),
+    ("s3-replication-kms", "S3", f"{D}/AmazonS3/latest/userguide/replication-config-for-kms-objects.html"),
+    ("s3-example-bucket-policies", "S3", f"{D}/AmazonS3/latest/userguide/example-bucket-policies.html"),
+    ("s3-user-policy-examples", "S3", f"{D}/AmazonS3/latest/userguide/example-policies-s3.html"),
+    ("elb-classic-access-logs", "Elastic Load Balancing", f"{D}/elasticloadbalancing/latest/classic/enable-access-logs.html"),
+    ("cwl-export-to-s3", "CloudWatch Logs", f"{D}/AmazonCloudWatch/latest/logs/S3ExportTasks.html"),
+    ("cwl-vended-logs", "CloudWatch Logs", f"{D}/AmazonCloudWatch/latest/logs/AWS-logs-and-resource-policy.html"),
+    ("dynamodb-export-s3", "DynamoDB", f"{D}/amazondynamodb/latest/developerguide/S3DataExport_Requesting.html"),
+    ("dynamodb-import-s3", "DynamoDB", f"{D}/amazondynamodb/latest/developerguide/S3DataImport.Requesting.html"),
+    ("rds-snapshot-export", "RDS", f"{D}/AmazonRDS/latest/UserGuide/USER_ExportSnapshot.html"),
+    ("rds-postgres-s3-import", "RDS", f"{D}/AmazonRDS/latest/UserGuide/USER_PostgreSQL.S3Import.html"),
+    ("config-iam-role-delivery", "Config", f"{D}/config/latest/developerguide/iamrole-permissions.html"),
+    ("s3-storage-lens-export", "S3", f"{D}/AmazonS3/latest/userguide/storage_lens_iam_permissions.html"),
+    ("s3-access-logs-permissions", "S3", f"{D}/AmazonS3/latest/userguide/enable-server-access-logging.html#grant-log-delivery-permissions-general"),
+    ("ssm-instance-profile-s3", "Systems Manager", f"{D}/systems-manager/latest/userguide/setup-instance-permissions.html"),
+    ("glue-cross-account", "Glue", f"{D}/glue/latest/dg/cross-account-access.html"),
+    ("emr-emrfs-roles", "EMR", f"{D}/emr/latest/ManagementGuide/emr-emrfs-iam-roles.html"),
 ]
 
 BLOCK = {"p", "li", "h1", "h2", "h3", "h4", "dt", "dd", "td", "th", "div", "br", "tr"}
@@ -75,12 +102,19 @@ class DocParser(HTMLParser):
         self._code: list[str] = []
         self.title = ""
         self._in_title = False
+        self._heading = 0  # level of the heading being read, if any
+        self.sections: list[dict] = [{"heading": "", "level": 1, "prose": [], "code": []}]
 
     def _flush(self):
         text = re.sub(r"\s+", " ", "".join(self._buf)).strip()
-        if text:
-            self.prose.append(text)
         self._buf = []
+        if not text:
+            return
+        if self._heading:
+            self.sections.append({"heading": text, "level": self._heading, "prose": [], "code": []})
+        else:
+            self.prose.append(text)
+            self.sections[-1]["prose"].append(text)
 
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
@@ -97,6 +131,8 @@ class DocParser(HTMLParser):
             self.in_pre += 1
         elif tag in BLOCK and not self.in_pre:
             self._flush()
+            if tag in ("h1", "h2", "h3", "h4"):
+                self._heading = int(tag[1])
 
     def handle_endtag(self, tag):
         if tag == "title":
@@ -108,10 +144,14 @@ class DocParser(HTMLParser):
         if tag == "pre" and self.in_pre:
             self.in_pre -= 1
             if not self.in_pre:
-                self.code.append("".join(self._code).strip())
+                block = "".join(self._code).strip()
+                self.code.append(block)
+                self.sections[-1]["code"].append(block)
                 self._code = []
         elif tag in BLOCK and not self.in_pre:
             self._flush()
+            if tag in ("h1", "h2", "h3", "h4"):
+                self._heading = 0
 
     def handle_data(self, data):
         if self._in_title:
@@ -171,9 +211,15 @@ def main(cache_dir: str, corpus_path: str) -> None:
         bucket = [t for t in p.prose if re.search(r"\bbucket", t, re.I)]
         pol = policies(p.code)
         print(f"  {job:<36} prose {len(p.prose):>4} blocks, bucket {len(bucket):>3}, code {len(p.code):>3}, policies {len(pol):>2}  | {p.title.strip()[:60]}")
+        sections = [
+            {"heading": sec["heading"], "level": sec["level"], "prose": sec["prose"],
+             "policies": policies(sec["code"])}
+            for sec in p.sections if sec["prose"] or sec["code"]
+        ]
         corpus.append({
             "job": job, "service": service, "url": url, "title": p.title.strip(),
             "n_prose_blocks": len(p.prose), "bucket_prose": bucket, "policies": pol,
+            "sections": sections,
         })
     Path(corpus_path).write_text(json.dumps(corpus, indent=1, ensure_ascii=False), encoding="utf-8")
     print(f"{len(corpus)}/{len(JOBS)} pages -> {corpus_path}")
