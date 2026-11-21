@@ -20,6 +20,7 @@ go learn that, and end up with several lines of investigation open.
   on another page, printing the tree of pages a reader ends up with open.
 - `reorder.py` turns the saved extractions into front-loaded checklists.
 - `stability.py` repeats the extraction and measures agreement between runs.
+- `detours.py` runs the extraction on every cached page and reports detours.
 - `join_intents.py` joins the result to the permission facts and rulers of
   `aws_intents`.
 
@@ -203,6 +204,77 @@ not the ones planned):
 One check passed: the page-level ruler, built without the page's own service,
 orders S-only pages above I-only pages with AUC 0.94 across 192 pages, so the
 null result is not because the ruler fails to read the mechanism.
+
+## Detours on every cached page
+
+A **detour** is a prerequisite the page springs on the reader (a surprise) and
+gives no steps for. It is either *sent elsewhere* (the page links to another
+page) or *left alone* (no steps, no link). `detours.py` extends the extraction
+from the first 60 pages to all 281 cached pages and reports the metric.
+
+```bash
+python experiments/doc_ordering/detours.py .
+```
+
+219 of the 281 pages are procedures, from 75 services, with 842
+prerequisites. Intervals resample services.
+
+| Measure | All 219 pages | First sample (52) | New pages (167) |
+|---|---|---|---|
+| Detours per prerequisite | 21% [16, 27] | 23% [14, 32] | 21% [16, 27] |
+| of which sent elsewhere | 9% [6, 12] | 8% | 9% |
+| of which left alone | 12% [9, 17] | 15% | 12% |
+| Pages with at least one detour | 46% [37, 55] | 38% | 49% |
+| Pages with two or more | 20% [14, 26] | 23% | 19% |
+
+The rate found on the first sample holds on the pages outside it.
+
+How the 181 detours arise: 128 are mentioned at the very block where they are
+needed, 46 after it, and 7 never. Two scripted checks flag 19 as doubtful (10
+sit in a prerequisites section, so they are announced up front; 9 have the
+need placed at the top of the page, which makes anything later look late).
+Without those the rate is 19%.
+
+| Prerequisite | Count | Detour | Sent elsewhere | Left alone |
+|---|---|---|---|---|
+| Tool or access | 60 | 35% | 8% | 27% |
+| KMS key | 47 | 32% | 9% | 23% |
+| IAM role | 110 | 25% | 11% | 14% |
+| Other AWS resource | 196 | 25% | 12% | 13% |
+| S3 bucket | 153 | 22% | 3% | 18% |
+| Account or service setting | 37 | 22% | 19% | 3% |
+| KMS key policy | 47 | 21% | 17% | 4% |
+| IAM identity policy | 134 | 13% | 9% | 4% |
+| Bucket policy | 58 | 0% | 0% | 0% |
+
+No bucket policy in 58 is a detour: pages that need one give it. Buckets, KMS
+keys and tools are the ones readers are left alone with.
+
+### Mechanism, tested on the new pages
+
+The two exploratory findings from the join were tested on the 167 procedure
+pages that were not in the first sample.
+
+| Finding | Result on new pages | Confirmed |
+|---|---|---|
+| Multi-mechanism pages send more permission prerequisites off-page | 39% on 22 pages vs 29% on 92, p = 0.27 | No |
+| Service-principal pages send the reader away for a permission prerequisite less often than identity-policy pages | 2 of 21 vs 34 of 98, p = 0.03 | Yes |
+| Same comparison, any detour | 5 of 21 vs 51 of 98, p = 0.03 | Yes |
+| Same comparison, permission detours | 3 of 21 vs 22 of 98, p = 0.57 | No |
+
+Over all 219 pages, 23% of service-principal pages have a detour against 52%
+of identity-policy pages. The permutation tests treat pages as independent,
+which they are not within a service, so read the p-values as loose.
+
+By service, among those with three or more procedure pages, the detour rate
+runs from 0% (Elastic Load Balancing, RDS, DataSync, MWAA) to 90% (Glue, 10
+prerequisites). These are small counts per service.
+
+Limits of the detour numbers: the 221 added pages have one extraction run
+each; six "left alone" detours were read against their pages and two of them
+were artefacts of the need being placed too early, which is what the second
+scripted check now flags; and pages the model classes as procedures include
+some that describe a setup in prose and have no numbered steps.
 
 ## Checks on the extraction
 
