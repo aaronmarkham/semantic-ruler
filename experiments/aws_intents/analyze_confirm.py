@@ -17,7 +17,6 @@ from pathlib import Path
 
 import numpy as np
 from spiritwriter.fabric.shard import AtomKind, DecayClass, MemoryShard, ShardAtom
-from spiritwriter.llm import AnthropicProvider
 from spiritwriter.secrets import configure
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -28,6 +27,7 @@ from make_draws import draw_store  # noqa: E402
 from semantic_ruler import store as shards  # noqa: E402
 from semantic_ruler.embed import KEYCHAIN_SERVICE, CachedEmbedder, OpenAIEmbedder  # noqa: E402
 from semantic_ruler.generate import judge_texts  # noqa: E402
+from semantic_ruler.llm_plain import PlainTextProvider  # noqa: E402
 from semantic_ruler.ruler import _unit, fit_ruler  # noqa: E402
 
 root = Path(sys.argv[1]).resolve()
@@ -40,7 +40,8 @@ rng = np.random.default_rng(0)
 
 configure(service_name=KEYCHAIN_SERVICE)
 emb = CachedEmbedder(OpenAIEmbedder(), root / ".cache" / "embeddings")
-llm = AnthropicProvider(model=MODEL)
+# The judge prompts embed fetched doc text, so use the provider that has no tools.
+llm = PlainTextProvider(MODEL)
 
 # --- sections ----------------------------------------------------------------
 rows, seen = [], set()

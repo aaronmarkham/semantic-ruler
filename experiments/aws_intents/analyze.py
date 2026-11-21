@@ -13,13 +13,13 @@ from pathlib import Path
 
 import numpy as np
 from spiritwriter.fabric.store import ShardStore
-from spiritwriter.llm import AnthropicProvider
 from spiritwriter.secrets import configure
 
 from semantic_ruler import store as shards
 from semantic_ruler.concepts import Block, Concept
 from semantic_ruler.embed import KEYCHAIN_SERVICE, CachedEmbedder, OpenAIEmbedder
 from semantic_ruler.generate import generate_pairs, judge_texts
+from semantic_ruler.llm_plain import PlainTextProvider
 from semantic_ruler.ruler import _unit, fit_direction, fit_ruler
 
 root = Path(sys.argv[1]).resolve()
@@ -82,7 +82,8 @@ EXPOSURE = Concept(
 configure(service_name=KEYCHAIN_SERVICE)
 emb = CachedEmbedder(OpenAIEmbedder(), root / ".cache" / "embeddings")
 store = ShardStore(root / "data" / "aws-intents" / "store")
-llm = AnthropicProvider(model=MODEL)
+# The judge prompts embed fetched doc text, so use the provider that has no tools.
+llm = PlainTextProvider(MODEL)
 
 corpus = json.load(open(here / "corpus.json", encoding="utf-8"))
 facts = json.load(open(here / "facts.json", encoding="utf-8"))

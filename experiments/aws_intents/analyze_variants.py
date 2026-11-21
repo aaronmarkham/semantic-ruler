@@ -24,7 +24,6 @@ from pathlib import Path
 
 import numpy as np
 from spiritwriter.fabric.store import ShardStore
-from spiritwriter.llm import AnthropicProvider
 from spiritwriter.secrets import configure
 
 sys.path.insert(0, str(Path(__file__).parent))
@@ -34,6 +33,7 @@ from semantic_ruler import store as shards  # noqa: E402
 from semantic_ruler.concepts import Block, Concept  # noqa: E402
 from semantic_ruler.embed import KEYCHAIN_SERVICE, CachedEmbedder, OpenAIEmbedder  # noqa: E402
 from semantic_ruler.generate import generate_pairs, judge_texts  # noqa: E402
+from semantic_ruler.llm_plain import PlainTextProvider  # noqa: E402
 from semantic_ruler.ruler import _unit, fit_ruler  # noqa: E402
 
 root = Path(sys.argv[1]).resolve()
@@ -49,7 +49,8 @@ CONTRASTS = {k: _ALL[k] for k in ("S vs I", "A vs I", "S vs A")}
 configure(service_name=KEYCHAIN_SERVICE)
 emb = CachedEmbedder(OpenAIEmbedder(), root / ".cache" / "embeddings")
 store = ShardStore(root / "data" / "aws-intents" / "store")
-llm = AnthropicProvider(model=MODEL)
+# The judge prompts embed fetched doc text, so use the provider that has no tools.
+llm = PlainTextProvider(MODEL)
 sem = asyncio.Semaphore(4)
 
 # --- sections and their policy-derived label ---------------------------------
