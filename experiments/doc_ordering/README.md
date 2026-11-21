@@ -18,6 +18,7 @@ go learn that, and end up with several lines of investigation open.
   service) from the `aws_intents` corpus and computes the measures below.
 - `chain.py` starts at one page and follows every prerequisite whose steps are
   on another page, printing the tree of pages a reader ends up with open.
+- `reorder.py` turns the saved extractions into front-loaded checklists.
 
 Prompts contain fetched doc text, so they go through
 `semantic_ruler.llm_plain.PlainTextProvider`, which runs the model with no
@@ -79,6 +80,46 @@ Configuring logging for a protection pack (web ACL)        procedure
 
 Six pages across three guides and four levels, starting from a procedure whose
 own page names one prerequisite. The bucket-creation page would be a seventh.
+
+## Reordering into a checklist
+
+`reorder.py` uses no LLM. It reads the saved extractions and does two things.
+
+```bash
+python experiments/doc_ordering/reorder.py .
+```
+
+**Per page.** A checklist before step 1 removes a surprise but not the work.
+Of the 68 surprises, 19 have their steps on the page, so the page is walking
+the reader through them in order and nothing needs moving. The other 49 are
+detours: 17 send the reader to another page and 32 give no steps. That is 23%
+of all prerequisites. 32 of the 52 pages have no detours, so a checklist would
+change 20 pages.
+
+**Across pages.** The WAF tree above flattens to
+[checklist_waf.md](checklist_waf.md): 12 prerequisites met over six pages
+become 10 items, 4 required and 6 that apply only in some setups.
+
+1. Identity permissions for the WAF administrator
+2. A bucket named `aws-waf-logs-...` in the same account
+3. Console access to edit the bucket's policy
+4. The bucket policy for the log delivery service (may be created for you)
+
+Items are ordered so each comes after what it depends on: a followed page's
+own prerequisites go before the thing that page creates, and within a page a
+fixed type order applies (access, then resources, then the policies that refer
+to them). A followed page that asks for "an existing bucket" when its parent
+already lists one is merged into the parent's item. A prerequisite that led to
+a hub page is replaced by the option taken there. Everything under a
+conditional item is conditional.
+
+Limits of this step: "conditional" and "may be created for you" come from
+keyword matches on the extracted description, the type order is a convention
+rather than something read from the docs, and the checklist inherits every
+error in the extraction. Only the WAF checklist was read against the pages.
+An earlier measure, prerequisites first mentioned after the main procedure
+begins, was dropped because the extracted start block is often the top of the
+page.
 
 ## Checks on the extraction
 
