@@ -81,10 +81,36 @@ Crossing the two runs, with the two rulers at cosine 0.82 to each other:
 | Sonnet anchors | 0.853 | 0.736 |
 | Haiku anchors | 0.898 | 0.808 |
 
-So a smaller generator does not explain the paper's higher numbers, the result
-depends on which anchor set and which test set were drawn, and each cell is a
-single run with no confidence interval. Why the paper's ruler matched its judge
-is still not established.
+So a smaller generator does not explain the paper's higher numbers.
+
+### Run-to-run variance
+
+Six anchor draws per generator (the original plus five fresh ones from the same
+prompt, stored under `data/variance/`), each scored on three test sets. Mean
+Pearson r, with the standard deviation across the six draws:
+
+| Anchors from | Sonnet test A | Sonnet test B | Haiku test |
+|---|---|---|---|
+| Sonnet | 0.854 (0.023) | 0.853 (0.021) | 0.765 (0.028) |
+| Haiku | 0.878 (0.022) | 0.844 (0.018) | 0.795 (0.021) |
+
+- The first run was typical. Across 36 ruler/test combinations r ranges from
+  0.735 to 0.898; none approaches the paper's 0.956.
+- Redrawing the anchors moves r by about 0.02 (one standard deviation).
+- The test set is the larger uncertainty: a bootstrap over the 72 texts gives a
+  95% interval of about 0.78 to 0.91 for one ruler on one Sonnet test set.
+- The apparent advantage of Haiku anchors in the cross table above does not
+  hold up: it appears on test A and reverses on test B.
+- Haiku's test texts are harder for every ruler.
+- Pooling all six draws (48 pairs per block) gives 0.86 on the Sonnet tests, no
+  better than the best single draw, so anchor count is not the limit.
+- Rulers from the same generator agree at cosine 0.88-0.90; across generators
+  0.80. The generator leaves a mark on the direction.
+
+Why the paper's ruler matched its judge is still not established, but sampling
+luck in this setup does not account for it. The scripts behind these checks are
+in `experiments/`; each takes the repo root as its argument, for example
+`python experiments/variance.py .`, and reuses stored text and cached embeddings.
 
 ## What spiritwriter provides
 
