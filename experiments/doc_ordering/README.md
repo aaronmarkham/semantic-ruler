@@ -21,6 +21,10 @@ go learn that, and end up with several lines of investigation open.
 - `reorder.py` turns the saved extractions into front-loaded checklists.
 - `stability.py` repeats the extraction and measures agreement between runs.
 - `detours.py` runs the extraction on every cached page and reports detours.
+- `dead_ends.py` follows each off-page prerequisite link and checks whether it delivers.
+- `chains.py` traces whole prerequisite trees (up to three levels, twelve pages) from ten
+  start pages chosen for having the most off-page prerequisites, one per service. Each
+  page is read once; results are in `chains.json`. These are examples, not a sample.
 - `join_intents.py` joins the result to the permission facts and rulers of
   `aws_intents`.
 
@@ -270,8 +274,83 @@ By service, among those with three or more procedure pages, the detour rate
 runs from 0% (Elastic Load Balancing, RDS, DataSync, MWAA) to 90% (Glue, 10
 prerequisites). These are small counts per service.
 
-Limits of the detour numbers: the 221 added pages have one extraction run
-each; six "left alone" detours were read against their pages and two of them
+### Three runs on all 281 pages
+
+`stability.py . 3 --all` repeated the extraction twice more on the 221 added
+pages, so every page has three runs.
+
+| Measure, procedure pages | Run 1 | Run 2 | Run 3 |
+|---|---|---|---|
+| Pages / prerequisites | 219 / 842 | 221 / 872 | 214 / 838 |
+| Detours | 21% | 21% | 20% |
+| Surprises | 27% | 28% | 26% |
+| Steps on another page | 30% | 30% | 31% |
+| No steps | 41% | 42% | 42% |
+
+Agreement between two runs: page is a procedure 0.96, where the steps are
+0.95, surprise or not 0.92, needed-at block within 3 of each other 0.88; 85%
+of prerequisites are found by both runs. Of 749 prerequisites that all three
+runs found on procedure pages, 141 are surprises every time and 96 are split.
+On this larger sample the per-type surprise rates are steadier than on the
+first 60 pages (identity policies 30%, 31%, 27%), though KMS key policies
+still range from 35% to 45%.
+
+### Dead links
+
+A detour that sends the reader elsewhere is worse when the link no longer
+leads to the steps. Of the 197 distinct off-page prerequisite links in the
+corpus, 4 are redirect stubs that now land on a guide's front page: two S3
+bucket-creation pages, an SQS create-queue page and a KMS getting-started
+page, cited by 5 pages (`dead_links.json`; three more redirects are plain
+links to a guide's root). The WAF logging page's bucket link is one of them,
+which is why the chain trace above could not read that page.
+`semantic_ruler.ordering.trace` follows such redirects and reports them.
+
+### Dead ends
+
+When a page sends the reader elsewhere for a prerequisite, does the link
+deliver? `dead_ends.py` takes every prerequisite whose steps are "on another
+page" (254 on 142 procedure pages, 197 distinct links), fetches the linked
+page and asks whether it gives steps for that specific prerequisite.
+
+```bash
+python experiments/doc_ordering/dead_ends.py . 2
+```
+
+| Outcome | Share | Dead end |
+|---|---|---|
+| Arrives: the linked page gives the steps | 41% | no |
+| Partial: some of the steps, or steps for a nearby thing | 23% | no |
+| Passed on: no steps, but a link onward | 22% | yes |
+| No steps and no further page | 12% | yes |
+| Dead link | 2% | yes |
+
+**36% of off-page prerequisites are dead ends** (95% interval 30% to 42%,
+resampling services). The rate is 43% for those that were also detours and
+34% for those announced in advance. 76 of the 219 procedure pages (35%) have
+at least one dead end, and 35 of the 142 pages that send the reader elsewhere
+send them only to dead ends.
+
+When there are no steps, the reader has usually landed on a concept page (37
+of 83 in run 1) or a hub of links (31). By prerequisite type, KMS keys (58%
+of 12) and KMS key policies (53% of 15) are the worst, IAM roles (24% of 42)
+and S3 buckets (26% of 21) the best.
+
+Second hop: for the 57 links that were passed on, the same question was asked
+of the page they were passed to. 29 arrive, 11 are partial, 15 are passed on
+again and 2 give no steps. After up to two links, 52 of the 254 off-page
+prerequisites (20%) still have no steps. The second hop was run once.
+
+Checks: two runs agree on the outcome for 98% of links. A scripted test for
+step-like text on the linked page (console and command phrasing, "To ..."
+headings), which uses no LLM, finds it on 81% of "arrives" pages and on 9% of
+dead-end pages. Nine verdicts were read against their pages and looked right.
+
+Limits: "partial" is counted as not a dead end, which is generous; counting it
+as one gives 59%. Prerequisites with no link at all (the "left
+alone" detours) are not in this measure.
+
+Limits of the detour numbers: six "left alone" detours were read against their pages and two of them
 were artefacts of the need being placed too early, which is what the second
 scripted check now flags; and pages the model classes as procedures include
 some that describe a setup in prose and have no numbered steps.

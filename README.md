@@ -112,6 +112,43 @@ luck in this setup does not account for it. The scripts behind these checks are
 in `experiments/`; each takes the repo root as its argument, for example
 `python experiments/variance.py .`, and reuses stored text and cached embeddings.
 
+## Detours in how-to docs
+
+A second line of work in this repo measures how often a how-to page makes the
+reader stop and go do something else first. A **detour** is a prerequisite the
+page mentions only at the point where it is needed (or later, or never) and
+gives no steps for. The experiments and their numbers are in
+[experiments/doc_ordering](experiments/doc_ordering/README.md); the reusable
+part is `semantic_ruler.ordering`, which reads AWS documentation pages.
+
+```bash
+semantic-ruler-docs https://docs.aws.amazon.com/waf/latest/developerguide/logging-s3.html
+semantic-ruler-docs <url> --chain --max-depth 3   # follow off-page prerequisites, print one checklist
+semantic-ruler-docs <url> --json
+```
+
+```python
+from semantic_ruler.llm_plain import PlainTextProvider
+from semantic_ruler.ordering import Fetcher, analyse, checklist, trace
+
+llm, fetch = PlainTextProvider("claude-sonnet-5-5"), Fetcher(".cache/docs")
+report = await analyse(llm, fetch(url), url)   # report.prerequisites, report.detours
+tree = await trace(llm, url, fetch)            # pages opened for off-page prerequisites
+items = checklist(tree)                        # one front-loaded list, in do-order
+```
+
+An interactive account of the whole project, with the data behind each chart,
+is built from `experiments/explainer/` (`build_data.py` collects the numbers,
+`explainer.html` is the page). A shorter, walkable version of the detour
+findings is `adventure.html` in the same folder, built by `build_trail.py`; its
+multi-level trees come from `experiments/doc_ordering/chains.py`.
+
+The prerequisites come from an LLM reading the page, so the output is a
+reading, not ground truth; each detour carries a `doubts` list of scripted
+reasons to distrust it. Pages are fetched only from `docs.aws.amazon.com`, and
+the default provider runs the model with no tools because the prompt contains
+fetched text.
+
 ## What spiritwriter provides
 
 | Need | Primitive |
@@ -136,6 +173,8 @@ instrument exactly. Embedding is the one piece spiritwriter lacks; the small
 | `semantic_ruler/generate.py` | Prompt templates and generation |
 | `semantic_ruler/store.py` | Shard persistence |
 | `semantic_ruler/demo.py` | The Case Study I pipeline and CLI |
+| `semantic_ruler/ordering.py` | Doc page parsing, prerequisite extraction, detours, chains, checklists, and the `semantic-ruler-docs` CLI |
+| `semantic_ruler/llm_plain.py` | An LLM provider with no tools, for prompts that contain fetched text |
 
 ## Differences from the paper
 

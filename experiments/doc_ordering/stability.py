@@ -6,6 +6,7 @@ compares every pair of runs field by field.
 
     python experiments/doc_ordering/stability.py . [n_runs]        # extract, then compare
     python experiments/doc_ordering/stability.py . [n_runs] --compare-only
+    python experiments/doc_ordering/stability.py . [n_runs] --all           # all cached pages
 """
 
 import asyncio
@@ -32,8 +33,16 @@ cache = root / "data" / "aws-docs-cache"
 runs_path = here / "extractions_runs.json"
 TOL = 3  # blocks; two runs "agree" on a position if within this many blocks
 
+ALL = "--all" in sys.argv  # every cached page (detours.py), not only the first 60
 run1 = json.load(open(here / "extractions.json", encoding="utf-8"))
 runs = json.load(open(runs_path, encoding="utf-8")) if runs_path.exists() else {}
+if ALL:
+    # runs 2..N of the first 60 pages are reused; the other pages are added alongside them
+    runs_path = here / "extractions_all_runs.json"
+    more = json.load(open(runs_path, encoding="utf-8")) if runs_path.exists() else {}
+    runs = {k: {**runs.get(k, {}), **more.get(k, {})} for k in set(runs) | set(more)}
+    run1 = {**json.load(open(here / "extractions_all.json", encoding="utf-8")), **run1}
+first60 = json.load(open(here / "extractions_runs.json", encoding="utf-8")) if ALL and (here / "extractions_runs.json").exists() else {}
 runs["1"] = run1
 
 
@@ -74,7 +83,9 @@ async def extract_runs():
 
     await asyncio.gather(*[one(str(r), u) for r in range(2, N_RUNS + 1) for u in run1])
     assert llm.last_tools in (None, []), f"LLM session had tools: {llm.last_tools}"
-    runs_path.write_text(json.dumps({k: v for k, v in runs.items() if k != "1"}, indent=1, ensure_ascii=False), encoding="utf-8")
+    # with --all, save only the pages that extractions_runs.json does not already hold
+    keep = {k: {u: d for u, d in v.items() if u not in first60.get(k, {})} for k, v in runs.items() if k != "1"}
+    runs_path.write_text(json.dumps(keep, indent=1, ensure_ascii=False), encoding="utf-8")
 
 
 if not COMPARE_ONLY:
@@ -191,4 +202,4 @@ print(f"  on majority-procedure pages: {len(its)} items; surprise unanimous yes 
       f"unanimous no {sum(i['surprise_votes'] == 0 for i in its)}, split {sum(0 < i['surprise_votes'] < len(ids) for i in its)}")
 print(f"  instructions unanimous: {sum(i['instructions_unanimous'] for i in its)} of {len(its)}")
 json.dump({"runs": ids, "agreement": {k: {"mean": float(np.mean(v)), "n": len(v)} for k, v in agree.items()}, "per_run": per_run, "consensus": consensus},
-          open(here / "stability.json", "w", encoding="utf-8"), indent=1, ensure_ascii=False)
+          open(here / ("stability_all.json" if ALL else "stability.json"), "w", encoding="utf-8"), indent=1, ensure_ascii=False)

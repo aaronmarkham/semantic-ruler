@@ -1,0 +1,493 @@
+<title>Rulers and Detours</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one reading column in the spiritwriter house style; each numbered section carries one instrument
+   (a sunk panel with controls above the chart and readouts beside it). Single light look, by choice. */
+:root{
+  --plate:#DCE0DC; --paper:#EFF1EE; --sunk:#E7EAE7; --ink:#131C21; --body:#2A363C; --muted:#55635F; --rule:#B7BFBA;
+  --invariant:#3B3190; --same:#5B4FD6; --lit:#8B7FE8; --diff:#8A6A18; --diff-lit:#C9A54A; --diff-deep:#4F3C0A;
+  --wash:rgba(59,49,144,.09); --diff-wash:rgba(138,106,24,.10);
+  --b1:#5B4FD6; --b2:#d9652e; --b3:#12997a; --b4:#c98500;
+  --serif:"Instrument Serif",Georgia,serif; --sans:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--plate);color:var(--body);font:16.5px/1.58 var(--sans)}
+.col{max-width:760px;margin:0 auto;padding-block:56px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.eyebrow{font:11px/1.5 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--invariant);margin:0 0 14px}
+h1{font:400 clamp(40px,8vw,62px)/.98 var(--serif);letter-spacing:-.015em;color:var(--ink);margin:0 0 26px;text-wrap:balance}
+h1 em,h2 em{color:var(--invariant);font-style:italic}
+h2{font:400 clamp(26px,4.6vw,34px)/1.08 var(--serif);color:var(--ink);margin:0 0 18px;text-wrap:balance}
+h3{font:600 15px/1.3 var(--sans);color:var(--ink);margin:26px 0 8px}
+p{margin:0 0 16px;max-width:66ch}
+.lede{font-size:18.5px;line-height:1.55;color:var(--ink)}
+section{margin-top:76px}
+a{color:var(--invariant)}
+code{font:13.5px var(--mono);background:var(--sunk);padding:1px 5px;border-radius:3px}
+.note{font:12px/1.6 var(--mono);letter-spacing:.02em;color:var(--muted);max-width:70ch}
+.panel{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:18px;margin:24px 0;min-width:0}
+.controls{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-bottom:14px}
+.ctl{display:flex;flex-direction:column;gap:5px;min-width:0}
+.ctl > span,.lab{font:11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.seg{display:flex;flex-wrap:wrap;gap:0;border:1px solid var(--rule);border-radius:5px;overflow:hidden}
+.seg button{font:12px var(--mono);letter-spacing:.04em;padding:8px 12px;min-height:36px;border:0;border-right:1px solid var(--rule);background:transparent;color:var(--body);cursor:pointer}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+.chk{display:flex;flex-wrap:wrap;gap:6px 14px}
+.chk label{display:flex;gap:6px;align-items:center;font-size:14px;cursor:pointer;min-height:30px}
+.chk i{width:10px;height:10px;border-radius:50%;display:inline-block}
+input[type=range]{width:min(240px,100%);accent-color:var(--invariant)}
+input[type=checkbox]{accent-color:var(--invariant);width:16px;height:16px}
+button:focus-visible,input:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--invariant);outline-offset:2px}
+.act{font:12px var(--mono);letter-spacing:.06em;text-transform:uppercase;padding:10px 14px;min-height:40px;border:1px solid var(--ink);border-radius:5px;background:var(--ink);color:var(--paper);cursor:pointer}
+.act.ghost{background:transparent;color:var(--ink)}
+.act:disabled{opacity:.4;cursor:default}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin:14px 0 4px}
+.tile{border-top:2px solid var(--ink);padding-top:8px;min-width:0}
+.tile b{display:block;font:400 34px/1 var(--serif);color:var(--ink);font-variant-numeric:tabular-nums}
+.tile span{font:11px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:block;margin-top:6px}
+.tile.ref{border-top-color:var(--rule)}.tile.ref b{color:var(--muted)}
+svg{display:block;width:100%;height:auto;overflow:visible}
+svg text{font:11px var(--mono);fill:var(--muted)}
+svg .axis{stroke:var(--rule);stroke-width:1}
+svg .grid{stroke:var(--rule);stroke-width:1;stroke-dasharray:2 4;opacity:.7}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;margin:0 0 8px}
+.legend span{display:flex;gap:6px;align-items:center}
+.legend i{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+.legend i.ring{background:transparent;border:1.5px solid var(--muted)}
+.legend i.sq{border-radius:2px}
+#tip{position:fixed;z-index:20;pointer-events:none;background:var(--ink);color:var(--paper);font:12px/1.45 var(--sans);padding:8px 10px;border-radius:5px;max-width:280px;opacity:0;transition:opacity .08s}
+#tip b{font-weight:600}#tip small{display:block;color:#C9D2CE;font:11px var(--mono);margin-top:3px}
+table{border-collapse:collapse;width:100%;font-size:14.5px;font-variant-numeric:tabular-nums}
+.tw{overflow-x:auto;margin:18px 0}
+th{font:11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:left;padding:6px 10px 6px 0;border-bottom:1px solid var(--ink);font-weight:400}
+td{padding:7px 10px 7px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+td.n,th.n{text-align:right}
+.tabs{display:flex;flex-direction:column;gap:8px}
+.tab{border:1px solid var(--rule);border-radius:5px;background:var(--sunk);padding:10px 12px;min-width:0}
+.tab .t{font-weight:600;color:var(--ink);overflow-wrap:anywhere}
+.tab .via{font:11px/1.5 var(--mono);color:var(--muted);margin-bottom:4px;overflow-wrap:anywhere}
+.tab ul{margin:6px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px;font-size:14px}
+.tab li{display:flex;gap:8px;align-items:baseline}
+.pill{font:10.5px var(--mono);letter-spacing:.05em;text-transform:uppercase;border-radius:3px;padding:1px 6px;flex:none;white-space:nowrap}
+.pill.away{background:var(--diff-wash);color:var(--diff-deep);border:1px solid var(--diff)}
+.pill.here{background:var(--wash);color:var(--invariant);border:1px solid var(--lit)}
+.pill.none{border:1px solid var(--rule);color:var(--muted)}
+ol.check{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px;font-size:15px}
+ol.check li::marker{font-family:var(--mono);color:var(--muted)}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px}
+.card{border-top:2px solid var(--ink);padding-top:10px}
+.card h3{margin-top:0}
+.card p{font-size:15px;margin-bottom:0}
+footer{margin-top:80px;border-top:1px solid var(--rule);padding-top:18px}
+footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
+@media (prefers-reduced-motion:no-preference){.tab{animation:in .25s ease-out}@keyframes in{from{transform:translateY(6px)}to{transform:none}}}
+</style>
+
+<div id="tip" role="status"></div>
+<div class="col">
+
+<p class="eyebrow">On a paper, a failed replication, and what the detour turned up</p>
+<h1>A ruler for meaning,<br><em>and where it bent.</em></h1>
+<p class="lede">A 2026 paper says you can measure an abstract idea, such as how sustainable a factory process is, by laying a ruler through the space where a language model stores meaning. We rebuilt it, missed its headline number, found out why we could not close the gap, and then took the method somewhere its authors never pointed it: cloud documentation, and the moment a how-to guide sends you off to do something else first.</p>
+<p class="note">Every chart below runs on the project's measured output. Move the controls; the numbers are recomputed in your browser.</p>
+
+<section>
+<p class="eyebrow">01 · The paper</p>
+<h2>Two texts that differ in <em>one thing only</em></h2>
+<p>Abonyi and Tombor's idea is short. Write pairs of passages that are identical except for the concept you care about: the same part, the same machine, one version wasteful and one frugal. Embed both. Subtract. What is left is an arrow pointing from "less" to "more". Average the arrows across a few domains and you have a direction. Project any new text onto it, rescale between the 5th and 95th percentile of your anchor texts, and you get a score from 0 to 1.</p>
+<p>The test is whether that score tracks reality. They asked a model to write passages at six known levels, 0.0 to 1.0, and checked how well the ruler recovered the level. They report a correlation of 0.956, level with a language model reading each text and rating it.</p>
+<p>Here is ours, on 72 test passages across four manufacturing domains. Each dot is one passage: where it was written to be, against where the ruler put it.</p>
+
+<div class="panel" id="ruler">
+  <div class="controls">
+    <div class="ctl"><span>Anchor pairs written by</span><div class="seg" id="r-gen"></div></div>
+    <div class="ctl"><span>Calibrate between percentiles <b id="r-qv"></b></span><input type="range" id="r-q" min="0" max="25" step="1" value="5" aria-label="Calibration percentile"></div>
+    <div class="ctl"><span>Also show</span><div class="chk"><label><input type="checkbox" id="r-judge"> the model judge</label></div></div>
+  </div>
+  <div class="ctl" style="margin-bottom:12px"><span>Domains used to build the direction</span><div class="chk" id="r-blocks"></div></div>
+  <svg id="r-svg" viewBox="0 0 720 400" role="img" aria-label="Scatter of intended level against ruler score"></svg>
+  <div class="tiles">
+    <div class="tile"><b id="r-r"></b><span>Ruler, correlation with the intended level</span></div>
+    <div class="tile"><b id="r-rmse"></b><span>Ruler, typical error (RMSE)</span></div>
+    <div class="tile ref"><b>0.966</b><span>Model judge on the same passages</span></div>
+    <div class="tile ref"><b>0.956</b><span>The paper's ruler</span></div>
+  </div>
+  <p class="note" id="r-off"></p>
+</div>
+
+<p>Turn domains off and on. Built from a single domain the ruler still works on the other three, which is the paper's central claim and it holds. What does not hold is the size: with everything on, we get 0.853 where they got 0.956.</p>
+<p>The colours show where the error lives. The ruler reads one whole domain high and another low. Inside any one domain the points line up well (0.88 to 0.93); it is the offset <em>between</em> domains that costs the correlation. The judge, shown as rings, has no such offset.</p>
+</section>
+
+<section>
+<p class="eyebrow">02 · Where we diverged</p>
+<h2>The gap is real, and <em>it is not luck</em></h2>
+<p>A single run proves little, so we redrew the anchor pairs five more times with each of two generator models and scored every ruler on three separate test sets. That is 36 rulers.</p>
+<div class="panel">
+  <div class="legend"><span><i style="background:var(--same)"></i>anchors by Sonnet</span><span><i style="background:var(--diff)"></i>anchors by Haiku</span></div>
+  <svg id="v-svg" viewBox="0 0 720 190" role="img" aria-label="Strip plot of 36 ruler correlations against the paper's result"></svg>
+  <p class="note">36 rulers, by test set. Redrawing the anchors moves the result by about 0.02. None reaches the paper's 0.956. The widest uncertainty is the test set itself: resampling the 72 passages gives one ruler a range of about 0.78 to 0.91.</p>
+</div>
+<div class="two">
+  <div class="card"><h3>What we ruled out</h3><p>Bad test passages (the judge rates them at 0.966). Too few anchors (no gain past six pairs per domain; pooling 48 changed nothing). A weak generator (a smaller model did no better). Text length. Sampling luck.</p></div>
+  <div class="card"><h3>What we did not test</h3><p>The paper's generator (Gemini), its exact wording for the level passages, and writing one pair per request instead of eight. Any of these could be the difference. We do not know which.</p></div>
+</div>
+<h3>Where our build differs from theirs</h3>
+<p>We used Claude to write the passages and OpenAI's <code>text-embedding-3-large</code> to embed them. Passages, the ruler and a hash-chained record of what produced what are stored as content-addressed shards in <a href="https://spiritwriter.ai">spiritwriter</a>, so a ruler's identifier names the exact instrument. And the judge prompt scores passages by an id, because asked for a plain list a model will sometimes return twenty scores for eighteen passages.</p>
+</section>
+
+<section>
+<p class="eyebrow">03 · A different question</p>
+<h2>Same service, <em>different facts</em></h2>
+<p>The theory that started the second half: across AWS, "give this service access to a bucket" reads almost the same everywhere, and what differs is the part that bites, which is how access is actually granted. Sometimes the bucket's own policy names the service. Sometimes you create a role and the permissions live there. If a ruler can isolate one concept from everything else in a passage, perhaps it can pull that difference out of documentation that otherwise looks alike.</p>
+<p>The ground truth here involves no model at all. Each doc section's label comes from its policy JSON: who is named as the principal. The text that gets embedded is the prose with the code stripped out. We collected 375 sections from 78 services.</p>
+<p>Each row below is one service that documents it both ways. A direction is doing its job when the violet dots sit to the right of the amber ones.</p>
+
+<div class="panel" id="intents">
+  <div class="controls">
+    <div class="ctl"><span>Contrast</span><div class="seg" id="i-con"></div></div>
+    <div class="ctl"><span>Place sections by</span><div class="seg" id="i-dir"></div></div>
+  </div>
+  <div class="legend" id="i-leg"></div>
+  <svg id="i-svg" viewBox="0 0 720 520" role="img" aria-label="Sections of each service placed along the chosen direction"></svg>
+  <div class="tiles">
+    <div class="tile"><b id="i-acc"></b><span>Pairs ordered correctly, averaged over services</span></div>
+    <div class="tile"><b id="i-n"></b><span>Services that do it both ways</span></div>
+    <div class="tile ref"><b>1.00</b><span>A model reading the prose</span></div>
+  </div>
+  <p class="note" id="i-note"></p>
+</div>
+
+<p>Three things came out of this, and two of them corrected what we expected.</p>
+<p><strong>Our guesses about plain similarity were wrong twice.</strong> We expected shared topic to swamp the mechanism entirely. On the first 23 pages it did not: a page's nearest neighbour had the same mechanism 87% of the time. Then, on 85 sections, a section's closest match was usually the same service with <em>different</em> facts (75%), which looked like the theory after all. On 375 sections that fell to 45%. Plain similarity carries both signals, and small samples told us whichever story we were ready to hear.</p>
+<p><strong>A ruler from invented pairs works, with wide error bars.</strong> Built from passages about fictional services, it orders real sections correctly about 84% of the time, averaged over five anchor draws (95% interval 71% to 95%). The chart shows one draw, which happens to be a good one.</p>
+<p><strong>The best ruler was already in the docs.</strong> Take the real sections of every <em>other</em> service, subtract one mechanism from the other, average, and use that on the service you held out. It reaches 0.99 for service against role and 0.93 for account against role. The difference between "the bucket policy names the service" and "a role carries the permissions" points the same way across AWS, and you do not need a generator to find it.</p>
+<p>And a model that simply reads each section gets them all right. The ruler's advantage is cost and repeatability, not accuracy.</p>
+</section>
+
+<section>
+<p class="eyebrow">04 · Order</p>
+<h2>One task, <em>six pages open</em></h2>
+<p>The second idea came from experience, not from the paper. You set out to turn on logging for a web firewall. The procedure needs a destination. The destination page needs a bucket. The bucket needs a policy. You started with one job and now have several lines of reading open, none finished.</p>
+<p>We traced that exact job through the AWS docs by listing each page's prerequisites and following every one whose steps live on another page. Follow it yourself.</p>
+
+<div class="panel" id="chain">
+  <div class="controls">
+    <button class="act" id="c-next">Follow the next link</button>
+    <button class="act ghost" id="c-reset">Start over</button>
+    <button class="act ghost" id="c-list">Show it as a checklist instead</button>
+  </div>
+  <div class="tiles">
+    <div class="tile"><b id="c-pages">1</b><span>Pages open</span></div>
+    <div class="tile"><b id="c-pre">0</b><span>Prerequisites met so far</span></div>
+    <div class="tile"><b id="c-depth">0</b><span>Links deep</span></div>
+  </div>
+  <div class="tabs" id="c-tabs"></div>
+  <div id="c-check" hidden></div>
+</div>
+<p>The starting page names one prerequisite. Four levels down there are twelve. Turned around, with each item placed after the things it depends on and duplicates merged, the same content is a list of four required steps and six that apply only in some setups.</p>
+</section>
+
+<section>
+<p class="eyebrow">05 · Detours</p>
+<h2>Springing it on the reader</h2>
+<p>To count this across many pages it needs a definition. A prerequisite is a <strong>detour</strong> when two things are true: the page does not mention it until the point where you need it (or later, or never), and the page gives no steps for it. Either you are <em>sent elsewhere</em> by a link, or you are <em>left alone</em> with nothing.</p>
+<p>A model read 281 AWS pages and listed each one's prerequisites, where each is first needed, where it is first mentioned, and where its steps are. 219 of the pages are procedures, with 842 prerequisites between them. The definition has judgement calls in it, so they are yours to change.</p>
+
+<div class="panel" id="detours">
+  <div class="controls">
+    <div class="ctl"><span>Fair warning means mentioned at least <b id="d-kv"></b> before it is needed</span><input type="range" id="d-k" min="1" max="15" step="1" value="1" aria-label="Blocks of warning required"></div>
+    <div class="ctl"><span>Pages whose access is granted by</span><div class="seg" id="d-mech"></div></div>
+  </div>
+  <div class="chk" style="margin-bottom:14px">
+    <label><input type="checkbox" id="d-onpage" checked> steps on the page are not a detour</label>
+    <label><input type="checkbox" id="d-doubt"> drop the ones our checks flag as doubtful</label>
+  </div>
+  <div class="tiles">
+    <div class="tile"><b id="d-rate"></b><span>Of prerequisites are detours</span></div>
+    <div class="tile"><b id="d-sent"></b><span>Sent elsewhere</span></div>
+    <div class="tile"><b id="d-alone"></b><span>Left alone</span></div>
+    <div class="tile"><b id="d-pages"></b><span>Of pages have at least one</span></div>
+  </div>
+  <div class="legend" style="margin-top:14px"><span><i class="sq" style="background:var(--diff)"></i>sent elsewhere</span><span><i class="sq" style="background:var(--diff-lit)"></i>left alone</span></div>
+  <svg id="d-svg" viewBox="0 0 720 330" role="img" aria-label="Detour rate by kind of prerequisite"></svg>
+  <p class="note" id="d-note"></p>
+</div>
+
+<p>At the default setting 21% of prerequisites are detours and close to half of all procedure pages have at least one. Ask for more warning and the number climbs fast, because most late mentions are <em>very</em> late: 128 of the 181 are first mentioned at the exact step that needs them.</p>
+<p>At the default setting one row is empty. In 58 cases a page needed a bucket policy, and not one was a detour: the policy is on the page, or the page says so in advance. The things readers are left alone with are the ones writers assume: a bucket, a key, a command-line tool.</p>
+<p>The mechanism from section 03 shows up here too. Switch between pages that grant access through a service principal and pages that use an identity policy. On pages we had not looked at before forming the idea, service-principal pages sent the reader away for a permission in 2 of 21 cases; identity-policy pages in 34 of 98.</p>
+</section>
+
+<section>
+<p class="eyebrow">06 · Dead ends</p>
+<h2>When the link <em>does not deliver</em></h2>
+<p>Being sent elsewhere is tolerable if the other page has what you need. So we followed all 254 links that a procedure gives for a prerequisite's steps, and asked of each landing page one question: does it give steps for that specific thing?</p>
+
+<div class="panel" id="dead">
+  <div class="chk" style="margin-bottom:14px">
+    <label><input type="checkbox" id="e-hop"> follow one more link when a page passes you on</label>
+    <label><input type="checkbox" id="e-partial"> count a partial answer as a dead end</label>
+    <label><input type="checkbox" id="e-det"> only links that were also detours</label>
+  </div>
+  <svg id="e-svg" viewBox="0 0 720 120" role="img" aria-label="Outcomes of following each off-page prerequisite link"></svg>
+  <div class="legend" id="e-leg" style="margin-top:10px"></div>
+  <div class="tiles">
+    <div class="tile"><b id="e-rate"></b><span>Dead ends</span></div>
+    <div class="tile"><b id="e-n"></b><span>Links followed</span></div>
+    <div class="tile ref"><b>98%</b><span>Agreement between two runs</span></div>
+  </div>
+</div>
+<p>More than a third of the time the link does not get you to steps. Usually you land on a page that explains the concept, or a hub that lists more links. Four of the 197 distinct links point at pages that no longer exist and now redirect to a guide's front page, including the bucket-creation link on the firewall logging page from section 04.</p>
+<p>Following one more link gets about half of the pass-alongs to real steps. A fifth of the time, two pages in, you still have no steps.</p>
+</section>
+
+<section>
+<p class="eyebrow">07 · What did not hold</p>
+<h2>Four ideas the data <em>turned down</em></h2>
+<div class="panel">
+  <svg id="j-svg" viewBox="0 0 720 260" role="img" aria-label="Scatter of mechanism mismatch against permission detours"></svg>
+  <p class="note" id="j-note"></p>
+</div>
+<div class="two">
+  <div class="card"><h3>Surprises cluster where a page differs from its look-alikes</h3><p>The idea that joined both halves. For each page we found its five most similar pages in other services and measured how far its mechanism differs from theirs. No relationship with detours, by the facts or by a ruler. The chart above is that null result.</p></div>
+  <div class="card"><h3>Pages with several mechanisms send you away more</h3><p>It appeared on the first 48 pages (p = 0.01) and did not survive the next 167 (39% against 29%, p = 0.27). It was one of sixteen things tested on the first sample.</p></div>
+  <div class="card"><h3>Surprise rates by type, from 60 pages</h3><p>Identity policies came out at 34%, 32% and 15% in three reads of the same pages. Too few pages. With 281 the three reads agree to within a few points.</p></div>
+  <div class="card"><h3>"Mentioned after the procedure begins"</h3><p>An earlier way to measure lateness. It collapsed on inspection: the reading model often marks the top of the page as where the procedure starts, which makes everything late.</p></div>
+</div>
+</section>
+
+<section>
+<p class="eyebrow">08 · How far to trust it</p>
+<h2>A reading, <em>checked where it can be</em></h2>
+<p>Every prerequisite in sections 04 to 06 comes from a language model reading a page. That is a reading and not ground truth. What we can say about it:</p>
+<div class="tw"><table>
+<thead><tr><th>Measured on all 281 pages</th><th class="n">Read 1</th><th class="n">Read 2</th><th class="n">Read 3</th></tr></thead>
+<tbody>
+<tr><td>Detours</td><td class="n">21%</td><td class="n">21%</td><td class="n">20%</td></tr>
+<tr><td>Surprises</td><td class="n">27%</td><td class="n">28%</td><td class="n">26%</td></tr>
+<tr><td>Steps on another page</td><td class="n">30%</td><td class="n">30%</td><td class="n">31%</td></tr>
+<tr><td>No steps at all</td><td class="n">41%</td><td class="n">42%</td><td class="n">42%</td></tr>
+</tbody></table></div>
+<p>Three independent reads agree on the totals. Item by item, two reads agree on where the steps are 95% of the time and on whether something is a surprise 92% of the time; 15% of prerequisites are found by one read and missed by the other.</p>
+<p>Agreement is not correctness. A blind sheet of 60 prerequisites, half of them detours by this measure and half not, is being labelled by a person as this is written. Until that is scored, treat the rates above as repeatable and unvalidated.</p>
+<p class="note">Other limits. The pages were chosen because their policy JSON grants S3 access, so permission-heavy jobs are over-represented. The dead-end check counts a partial answer as success unless you tick the box. The page parser understands AWS documentation and nothing else.</p>
+</section>
+
+<footer>
+<p>J. Abonyi and R. Tombor, "Semantic rulers: Continuous measurement of abstract concepts in LLM embedding spaces", Array 32 (2026) 101249.</p>
+<p>Code and results: the semantic-ruler repository, <code>experiments/</code> and <code>semantic_ruler/ordering.py</code>. Built on spiritwriter-core.</p>
+<p>The ruler is recomputed live from stored projections of each passage onto each domain's direction. Section 03 uses one anchor draw of five. Sections 05 and 06 use the first of the repeated reads. Nothing is staged.</p>
+</footer>
+</div>
+
+<script>
+(async () => {
+const D = window.__DATA__ || await fetch("data.json").then(r => r.json());
+const NS = "http://www.w3.org/2000/svg";
+const $ = id => document.getElementById(id);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const S = (tag, attrs, parent, text) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; if (parent) parent.append(e); return e; };
+const H = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const clear = e => { while (e.firstChild) e.firstChild.remove(); };
+const mean = a => a.reduce((s, x) => s + x, 0) / a.length;
+const pct = x => Math.round(100 * x) + "%";
+const pearson = (a, b) => { const ma = mean(a), mb = mean(b); let n = 0, da = 0, db = 0; for (let i = 0; i < a.length; i++) { n += (a[i] - ma) * (b[i] - mb); da += (a[i] - ma) ** 2; db += (b[i] - mb) ** 2; } return n / Math.sqrt(da * db); };
+const quantile = (arr, q) => { const s = [...arr].sort((x, y) => x - y), p = (s.length - 1) * q, lo = Math.floor(p), hi = Math.ceil(p); return s[lo] + (s[hi] - s[lo]) * (p - lo); };
+
+// one tooltip for every chart
+const tip = $("tip");
+function hover(el, html) {
+  el.addEventListener("pointerenter", () => { tip.innerHTML = ""; tip.append(...html()); tip.style.opacity = 1; });
+  el.addEventListener("pointermove", ev => { const w = tip.offsetWidth, x = Math.min(innerWidth - w - 8, Math.max(8, ev.clientX + 14)); tip.style.left = x + "px"; tip.style.top = Math.max(8, ev.clientY - tip.offsetHeight - 12) + "px"; });
+  el.addEventListener("pointerleave", () => { tip.style.opacity = 0; });
+}
+const tipLines = (title, ...small) => () => [H("b", null, title), ...small.filter(Boolean).map(s => H("small", null, s))];
+function seg(host, options, value, onChange) {
+  clear(host);
+  options.forEach(([v, label]) => { const b = H("button", null, label); b.type = "button"; b.setAttribute("aria-pressed", v === value); b.onclick = () => { host.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); onChange(v); }; host.append(b); });
+}
+const BC = ["--b1", "--b2", "--b3", "--b4"].map(css);
+
+// ---------- 01 the ruler ----------
+{
+  const R = D.ruler, st = { gen: "Sonnet", on: R.blocks.map(() => true), q: 5, judge: false };
+  seg($("r-gen"), [["Sonnet", "Sonnet"], ["Haiku", "Haiku"]], st.gen, v => { st.gen = v; draw(); });
+  R.blocks.forEach((name, i) => { const l = H("label"); const c = H("input"); c.type = "checkbox"; c.checked = true; c.id = "r-b" + i;
+    c.onchange = () => { st.on[i] = c.checked; if (!st.on.some(Boolean)) { st.on[i] = true; c.checked = true; } draw(); };
+    const dot = H("i"); dot.style.background = BC[i]; l.append(c, dot, document.createTextNode(name)); $("r-blocks").append(l); });
+  $("r-q").oninput = e => { st.q = +e.target.value; draw(); };
+  $("r-judge").onchange = e => { st.judge = e.target.checked; draw(); };
+  const lam = R.levels.map(x => x.lam);
+  function scores() {
+    const G = R.generators[st.gen], idx = st.on.map((v, i) => v ? i : -1).filter(i => i >= 0);
+    let norm = 0; for (const a of idx) for (const b of idx) norm += G.gram[a][b]; norm = Math.sqrt(norm);
+    const proj = rows => rows.map(r => idx.reduce((s, i) => s + r[i], 0) / norm);
+    const anchors = proj(G.anchors), lo = quantile(anchors, st.q / 100), hi = quantile(anchors, 1 - st.q / 100);
+    return proj(G.levels).map(s => Math.min(1, Math.max(0, (s - lo) / (hi - lo))));
+  }
+  function draw() {
+    const p = scores(), svg = $("r-svg"); clear(svg);
+    const L = 44, T = 12, W = 720 - L - 14, Hh = 400 - T - 40, X = v => L + 30 + v * (W - 60), Y = v => T + (1 - v) * Hh;
+    for (const v of [0, .2, .4, .6, .8, 1]) { S("line", { class: "grid", x1: L, x2: L + W, y1: Y(v), y2: Y(v) }, svg); S("text", { x: L - 8, y: Y(v) + 4, "text-anchor": "end" }, svg, v.toFixed(1)); S("text", { x: X(v), y: T + Hh + 18, "text-anchor": "middle" }, svg, v.toFixed(1)); }
+    S("line", { class: "axis", x1: L, x2: L + W, y1: Y(0), y2: Y(0) }, svg);
+    S("line", { x1: X(0), y1: Y(0), x2: X(1), y2: Y(1), stroke: css("--ink"), "stroke-width": 1, opacity: .35 }, svg);
+    S("text", { x: X(1) - 6, y: Y(1) + 16, "text-anchor": "end" }, svg, "perfect");
+    S("text", { x: L + W / 2, y: 396, "text-anchor": "middle" }, svg, "level the passage was written at");
+    S("text", { x: 12, y: T + Hh / 2, "text-anchor": "middle", transform: `rotate(-90 12 ${T + Hh / 2})` }, svg, "score");
+    const seen = {};
+    R.levels.forEach((x, i) => { const k = x.lam + "|" + x.b; seen[k] = (seen[k] || 0) + 1; const jx = (x.b - 1.5) * 9 + (seen[k] - 2) * 2.4;
+      if (st.judge && x.judge != null) S("circle", { cx: X(x.lam) + jx, cy: Y(x.judge), r: 4, fill: "none", stroke: css("--muted"), "stroke-width": 1.3 }, svg);
+      const c = S("circle", { cx: X(x.lam) + jx, cy: Y(p[i]), r: 4.5, fill: BC[x.b], stroke: css("--paper"), "stroke-width": 1.5, opacity: st.on[x.b] ? 1 : .45 }, svg);
+      const hit = S("circle", { cx: X(x.lam) + jx, cy: Y(p[i]), r: 11, fill: "transparent" }, svg);
+      hover(hit, tipLines(R.blocks[x.b], `written at ${x.lam.toFixed(1)} · ruler ${p[i].toFixed(2)}` + (x.judge != null ? ` · judge ${x.judge.toFixed(2)}` : ""), x.text)); });
+    $("r-r").textContent = pearson(p, lam).toFixed(3);
+    $("r-rmse").textContent = Math.sqrt(mean(p.map((v, i) => (v - lam[i]) ** 2))).toFixed(2);
+    $("r-qv").textContent = `${st.q} and ${100 - st.q}`;
+    const off = R.blocks.map((n, b) => { const d = mean(R.levels.map((x, i) => x.b === b ? p[i] - x.lam : null).filter(v => v != null)); return `${n} ${d >= 0 ? "+" : "−"}${Math.abs(d).toFixed(2)}`; });
+    const used = st.on.filter(Boolean).length;
+    $("r-off").textContent = `Mean reading above or below the intended level, by domain: ${off.join(" · ")}.` + (used < 4 ? ` Direction built from ${used} of 4 domains; faded dots are domains it never saw.` : "");
+  }
+  draw();
+}
+
+// ---------- 02 variance ----------
+{
+  const V = { Sonnet: { "Sonnet test A": [.853, .827, .874, .825, .876, .870], "Sonnet test B": [.845, .835, .884, .829, .867, .858], "Haiku test": [.736, .756, .801, .735, .793, .768] },
+              Haiku: { "Sonnet test A": [.898, .895, .861, .844, .894, .879], "Sonnet test B": [.853, .869, .831, .818, .847, .845], "Haiku test": [.808, .810, .803, .754, .788, .806] } };
+  const svg = $("v-svg"), L = 118, W = 720 - L - 20, X = v => L + (v - .7) / .3 * W, rows = ["Sonnet test A", "Sonnet test B", "Haiku test"];
+  for (const v of [.7, .75, .8, .85, .9, .95, 1]) { S("line", { class: "grid", x1: X(v), x2: X(v), y1: 26, y2: 150 }, svg); S("text", { x: X(v), y: 168, "text-anchor": "middle" }, svg, v.toFixed(2)); }
+  S("text", { x: L + W / 2, y: 186, "text-anchor": "middle" }, svg, "correlation with the intended level");
+  [[.956, "paper's ruler 0.956"], [.966, "our judge 0.966"]].forEach(([v, label], i) => { S("line", { x1: X(v), x2: X(v), y1: 26, y2: 150, stroke: css("--ink"), "stroke-width": 1.5 }, svg); S("text", { x: X(v) + (i ? 5 : -5), y: 18, "text-anchor": i ? "start" : "end", style: "fill:" + css("--ink") }, svg, label); });
+  rows.forEach((name, r) => { const y = 50 + r * 40; S("text", { x: L - 12, y: y + 4, "text-anchor": "end" }, svg, name);
+    ["Sonnet", "Haiku"].forEach((g, k) => V[g][name].forEach((v, i) => { const c = S("circle", { cx: X(v), cy: y + (k ? 8 : -8), r: 5, fill: css(k ? "--diff" : "--same"), stroke: css("--paper"), "stroke-width": 1.5 }, svg);
+      hover(c, tipLines(`r = ${v.toFixed(3)}`, `${g} anchors, draw ${i}${i ? "" : " (the first run)"}`, name)); })); });
+}
+
+// ---------- 03 intents ----------
+{
+  const st = { con: "S vs I", dir: "raw" };
+  const DIRS = [["raw", "Generic similarity"], ["gen", "Ruler from invented pairs"], ["nat", "Ruler from other services' real sections"]];
+  const NAMES = { S: "bucket policy names the service", A: "bucket policy names another account", I: "identity policy on a role" };
+  seg($("i-con"), [["S vs I", "Service vs role"], ["A vs I", "Account vs role"]], st.con, v => { st.con = v; draw(); });
+  seg($("i-dir"), DIRS, st.dir, v => { st.dir = v; draw(); });
+  function draw() {
+    const C = D.intents.contrasts[st.con], svg = $("i-svg"), n = C.services.length, RH = 23, L = 150, W = 720 - L - 70, Hh = n * RH + 30;
+    svg.setAttribute("viewBox", `0 0 720 ${Hh}`); clear(svg);
+    clear($("i-leg")); [[css("--same"), NAMES[C.pos]], [css("--diff"), NAMES[C.neg]]].forEach(([c, t]) => { const s = H("span"); const i = H("i"); i.style.background = c; s.append(i, document.createTextNode(t)); $("i-leg").append(s); });
+    const accs = [];
+    C.services.forEach((name, s) => { const pts = C.points.filter(p => p.s === s), vals = pts.map(p => p[st.dir]), lo = Math.min(...vals), hi = Math.max(...vals), y = 14 + s * RH;
+      const pos = pts.filter(p => p.pos), neg = pts.filter(p => !p.pos); let ok = 0; for (const a of pos) for (const b of neg) ok += a[st.dir] > b[st.dir] ? 1 : a[st.dir] === b[st.dir] ? .5 : 0;
+      const acc = ok / (pos.length * neg.length); accs.push(acc);
+      S("line", { class: "axis", x1: L, x2: L + W, y1: y, y2: y }, svg);
+      S("text", { x: L - 10, y: y + 4, "text-anchor": "end" }, svg, name.length > 22 ? name.slice(0, 21) + "…" : name);
+      S("text", { x: L + W + 12, y: y + 4, style: "fill:" + css(acc >= .5 ? "--ink" : "--diff-deep") }, svg, pct(acc));
+      pts.forEach(p => { const x = L + 8 + (hi > lo ? (p[st.dir] - lo) / (hi - lo) : .5) * (W - 16);
+        const c = S("circle", { cx: x, cy: y, r: 5, fill: css(p.pos ? "--same" : "--diff"), stroke: css("--paper"), "stroke-width": 1.5 }, svg);
+        hover(c, tipLines(name, NAMES[p.pos ? C.pos : C.neg], p.h)); }); });
+    S("text", { x: L, y: Hh - 4 }, svg, "← lower"); S("text", { x: L + W, y: Hh - 4, "text-anchor": "end" }, svg, "higher →"); S("text", { x: L + W + 12, y: Hh - 4 }, svg, "correct");
+    $("i-acc").textContent = mean(accs).toFixed(2); $("i-n").textContent = n;
+    $("i-note").textContent = { raw: "Generic similarity here is each section's closeness to the centre of the whole corpus: a direction that knows nothing about permissions. 0.50 is chance.",
+      gen: "Direction built from generated passage pairs about fictional services (one anchor draw; the average over five draws is 0.84 for service vs role and 0.85 for account vs role).",
+      nat: "Direction built from the real sections of every service except the one being scored." }[st.dir] + " Each row is scaled to its own range; only the order within a row matters.";
+  }
+  draw();
+}
+
+// ---------- 04 the chain ----------
+{
+  const T = D.chain.tree, LABEL = { other_page: ["away", "another page"], on_page: ["here", "on this page"], none: ["none", "no steps"] };
+  let shown = 1, list = false;
+  function draw() {
+    const host = $("c-tabs"); clear(host);
+    T.slice(0, shown).forEach(n => { const t = H("div", "tab"); t.style.marginLeft = Math.min(n.depth * 16, 48) + "px";
+      if (n.via) t.append(H("div", "via", "opened for: " + n.via));
+      const a = H("a", "t", n.title); a.href = n.url; a.target = "_blank"; a.rel = "noopener"; t.append(a);
+      if (!n.pre.length) t.append(H("div", "via", n.procedure ? "no prerequisites listed" : "a page of options or reference material, no steps"));
+      const ul = H("ul"); n.pre.forEach(q => { const li = H("li"); const [c, txt] = LABEL[q.inst] || LABEL.none; li.append(H("span", "pill " + c, txt), H("span", null, q.what)); ul.append(li); });
+      if (n.pre.length) t.append(ul); host.append(t); });
+    const open = T.slice(0, shown);
+    $("c-pages").textContent = shown; $("c-pre").textContent = open.reduce((s, n) => s + n.pre.length, 0); $("c-depth").textContent = Math.max(...open.map(n => n.depth));
+    $("c-next").disabled = shown >= T.length || list; $("c-next").textContent = shown >= T.length ? "No more links to follow" : "Follow the next link";
+    host.hidden = list; $("c-check").hidden = !list; $("c-list").textContent = list ? "Back to the pages" : "Show it as a checklist instead";
+    if (list) { const box = $("c-check"); clear(box);
+      [["Before you start", false], ["Only in some setups", true]].forEach(([title, opt]) => { const rows = D.chain.checklist.filter(i => i.optional === opt); if (!rows.length) return;
+        box.append(H("h3", null, title)); const ol = H("ol", "check"); rows.forEach(i => { const li = H("li"); li.append(H("b", null, i.type.replace(/_/g, " ") + ": "), document.createTextNode(i.what + (i.automatic ? " (may be created for you)" : ""))); ol.append(li); }); box.append(ol); }); }
+  }
+  $("c-next").onclick = () => { shown = Math.min(T.length, shown + 1); draw(); };
+  $("c-reset").onclick = () => { shown = 1; list = false; draw(); };
+  $("c-list").onclick = () => { list = !list; draw(); };
+  draw();
+}
+
+// ---------- 05 detours ----------
+{
+  const X = D.detours, st = { k: 1, mech: "all", onpage: true, doubt: false };
+  const NAMES = { s3_bucket: "S3 bucket", bucket_policy: "Bucket policy", iam_role: "IAM role", iam_identity_policy: "IAM identity policy", kms_key: "KMS key", kms_key_policy: "KMS key policy", other_aws_resource: "Other AWS resource", account_or_service_setting: "Account or service setting", tool_or_access: "Tool or access" };
+  seg($("d-mech"), [["all", "Any"], ["S", "Service principal"], ["I", "Identity policy"], ["A", "Account principal"]], st.mech, v => { st.mech = v; draw(); });
+  $("d-k").oninput = e => { st.k = +e.target.value; draw(); };
+  $("d-onpage").onchange = e => { st.onpage = e.target.checked; draw(); };
+  $("d-doubt").onchange = e => { st.doubt = e.target.checked; draw(); };
+  // item: [page, type, needed, introduced, instructions (0 on page, 1 other page, 2 none), doubt flags]
+  const kind = it => { const need = it[2], intro = it[3]; const surprise = intro < 0 || (need >= 0 && intro > need - st.k);
+    if (!surprise || (st.onpage && it[4] === 0) || (st.doubt && it[5])) return 0; return it[4] === 1 ? 1 : 2; };
+  function draw() {
+    const items = X.items.filter(it => st.mech === "all" || X.pages[it[0]].mech === st.mech), ks = items.map(kind);
+    const n = items.length, sent = ks.filter(k => k === 1).length, alone = ks.filter(k => k === 2).length;
+    const pages = new Set(items.map(it => it[0])), hit = new Set(items.filter((it, i) => ks[i]).map(it => it[0]));
+    $("d-rate").textContent = n ? pct((sent + alone) / n) : "–"; $("d-sent").textContent = n ? pct(sent / n) : "–"; $("d-alone").textContent = n ? pct(alone / n) : "–"; $("d-pages").textContent = pages.size ? pct(hit.size / pages.size) : "–";
+    $("d-kv").textContent = st.k === 1 ? "1 block" : st.k + " blocks";
+    const svg = $("d-svg"); clear(svg); const L = 190, W = 720 - L - 90, RH = 34, max = .8, Xs = v => L + Math.min(v, max) / max * W;
+    for (const v of [0, .2, .4, .6, .8]) { S("line", { class: "grid", x1: Xs(v), x2: Xs(v), y1: 4, y2: 9 * RH + 4 }, svg); S("text", { x: Xs(v), y: 9 * RH + 20, "text-anchor": "middle" }, svg, pct(v)); }
+    X.types.forEach((t, ti) => { const idx = items.map((it, i) => it[1] === ti ? i : -1).filter(i => i >= 0), c = idx.length, a = idx.filter(i => ks[i] === 1).length, b = idx.filter(i => ks[i] === 2).length, y = 8 + ti * RH;
+      S("text", { x: L - 10, y: y + 15, "text-anchor": "end", style: "fill:" + css("--body") + ";font:13px " + css("--sans") }, svg, NAMES[t]);
+      if (!c) { S("text", { x: L + 6, y: y + 15 }, svg, "none on these pages"); return; }
+      const wa = a / c / max * W, wb = b / c / max * W;
+      if (a) hover(S("rect", { x: L, y, width: Math.max(wa - 1, 1), height: 22, rx: 2, fill: css("--diff") }, svg), tipLines(NAMES[t], `${a} of ${c} sent elsewhere (${pct(a / c)})`));
+      if (b) hover(S("rect", { x: L + wa + (a ? 1 : 0), y, width: Math.max(wb - 1, 1), height: 22, rx: 2, fill: css("--diff-lit") }, svg), tipLines(NAMES[t], `${b} of ${c} left alone (${pct(b / c)})`));
+      S("text", { x: L + wa + wb + 8, y: y + 15, style: "fill:" + css("--ink") }, svg, `${pct((a + b) / c)} of ${c}`); });
+    S("line", { class: "axis", x1: L, x2: L, y1: 4, y2: 9 * RH + 4 }, svg);
+    $("d-note").textContent = `${n} prerequisites on ${pages.size} procedure pages` + (st.mech === "all" ? "" : " whose policy JSON shows only that mechanism") + `. A block is one paragraph, list item, heading or code sample. Positions come from a model's reading of the page; two reads place "needed at" within three blocks of each other 88% of the time.`;
+  }
+  draw();
+}
+
+// ---------- 06 dead ends ----------
+{
+  const st = { hop: false, partial: false, det: false };
+  const ORDER = ["arrives", "partial", "passed on", "no steps", "dead link"], COL = { arrives: "--invariant", partial: "--lit", "passed on": "--diff-lit", "no steps": "--diff", "dead link": "--diff-deep" };
+  const TEXT = { arrives: "arrives: the page gives the steps", partial: "partial: some of them, or a nearby thing", "passed on": "passed on: no steps, another link", "no steps": "no steps, no further link", "dead link": "dead link" };
+  ["hop", "partial", "det"].forEach(k => { $("e-" + k).onchange = e => { st[k] = e.target.checked; draw(); }; });
+  function draw() {
+    const rows = D.dead_ends.rows.filter(r => !st.det || r.detour), count = {}; ORDER.forEach(o => count[o] = 0);
+    rows.forEach(r => { count[st.hop && r.o === "passed on" && r.hop2 ? r.hop2 : r.o]++; });
+    const n = rows.length, dead = new Set(["passed on", "no steps", "dead link"].concat(st.partial ? ["partial"] : []));
+    const svg = $("e-svg"); clear(svg); let x = 0; const W = 720;
+    ORDER.forEach(o => { const w = count[o] / n * W; if (!count[o]) return;
+      hover(S("rect", { x: x + 1, y: 30, width: Math.max(w - 2, 1), height: 46, rx: 3, fill: css(COL[o]) }, svg), tipLines(TEXT[o], `${count[o]} of ${n} (${pct(count[o] / n)})`));
+      if (w > 44) S("text", { x: x + w / 2, y: 58, "text-anchor": "middle", style: "fill:" + (o === "partial" || o === "passed on" ? css("--ink") : "#fff") + ";font:13px " + css("--mono") }, svg, pct(count[o] / n));
+      x += w; });
+    let dx = 0, dw = 0; x = 0; ORDER.forEach(o => { const w = count[o] / n * W; if (dead.has(o)) { if (!dw) dx = x; dw += w; } x += w; });
+    if (dw) { S("line", { x1: dx + 2, x2: dx + dw - 2, y1: 90, y2: 90, stroke: css("--ink"), "stroke-width": 1.5 }, svg); S("text", { x: dx + dw / 2, y: 108, "text-anchor": "middle", style: "fill:" + css("--ink") }, svg, "dead ends"); }
+    S("text", { x: 0, y: 18 }, svg, st.hop ? "where the reader is after up to two links" : "where the first link lands");
+    clear($("e-leg")); ORDER.forEach(o => { const s = H("span"); const i = H("i", "sq"); i.style.background = css(COL[o]); s.append(i, document.createTextNode(`${TEXT[o]} (${count[o]})`)); $("e-leg").append(s); });
+    $("e-rate").textContent = pct(ORDER.filter(o => dead.has(o)).reduce((s, o) => s + count[o], 0) / n); $("e-n").textContent = n;
+  }
+  draw();
+}
+
+// ---------- 07 the join ----------
+{
+  const J = D.join, svg = $("j-svg"), L = 44, T = 10, W = 720 - L - 16, Hh = 200, maxY = Math.max(2, ...J.rows.map(r => r.y));
+  const X = v => L + 14 + v * (W - 28), Y = v => T + (1 - v / maxY) * Hh;
+  for (let v = 0; v <= maxY; v++) { S("line", { class: "grid", x1: L, x2: L + W, y1: Y(v), y2: Y(v) }, svg); S("text", { x: L - 8, y: Y(v) + 4, "text-anchor": "end" }, svg, v); }
+  for (const v of [0, .25, .5, .75, 1]) S("text", { x: X(v), y: T + Hh + 18, "text-anchor": "middle" }, svg, v.toFixed(2));
+  S("text", { x: L + W / 2, y: T + Hh + 40, "text-anchor": "middle" }, svg, "how much the page's mechanism differs from its five nearest look-alikes");
+  S("text", { x: 12, y: T + Hh / 2, "text-anchor": "middle", transform: `rotate(-90 12 ${T + Hh / 2})` }, svg, "permission detours");
+  J.rows.forEach((r, i) => { const c = S("circle", { cx: X(r.x) + ((i * 7) % 9 - 4), cy: Y(r.y) - ((i * 5) % 7 - 3), r: 5, fill: css("--same"), opacity: .75, stroke: css("--paper"), "stroke-width": 1.5 }, svg);
+    hover(c, tipLines(r.service, `mismatch ${r.x.toFixed(2)} · ${r.y.toFixed(1)} permission detours`, `mechanism ${r.mech}`)); });
+  $("j-note").textContent = `48 procedure pages. Rank correlation ${J.r.spearman.toFixed(2)} (95% interval ${J.r.lo.toFixed(2)} to ${J.r.hi >= 0 ? "+" : ""}${J.r.hi.toFixed(2)}). If the idea were right the cloud would rise to the right. It does not, though with 48 pages a moderate effect in either direction cannot be excluded.`;
+}
+})();
+</script>
