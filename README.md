@@ -3,8 +3,15 @@
 A demo of *Semantic rulers: Continuous measurement of abstract concepts in LLM
 embedding spaces* (Abonyi & Tombor, Array 32 (2026) 101249,
 [doi:10.1016/j.array.2026.101249](https://doi.org/10.1016/j.array.2026.101249)),
-built on [spiritwriter](../spiritwriter-core) primitives. The paper is in this
-folder as `semantic-rulers.pdf`.
+built on [spiritwriter](https://pypi.org/project/spiritwriter/) primitives. The
+paper is open access under CC BY 4.0 and is in this folder as
+`semantic-rulers.pdf`.
+
+Two interactive pages walk through the results:
+[Rulers and Detours](https://aaronmarkham.github.io/semantic-ruler/) (the whole
+project) and
+[The Detour Map](https://aaronmarkham.github.io/semantic-ruler/detour-map.html)
+(the documentation findings, as a map you walk).
 
 A semantic ruler is a calibrated direction in an embedding space. Projecting any
 text onto it gives a score `p` in [0, 1] for how strongly the text expresses one
@@ -142,6 +149,8 @@ is built from `experiments/explainer/` (`build_data.py` collects the numbers,
 `explainer.html` is the page). A shorter, walkable version of the detour
 findings is `adventure.html` in the same folder, built by `build_trail.py`; its
 multi-level trees come from `experiments/doc_ordering/chains.py`.
+`python -I experiments/explainer/build_site.py .` wraps both pages into the
+static site in `docs/`, which GitHub Pages serves.
 
 The prerequisites come from an LLM reading the page, so the output is a
 reading, not ground truth; each detour carries a `doubts` list of scripted
@@ -186,3 +195,17 @@ instrument exactly. Embedding is the one piece spiritwriter lacks; the small
   III) yet. The LLM-as-judge baseline is behind `--judge`.
 - The paper does not give its level-guided prompt for Case Study I; the one here
   is adapted from its Case Study II template.
+
+## Licence
+
+The code and result files are under the [Apache License 2.0](LICENSE).
+
+- `semantic-rulers.pdf` is the paper by J. Abonyi and R. Tombor, redistributed
+  unchanged under its own licence,
+  [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+- The documentation experiments read pages from `docs.aws.amazon.com`. The raw
+  pages are not in this repository; the result files hold URLs and short
+  model-written descriptions of what each page asks for. This project is not
+  affiliated with or endorsed by Amazon Web Services.
+- Account IDs in the result files are the placeholder IDs AWS uses in its
+  documentation examples.
