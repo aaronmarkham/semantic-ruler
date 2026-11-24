@@ -15,7 +15,9 @@ project) and
 
 A semantic ruler is a calibrated direction in an embedding space. Projecting any
 text onto it gives a score `p` in [0, 1] for how strongly the text expresses one
-abstract concept, with one embedding call and one dot product.
+abstract concept, with one embedding call and one dot product. A model judge
+costs a call for every text; a ruler costs a handful of calls once, then scores
+any number of texts for the price of an embedding.
 
 ## How it works
 
@@ -45,10 +47,11 @@ requested intensity levels 0.0 to 1.0. It reads `ANTHROPIC_API_KEY` and
 `SEMANTIC_RULER_KEYCHAIN_SERVICE` to use another. Generated text is kept in
 `data/store`, so later runs reuse it unless you pass `--regenerate`.
 
-## Results so far (2026-11-21)
+## What the ruler is good for
 
-One live run of Case Study I: `claude-sonnet-5-5` as generator and judge,
-`text-embedding-3-large` as embedder, 72 test texts.
+Results from the paper's Case Study I, run live on 2026-11-21:
+`claude-sonnet-5-5` as generator and judge, `text-embedding-3-large` as
+embedder, 72 test texts.
 
 | Method | Pearson r | RMSE | Paper's r |
 |---|---|---|---|
@@ -58,37 +61,63 @@ One live run of Case Study I: `claude-sonnet-5-5` as generator and judge,
 | Random direction | -0.207 | 0.467 | -0.161 |
 | LLM judge | 0.966 | 0.093 | 0.952 |
 
-The ordering of the embedding methods matches the paper, but the ruler does not
-reach parity with the LLM judge here. What the follow-up checks showed:
+The ruler recovers the intended level at r = 0.853, and the embedding methods
+rank in the same order as in the paper. Four properties held up under the
+follow-up checks:
 
-- The gap is in the ruler, not the test texts: the judge rates the same texts
-  at r = 0.966 with no difference between blocks.
+- **It carries to a domain it has yet to see.** Built from three blocks and
+  scored on the fourth, pooled r is 0.856, level with the 0.853 it gets when it
+  has seen all four.
+- **It beats the obvious shortcut.** Cosine similarity to the concept's name
+  scores 0.216 on the same texts.
+- **It is cheap to build, and steady.** r plateaus by 6 anchor pairs per block.
+  Redrawing the anchors moves r by about 0.02 (one standard deviation), and
+  anchors from the smaller `claude-haiku-5-5` score about level with Sonnet's.
+- **It is sharp inside a domain.** Within a block r is 0.88-0.93, and text
+  length is not a confound.
+
+Scoring a text takes one embedding call and one dot product, and the same text
+always gets the same score. That makes a ruler a good fit for three jobs:
+
+- ranking a large pile of texts, then sending only the top slice to a judge
+- tracking one concept across releases with a fixed instrument
+- putting a review queue in order
+
+These jobs follow from the measured properties; this repo has yet to run them
+at scale. When you need exact scores that compare across domains, pair the
+ruler with a judge.
+
+### The gap to the paper
+
+The paper's ruler reaches r = 0.956, level with its LLM judge. Ours reaches
+0.853 against a judge at 0.966. The follow-up checks narrow down where the gap
+sits:
+
+- It sits in the ruler: the judge rates the same test texts at r = 0.966 with
+  no difference between blocks.
 - The ruler's error is a per-block offset. Against the judge it reads injection
-  molding +0.14 high and surface treatment -0.16 low; within a block r is
-  0.88-0.93. The anchors themselves show no such offset.
-- The ruler generalises to an unseen block: built from three blocks and scored
-  on the fourth, pooled r is 0.856.
-- More anchors do not help (r plateaus by 6 pairs per block), and text length
-  is not a confound.
-- No alternative direction tried on this data did much better: per-block
+  molding +0.14 high and surface treatment -0.16 low. The anchors themselves
+  show no such offset.
+- More anchors add nothing past 6 pairs per block.
+- The alternative directions tried on this data land close by: per-block
   calibration 0.888, a shrinkage-whitened mean delta 0.882, projecting out the
   block-centroid subspace 0.877. A ridge regression trained directly on three
-  blocks' test texts scored the fourth at only 0.80, and a ruler built from
-  graded six-level anchors scored 0.77.
+  blocks' test texts scored the fourth at 0.80, and a ruler built from graded
+  six-level anchors scored 0.77.
 
-These variants were all compared on the same 72 texts, so the small gains are
-not reliable evidence.
+All of these variants were compared on the same 72 texts, so treat the small
+gains as noise.
 
 A second run with `claude-haiku-5-5` as generator and judge (store in
-`data/store-haiku`) did not close the gap: ruler r = 0.808, judge r = 0.938.
-Crossing the two runs, with the two rulers at cosine 0.82 to each other:
+`data/store-haiku`) gave ruler r = 0.808 and judge r = 0.938. Crossing the two
+runs, with the two rulers at cosine 0.82 to each other:
 
 | Ruler built from | Sonnet test texts | Haiku test texts |
 |---|---|---|
 | Sonnet anchors | 0.853 | 0.736 |
 | Haiku anchors | 0.898 | 0.808 |
 
-So a smaller generator does not explain the paper's higher numbers.
+A smaller generator leaves the paper's higher numbers unexplained.
 
 ### Run-to-run variance
 
@@ -102,21 +131,21 @@ Pearson r, with the standard deviation across the six draws:
 | Haiku | 0.878 (0.022) | 0.844 (0.018) | 0.795 (0.021) |
 
 - The first run was typical. Across 36 ruler/test combinations r ranges from
-  0.735 to 0.898; none approaches the paper's 0.956.
+  0.735 to 0.898, against the paper's 0.956.
 - Redrawing the anchors moves r by about 0.02 (one standard deviation).
 - The test set is the larger uncertainty: a bootstrap over the 72 texts gives a
   95% interval of about 0.78 to 0.91 for one ruler on one Sonnet test set.
-- The apparent advantage of Haiku anchors in the cross table above does not
-  hold up: it appears on test A and reverses on test B.
+- Haiku anchors and Sonnet anchors are about level: Haiku's lead on test A
+  reverses on test B.
 - Haiku's test texts are harder for every ruler.
-- Pooling all six draws (48 pairs per block) gives 0.86 on the Sonnet tests, no
-  better than the best single draw, so anchor count is not the limit.
+- Pooling all six draws (48 pairs per block) gives 0.86 on the Sonnet tests,
+  level with the best single draw, so anchor count is not the limit.
 - Rulers from the same generator agree at cosine 0.88-0.90; across generators
   0.80. The generator leaves a mark on the direction.
 
-Why the paper's ruler matched its judge is still not established, but sampling
-luck in this setup does not account for it. The scripts behind these checks are
-in `experiments/`; each takes the repo root as its argument, for example
+Why the paper's ruler matched its judge is still an open question; sampling
+luck in this setup is ruled out as the cause. The scripts behind these checks
+are in `experiments/`; each takes the repo root as its argument, for example
 `python experiments/variance.py .`, and reuses stored text and cached embeddings.
 
 ## Detours in how-to docs
