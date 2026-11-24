@@ -87,17 +87,20 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
 <div id="tip" role="status"></div>
 <div class="col">
 
-<p class="eyebrow">On a paper, a failed replication, and what the detour turned up</p>
-<h1>A ruler for meaning,<br><em>and where it bent.</em></h1>
-<p class="lede">A 2026 paper says you can measure an abstract idea, such as how sustainable a factory process is, by laying a ruler through the space where a language model stores meaning. We rebuilt it, came in under its headline number, chased the gap as far as it would go, and then took the method somewhere new: cloud documentation, and the moment a how-to guide sends you off to do something else first.</p>
+<p class="eyebrow">On <em>Semantic rulers</em>, a rebuild, and what the detour turned up</p>
+<h1>A ruler for meaning,<br><em>and where it took us.</em></h1>
+<p class="lede">In <a href="https://doi.org/10.1016/j.array.2026.101249"><em>Semantic rulers: Continuous measurement of abstract concepts in LLM embedding spaces</em></a> (Array, 2026), J. Abonyi and R. Tombor show how to measure an abstract idea, such as how sustainable a factory process is, by laying a ruler through the space where a language model stores meaning. Scoring a text then costs one embedding and one dot product.</p>
+<p class="lede">We rebuilt it on our own stack and got a ruler that works, holds steady across redraws, and carries to domains it has yet to see. Then we took the method somewhere new: cloud documentation, and the moment a how-to guide sends you off to do something else first.</p>
 <p class="note">Every chart below runs on the project's measured output. Move the controls and the numbers recompute in your browser.</p>
 
 <section>
 <p class="eyebrow">01 · The paper</p>
 <h2>Two texts that differ in <em>one thing only</em></h2>
-<p>Abonyi and Tombor's idea is short. Write pairs of passages that match in everything but the concept you care about: the same part, the same machine, one version wasteful and one frugal. Embed both. Subtract. What's left is an arrow pointing from "less" to "more". Average the arrows across a few domains and you have a direction. Project any new text onto it, rescale between the 5th and 95th percentile of your anchor texts, and you get a score from 0 to 1.</p>
+<p>Ask how sustainable a process description is, or how urgent a support ticket is, and the usual answer is to have a language model read each text and rate it. That works, and it costs a model call per text, every time you ask. Abonyi and Tombor's paper offers an instrument in its place: build a ruler once, then measure as many texts as you like for the price of an embedding.</p>
+<p>The idea is short. Write pairs of passages that match in everything but the concept you care about: the same part, the same machine, one version wasteful and one frugal. Embed both. Subtract. What's left is an arrow pointing from "less" to "more". Average the arrows across a few domains and you have a direction. Project any new text onto it, rescale between the 5th and 95th percentile of your anchor texts, and you get a score from 0 to 1.</p>
+<p>The paper keeps one more thing separate, and it's a good habit: the ruler measures, and a second, explicit function decides what a score is worth to you. Whether 0.7 is good enough is your call, written down where anyone can read it.</p>
 <p>The test is whether that score tracks reality. They asked a model to write passages at six known levels, 0.0 to 1.0, and checked how well the ruler recovered the level. They report a correlation of 0.956, level with a language model reading each text and rating it.</p>
-<p>Here is ours, on 72 test passages across four manufacturing domains. Each dot is one passage: where it was written to be, against where the ruler put it.</p>
+<p>Here is our rebuild of that first case study, on 72 test passages across four manufacturing domains. Each dot is one passage: where it was written to be, against where the ruler put it.</p>
 
 <div class="panel" id="ruler">
   <div class="controls">
@@ -116,23 +119,29 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
   <p class="note" id="r-off"></p>
 </div>
 
-<p>Turn domains off and on. Built from a single domain, the ruler still works on the other three. That's the paper's central claim, and it holds. The size is where we part ways: with everything on, we get 0.853 where they got 0.956.</p>
-<p>The colours show where the error lives. The ruler reads one whole domain high and another low. Inside any one domain the points line up well (0.88 to 0.93); the offset <em>between</em> domains is what costs the correlation. The judge, shown as rings, reads every domain level.</p>
+<p>Turn domains off and on. Built from a single domain, the ruler still works on the other three. That's the paper's central claim, and it holds: with everything on, the ruler recovers the intended level at 0.853.</p>
+<p>The colours show where the remaining error lives. The ruler reads one whole domain high and another low. Inside any one domain the points line up well (0.88 to 0.93); the offset <em>between</em> domains is what costs the correlation. The judge, shown as rings, reads every domain level.</p>
 </section>
 
 <section>
-<p class="eyebrow">02 · Where we diverged</p>
-<h2>The gap is real, and <em>it survives a redraw</em></h2>
-<p>One run is thin evidence, so we redrew the anchor pairs five more times with each of two generator models and scored every ruler on three separate test sets. That makes 36 rulers.</p>
+<p class="eyebrow">02 · What it's good for</p>
+<h2>A cheap, steady <em>instrument</em></h2>
+<p>One run is thin evidence, so we redrew the anchor pairs five more times with each of two generator models and scored every ruler on three separate test sets. That makes 36 rulers, and they land close together.</p>
 <div class="panel">
   <div class="legend"><span><i style="background:var(--same)"></i>anchors by Sonnet</span><span><i style="background:var(--diff)"></i>anchors by Haiku</span></div>
   <svg id="v-svg" viewBox="0 0 720 190" role="img" aria-label="Strip plot of 36 ruler correlations against the paper's result"></svg>
-  <p class="note">36 rulers, by test set. Redrawing the anchors moves the result by about 0.02. The best of them reaches 0.898 against the paper's 0.956. The widest uncertainty is the test set itself: resampling the 72 passages gives one ruler a range of about 0.78 to 0.91.</p>
+  <p class="note">36 rulers, by test set. Redrawing the anchors moves the result by about 0.02, and rulers built from the same generator point almost the same way (cosine 0.88 to 0.90). The widest uncertainty is the test set itself: resampling the 72 passages gives one ruler a range of about 0.78 to 0.91.</p>
 </div>
+<h3>What held up</h3>
 <div class="two">
-  <div class="card"><h3>What we ruled out</h3><p>Bad test passages (the judge rates them at 0.966). Too few anchors (the gain stops at six pairs per domain, and pooling 48 lands in the same place). A weak generator (a smaller model came out about level). Text length. Sampling luck.</p></div>
-  <div class="card"><h3>Still untested</h3><p>The paper's generator (Gemini), its exact wording for the level passages, and writing one pair per request instead of eight. Any of these could be the difference, and which one is still an open question.</p></div>
+  <div class="card"><h3>It carries to new domains</h3><p>Build the ruler from three domains and score the fourth, and it reaches 0.856, level with the 0.853 it gets when it has seen all four. You can write anchors for the domains you know and measure text from one you skipped.</p></div>
+  <div class="card"><h3>It beats the obvious shortcut</h3><p>Comparing each text to the concept's name, the first thing most people try, scores 0.216 on these passages. The ruler scores 0.853. The counterfactual pairs do the work: they cancel the topic and keep the concept.</p></div>
+  <div class="card"><h3>It's cheap to build</h3><p>Six anchor pairs per domain is enough; more pairs land in the same place. A smaller, cheaper model writes anchors that work about as well as a larger one's.</p></div>
+  <div class="card"><h3>It's sharp inside a domain</h3><p>Within any one domain the ruler tracks the intended level at 0.88 to 0.93. Scoring a text is one embedding and one dot product, and the same text gets the same score every time.</p></div>
 </div>
+<p>So where would you reach for one? Anywhere a model judge is too slow or too costly to run on everything. Rank a few hundred thousand documents by a concept and send the top slice to a judge. Watch a concept move across releases of the same docs with an instrument that stays fixed. Sort a queue so a person reads the strongest cases first. The ruler shines on order and on change within one domain; when you need an exact score compared across very different domains, pair it with a judge. (We measured the properties above; these jobs are where they point, and section 03 tries one on real documentation.)</p>
+<h3>The gap to the paper</h3>
+<p>The paper reports 0.956, level with its model judge. Our best ruler reaches 0.898, and a judge on our passages scores 0.966. We ruled out bad test passages, too few anchors, a weak generator, text length and sampling luck. Three things are still untested: the paper's generator (Gemini), its exact wording for the level passages, and writing one pair per request instead of eight.</p>
 <h3>Where our build differs from theirs</h3>
 <p>We used Claude to write the passages and OpenAI's <code>text-embedding-3-large</code> to embed them. <a href="https://spiritwriter.ai">spiritwriter</a> stores the passages, the ruler and a hash-chained record of what produced what as content-addressed shards, so a ruler's identifier names the exact instrument. And the judge prompt scores passages by an id, because asked for a plain list a model will sometimes return twenty scores for eighteen passages.</p>
 </section>
