@@ -45,6 +45,23 @@ requested intensity levels 0.0 to 1.0. It reads `ANTHROPIC_API_KEY` and
 `SEMANTIC_RULER_KEYCHAIN_SERVICE` to use another. Generated text is kept in
 `data/store`, so later runs reuse it unless you pass `--regenerate`.
 
+To run on Amazon Bedrock with your own AWS account instead, no API keys needed:
+
+```bash
+pip install -e ".[bedrock]"
+export AWS_PROFILE=<your-profile> AWS_REGION=us-east-1 AWS_DEFAULT_REGION=us-east-1
+export CLAUDE_CODE_USE_BEDROCK=1   # Claude generation through Bedrock
+semantic-ruler --embedder bedrock --model <bedrock-claude-model-id>
+```
+
+`--embedder bedrock` defaults to `cohere.embed-english-v3`. Pass
+`--embedding-model` to use another Bedrock embedding model. The scores depend
+on the embedder, so don't compare them directly with the OpenAI results below.
+On the stored Case Study I texts (one run each, 2026-11-24), the ruler's
+Pearson r was 0.820 with Cohere English v3, 0.813 with Cohere v4
+(`cohere.embed-v4:0`) and 0.646 with Titan Text v2
+(`amazon.titan-embed-text-v2:0`).
+
 ## Results so far (2026-11-21)
 
 One live run of Case Study I: `claude-sonnet-5-5` as generator and judge,
