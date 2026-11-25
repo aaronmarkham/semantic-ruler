@@ -24,6 +24,8 @@ PAGES = [
      "Measuring abstract concepts with a calibrated direction in embedding space, and how often AWS how-to pages send the reader on a detour."),
     ("adventure.html", "trail.json", "detour-map.html",
      "Walk 219 AWS how-to pages as a map: where the prerequisites are, which links deliver, and which are dead ends."),
+    ("drift.html", "drift-explainer.json", "drift.html",
+     "What a fact store can't hold: measuring semantic drift when documentation is distilled to atomic facts and regenerated."),
 ]
 # The fragments link to each other's claude.ai copies; on the site they link to the neighbouring file.
 LINKS = {

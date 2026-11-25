@@ -242,3 +242,80 @@ def ruler_from_shard(shard: MemoryShard) -> Ruler:
 def load_ruler(store: ShardStore, concept: Concept, embedding_model: str) -> Ruler | None:
     shard = store.resolve_ref(ruler_ref(concept, embedding_model))
     return ruler_from_shard(shard) if shard else None
+
+
+# --- fact graphs (drift evaluation) ------------------------------------------
+
+FACT_GRAPH_ORIGIN = "factgraph"
+
+
+def _fact_graph_ref(source_hash: str) -> str:
+    return f"factgraph:{source_hash}"
+
+
+def save_fact_graph(
+    store: ShardStore,
+    source_hash: str,
+    graph: "FactGraph",
+    *,
+    label: str = "",
+    trace_ref: str | None = None,
+) -> ShardRef:
+    """Persist a FactGraph keyed by the hash of its source text."""
+    from .factgraph import FactGraph  # noqa: F401 — imported for type check only
+
+    atoms = []
+    for fact in graph.facts:
+        atoms.append(ShardAtom(
+            text=fact.text,
+            kind=AtomKind.FACT,
+            entity=f"fact:{fact.fact_id}",
+            key="text",
+        ))
+    for i, edge in enumerate(graph.edges):
+        atoms.append(ShardAtom(
+            text=f"{edge.kind.value}: [{', '.join(edge.antecedents)}] → {edge.consequent}",
+            kind=AtomKind.FACT,
+            entity=f"edge:{i:04d}",
+            key="edge",
+            value=json.dumps({
+                "kind": edge.kind.value,
+                "antecedents": edge.antecedents,
+                "consequent": edge.consequent,
+                "confidence": edge.confidence,
+            }),
+        ))
+    shard = MemoryShard(
+        atoms=atoms,
+        scope=_fact_graph_ref(source_hash),
+        origin=FACT_GRAPH_ORIGIN,
+        decay_class=DecayClass.PERMANENT,
+        tags=[label] if label else [],
+        meta={"n_facts": len(graph.facts), "n_edges": len(graph.edges)},
+        trace_ref=trace_ref,
+    )
+    ref = store.put(shard)
+    store.set_ref(_fact_graph_ref(source_hash), ref.shard_id)
+    return ref
+
+
+def load_fact_graph(store: ShardStore, source_hash: str) -> "FactGraph | None":
+    """Load a stored FactGraph by source hash, or None if not found."""
+    from .factgraph import EdgeKind, FactAtom, FactEdge, FactGraph
+
+    shard = store.resolve_ref(_fact_graph_ref(source_hash))
+    if shard is None:
+        return None
+    facts, edges = [], []
+    for atom in sorted(shard.atoms, key=lambda a: a.entity):
+        if atom.key == "text":
+            facts.append(FactAtom(text=atom.text, fact_id=atom.entity.split(":", 1)[1]))
+        elif atom.key == "edge":
+            d = json.loads(atom.value)
+            edges.append(FactEdge(
+                kind=EdgeKind(d["kind"]),
+                antecedents=d["antecedents"],
+                consequent=d["consequent"],
+                confidence=float(d.get("confidence", 1.0)),
+            ))
+    return FactGraph(facts=facts, edges=edges)
