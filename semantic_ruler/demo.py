@@ -364,7 +364,10 @@ def main(argv: list[str] | None = None) -> int:
             from .llm_bedrock import DEFAULT_BEDROCK_MODEL, BedrockLLMProvider
 
             model = args.model or DEFAULT_BEDROCK_MODEL
-            llm = BedrockLLMProvider(model, region=args.aws_region)
+            try:
+                llm = BedrockLLMProvider(model, region=args.aws_region)
+            except ValueError as e:
+                ap.error(str(e))
         else:
             from spiritwriter.llm import AnthropicProvider
             from spiritwriter.secrets import configure

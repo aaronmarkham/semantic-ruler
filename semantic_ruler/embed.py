@@ -109,6 +109,10 @@ class BedrockEmbedder:
     """
 
     COHERE_BATCH = 96  # Cohere Embed's per-request text limit on Bedrock
+    # Bedrock rejects longer texts for Cohere Embed v3 before the model sees
+    # them (ValidationException "expected maxLength: 2048"), whatever
+    # `truncate` says. Cohere v4 accepts much longer input.
+    COHERE_V3_MAX_CHARS = 2048
 
     def __init__(
         self,
@@ -142,7 +146,22 @@ class BedrockEmbedder:
         )
         return json.loads(resp["body"].read())
 
+    def _check_lengths(self, texts: Sequence[str]) -> None:
+        if "cohere.embed" not in self.model or "-v3" not in self.model:
+            return
+        too_long = [i for i, t in enumerate(texts) if len(t) > self.COHERE_V3_MAX_CHARS]
+        if too_long:
+            i = too_long[0]
+            raise ValueError(
+                f"{len(too_long)} text(s) exceed {self.model}'s {self.COHERE_V3_MAX_CHARS}-character "
+                f"limit on Bedrock; first is index {i} ({len(texts[i])} chars: {texts[i][:60]!r}...). "
+                "Shorten them or use --embedding-model cohere.embed-v4:0"
+            )
+
     def embed(self, texts: Sequence[str]) -> np.ndarray:
+        if not texts:
+            return np.zeros((0, self.dimensions))
+        self._check_lengths(texts)
         rows: list[list[float]] = []
         if "cohere.embed" in self.model:
             for i in range(0, len(texts), self.COHERE_BATCH):

@@ -58,7 +58,9 @@ semantic-ruler --llm bedrock --embedder bedrock
 `--llm bedrock` calls Claude through the Bedrock Converse API and defaults to
 the `us.anthropic.claude-sonnet-5-5` inference profile; pass `--model` for
 another. `--embedder bedrock` defaults to `cohere.embed-english-v3`. Pass
-`--embedding-model` to use another Bedrock embedding model. The scores depend
+`--embedding-model` to use another Bedrock embedding model. Bedrock rejects
+texts over 2,048 characters for Cohere v3, so the embedder stops with the index
+of the first one; `cohere.embed-v4:0` takes longer texts. The scores depend
 on the embedder, so don't compare them directly with the OpenAI results below.
 On the stored Case Study I texts (one run each, 2026-11-24), the ruler's
 Pearson r was 0.820 with Cohere English v3, 0.813 with Cohere v4

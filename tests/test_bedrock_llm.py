@@ -55,3 +55,51 @@ def test_query_json_does_not_retry_provider_errors():
     with pytest.raises(ValueError, match="ANTHROPIC_API_KEY"):
         asyncio.run(_query_json(Broken(), "p", None))
     assert len(calls) == 1
+
+
+def test_system_prompt_goes_in_the_system_field():
+    calls = []
+
+    class Fake(FakeConverse):
+        def converse(self, **request):
+            calls.append(request)
+            return super().converse(request["modelId"], request["messages"], request["inferenceConfig"])
+
+    asyncio.run(BedrockLLMProvider(client=Fake()).query("hi", system_prompt="be brief"))
+    assert calls[0]["system"] == [{"text": "be brief"}]
+    assert calls[0]["messages"] == [{"role": "user", "content": [{"text": "hi"}]}]
+
+
+class FlakyConverse(FakeConverse):
+    """First reply empty, second cut off at max_tokens, third good."""
+
+    def __init__(self):
+        super().__init__()
+        self.replies = [("", "end_turn"), ('{"ok": ', "max_tokens"), ('{"ok": 2}', "end_turn")]
+
+    def converse(self, modelId, messages, inferenceConfig):
+        text, stop = self.replies.pop(0)
+        self.calls.append(modelId)
+        return {"output": {"message": {"content": [{"text": text}]}}, "stopReason": stop, "usage": {}}
+
+
+def test_query_json_retries_empty_and_truncated_replies():
+    fake = FlakyConverse()
+    assert asyncio.run(_query_json(BedrockLLMProvider(client=fake), "p", None)) == {"ok": 2}
+    assert len(fake.calls) == 3
+
+
+def test_rejects_anthropic_api_model_id():
+    with pytest.raises(ValueError, match="us.anthropic.claude-sonnet-5-5"):
+        BedrockLLMProvider("claude-sonnet-5-5", client=FakeConverse())
+    with pytest.raises(ValueError):
+        asyncio.run(BedrockLLMProvider(client=FakeConverse()).query("hi", model="claude-haiku-5-5"))
+
+
+def test_cli_rejects_anthropic_model_id_with_llm_bedrock(capsys):
+    from semantic_ruler.demo import main
+
+    with pytest.raises(SystemExit) as exc:
+        main(["--llm", "bedrock", "--model", "claude-sonnet-5-5", "--no-plot"])
+    assert exc.value.code == 2
+    assert "not a Bedrock model ID" in capsys.readouterr().err

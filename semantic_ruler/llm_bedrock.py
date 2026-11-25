@@ -17,6 +17,18 @@ from .embed import bedrock_runtime_client
 DEFAULT_BEDROCK_MODEL = "us.anthropic.claude-sonnet-5-5"
 
 
+class RetryableReply(RuntimeError):
+    """A reply worth asking for again: empty, or cut off at the token limit."""
+
+
+def check_bedrock_model_id(model: str) -> None:
+    """Bedrock IDs look like `us.anthropic.claude-...`, `anthropic.claude-...` or an ARN."""
+    if "." not in model and not model.startswith("arn:"):
+        raise ValueError(
+            f"{model!r} is not a Bedrock model ID; did you mean 'us.anthropic.{model}'?"
+        )
+
+
 class BedrockLLMProvider(LLMProvider):
     def __init__(
         self,
@@ -25,6 +37,7 @@ class BedrockLLMProvider(LLMProvider):
         max_tokens: int = 8192,
         client=None,
     ):
+        check_bedrock_model_id(model)
         self.model = model
         self.max_tokens = max_tokens
         self._region = region
@@ -36,17 +49,25 @@ class BedrockLLMProvider(LLMProvider):
             self._client = bedrock_runtime_client(self._region)
         return self._client
 
-    def _converse(self, prompt: str, model: str) -> tuple[str, dict[str, int]]:
-        resp = self.client.converse(
-            modelId=model,
-            messages=[{"role": "user", "content": [{"text": prompt}]}],
-            inferenceConfig={"maxTokens": self.max_tokens},
-        )
+    def _converse(
+        self, prompt: str, model: str, system_prompt: str | None = None
+    ) -> tuple[str, dict[str, int]]:
+        request: dict[str, Any] = {
+            "modelId": model,
+            "messages": [{"role": "user", "content": [{"text": prompt}]}],
+            "inferenceConfig": {"maxTokens": self.max_tokens},
+        }
+        if system_prompt:
+            request["system"] = [{"text": system_prompt}]
+        resp = self.client.converse(**request)
+        stop = resp.get("stopReason")
         text = "".join(
             block.get("text", "") for block in resp["output"]["message"]["content"]
         ).strip()
+        if stop == "max_tokens":
+            raise RetryableReply(f"Bedrock reply cut off at maxTokens={self.max_tokens}")
         if not text:
-            raise RuntimeError(f"Bedrock returned no text (stopReason={resp.get('stopReason')})")
+            raise RetryableReply(f"Bedrock returned no text (stopReason={stop})")
         u = resp.get("usage", {})
         usage = {
             "input_tokens": u.get("inputTokens", 0),
@@ -56,11 +77,10 @@ class BedrockLLMProvider(LLMProvider):
         return text, usage
 
     async def query(self, prompt: str, *, return_usage: bool = False, **kwargs: Any) -> Any:
-        system_prompt = kwargs.get("system_prompt")
-        if system_prompt:
-            prompt = f"{system_prompt}\n\n{prompt}"
+        model = kwargs.get("model") or self.model
+        check_bedrock_model_id(model)
         text, usage = await asyncio.to_thread(
-            self._converse, prompt, kwargs.get("model") or self.model
+            self._converse, prompt, model, kwargs.get("system_prompt")
         )
         return (text, usage) if return_usage else text
 
