@@ -98,17 +98,20 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
 <div id="tip" role="status"></div>
 <div class="col">
 
-<p class="eyebrow">On a paper, a failed replication, and what the detour turned up</p>
-<h1>A ruler for meaning,<br><em>and where it bent.</em></h1>
-<p class="lede">A 2026 paper says you can measure an abstract idea, such as how sustainable a factory process is, by laying a ruler through the space where a language model stores meaning. We rebuilt it, missed its headline number, found out why we could not close the gap, and then took the method somewhere its authors never pointed it: cloud documentation, and the moment a how-to guide sends you off to do something else first.</p>
-<p class="note">Every chart below runs on the project's measured output. Move the controls; the numbers are recomputed in your browser.</p>
+<p class="eyebrow">On <em>Semantic rulers</em>, a rebuild, and what the detour turned up</p>
+<h1>A ruler for meaning,<br><em>and where it took us.</em></h1>
+<p class="lede">In <a href="https://doi.org/10.1016/j.array.2026.101249"><em>Semantic rulers: Continuous measurement of abstract concepts in LLM embedding spaces</em></a> (Array, 2026), J. Abonyi and R. Tombor show how to measure an abstract idea, such as how sustainable a factory process is, by laying a ruler through the space where a language model stores meaning. Scoring a text then costs one embedding and one dot product.</p>
+<p class="lede">We rebuilt it on our own stack and got a ruler that works, holds steady across redraws, and carries to domains it has yet to see. Then we took the method somewhere new: cloud documentation, and the moment a how-to guide sends you off to do something else first.</p>
+<p class="note">Every chart below runs on the project's measured output. Move the controls and the numbers recompute in your browser.</p>
 
 <section>
 <p class="eyebrow">01 · The paper</p>
 <h2>Two texts that differ in <em>one thing only</em></h2>
-<p>Abonyi and Tombor's idea is short. Write pairs of passages that are identical except for the concept you care about: the same part, the same machine, one version wasteful and one frugal. Embed both. Subtract. What is left is an arrow pointing from "less" to "more". Average the arrows across a few domains and you have a direction. Project any new text onto it, rescale between the 5th and 95th percentile of your anchor texts, and you get a score from 0 to 1.</p>
+<p>Ask how sustainable a process description is, or how urgent a support ticket is, and the usual answer is to have a language model read each text and rate it. That works, and it costs a model call per text, every time you ask. Abonyi and Tombor's paper offers an instrument in its place: build a ruler once, then measure as many texts as you like for the price of an embedding.</p>
+<p>The idea is short. Write pairs of passages that match in everything but the concept you care about: the same part, the same machine, one version wasteful and one frugal. Embed both. Subtract. What's left is an arrow pointing from "less" to "more". Average the arrows across a few domains and you have a direction. Project any new text onto it, rescale between the 5th and 95th percentile of your anchor texts, and you get a score from 0 to 1.</p>
+<p>The paper keeps one more thing separate, and it's a good habit: the ruler measures, and a second, explicit function decides what a score is worth to you. Whether 0.7 is good enough is your call, written down where anyone can read it.</p>
 <p>The test is whether that score tracks reality. They asked a model to write passages at six known levels, 0.0 to 1.0, and checked how well the ruler recovered the level. They report a correlation of 0.956, level with a language model reading each text and rating it.</p>
-<p>Here is ours, on 72 test passages across four manufacturing domains. Each dot is one passage: where it was written to be, against where the ruler put it.</p>
+<p>Here is our rebuild of that first case study, on 72 test passages across four manufacturing domains. Each dot is one passage: where it was written to be, against where the ruler put it.</p>
 
 <div class="panel" id="ruler">
   <div class="controls">
@@ -127,32 +130,38 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
   <p class="note" id="r-off"></p>
 </div>
 
-<p>Turn domains off and on. Built from a single domain the ruler still works on the other three, which is the paper's central claim and it holds. What does not hold is the size: with everything on, we get 0.853 where they got 0.956.</p>
-<p>The colours show where the error lives. The ruler reads one whole domain high and another low. Inside any one domain the points line up well (0.88 to 0.93); it is the offset <em>between</em> domains that costs the correlation. The judge, shown as rings, has no such offset.</p>
+<p>Turn domains off and on. Built from a single domain, the ruler still works on the other three. That's the paper's central claim, and it holds: with everything on, the ruler recovers the intended level at 0.853.</p>
+<p>The colours show where the remaining error lives. The ruler reads one whole domain high and another low. Inside any one domain the points line up well (0.88 to 0.93); the offset <em>between</em> domains is what costs the correlation. The judge, shown as rings, reads every domain level.</p>
 </section>
 
 <section>
-<p class="eyebrow">02 · Where we diverged</p>
-<h2>The gap is real, and <em>it is not luck</em></h2>
-<p>A single run proves little, so we redrew the anchor pairs five more times with each of two generator models and scored every ruler on three separate test sets. That is 36 rulers.</p>
+<p class="eyebrow">02 · What it's good for</p>
+<h2>A cheap, steady <em>instrument</em></h2>
+<p>One run is thin evidence, so we redrew the anchor pairs five more times with each of two generator models and scored every ruler on three separate test sets. That makes 36 rulers, and they land close together.</p>
 <div class="panel">
   <div class="legend"><span><i style="background:var(--same)"></i>anchors by Sonnet</span><span><i style="background:var(--diff)"></i>anchors by Haiku</span></div>
   <svg id="v-svg" viewBox="0 0 720 190" role="img" aria-label="Strip plot of 36 ruler correlations against the paper's result"></svg>
-  <p class="note">36 rulers, by test set. Redrawing the anchors moves the result by about 0.02. None reaches the paper's 0.956. The widest uncertainty is the test set itself: resampling the 72 passages gives one ruler a range of about 0.78 to 0.91.</p>
+  <p class="note">36 rulers, by test set. Redrawing the anchors moves the result by about 0.02, and rulers built from the same generator point almost the same way (cosine 0.88 to 0.90). The widest uncertainty is the test set itself: resampling the 72 passages gives one ruler a range of about 0.78 to 0.91.</p>
 </div>
+<h3>What held up</h3>
 <div class="two">
-  <div class="card"><h3>What we ruled out</h3><p>Bad test passages (the judge rates them at 0.966). Too few anchors (no gain past six pairs per domain; pooling 48 changed nothing). A weak generator (a smaller model did no better). Text length. Sampling luck.</p></div>
-  <div class="card"><h3>What we did not test</h3><p>The paper's generator (Gemini), its exact wording for the level passages, and writing one pair per request instead of eight. Any of these could be the difference. We do not know which.</p></div>
+  <div class="card"><h3>It carries to new domains</h3><p>Build the ruler from three domains and score the fourth, and it reaches 0.856, level with the 0.853 it gets when it has seen all four. You can write anchors for the domains you know and measure text from one you skipped.</p></div>
+  <div class="card"><h3>It beats the obvious shortcut</h3><p>Comparing each text to the concept's name, the first thing most people try, scores 0.216 on these passages. The ruler scores 0.853. The counterfactual pairs do the work: they cancel the topic and keep the concept.</p></div>
+  <div class="card"><h3>It's cheap to build</h3><p>Six anchor pairs per domain is enough; more pairs land in the same place. A smaller, cheaper model writes anchors that work about as well as a larger one's.</p></div>
+  <div class="card"><h3>It's sharp inside a domain</h3><p>Within any one domain the ruler tracks the intended level at 0.88 to 0.93. Scoring a text is one embedding and one dot product, and the same text gets the same score every time.</p></div>
 </div>
+<p>So where would you reach for one? Anywhere a model judge is too slow or too costly to run on everything. Rank a few hundred thousand documents by a concept and send the top slice to a judge. Watch a concept move across releases of the same docs with an instrument that stays fixed. Sort a queue so a person reads the strongest cases first. The ruler shines on order and on change within one domain; when you need an exact score compared across very different domains, pair it with a judge. (We measured the properties above; these jobs are where they point, and section 03 tries one on real documentation.)</p>
+<h3>The gap to the paper</h3>
+<p>The paper reports 0.956, level with its model judge. Our best ruler reaches 0.898, and a judge on our passages scores 0.966. We ruled out bad test passages, too few anchors, a weak generator, text length and sampling luck. Three things are still untested: the paper's generator (Gemini), its exact wording for the level passages, and writing one pair per request instead of eight.</p>
 <h3>Where our build differs from theirs</h3>
-<p>We used Claude to write the passages and OpenAI's <code>text-embedding-3-large</code> to embed them. Passages, the ruler and a hash-chained record of what produced what are stored as content-addressed shards in <a href="https://spiritwriter.ai">spiritwriter</a>, so a ruler's identifier names the exact instrument. And the judge prompt scores passages by an id, because asked for a plain list a model will sometimes return twenty scores for eighteen passages.</p>
+<p>We used Claude to write the passages and OpenAI's <code>text-embedding-3-large</code> to embed them. <a href="https://spiritwriter.ai">spiritwriter</a> stores the passages, the ruler and a hash-chained record of what produced what as content-addressed shards, so a ruler's identifier names the exact instrument. And the judge prompt scores passages by an id, because asked for a plain list a model will sometimes return twenty scores for eighteen passages.</p>
 </section>
 
 <section>
 <p class="eyebrow">03 · A different question</p>
 <h2>Same service, <em>different facts</em></h2>
-<p>The theory that started the second half: across AWS, "give this service access to a bucket" reads almost the same everywhere, and what differs is the part that bites, which is how access is actually granted. Sometimes the bucket's own policy names the service. Sometimes you create a role and the permissions live there. If a ruler can isolate one concept from everything else in a passage, perhaps it can pull that difference out of documentation that otherwise looks alike.</p>
-<p>The ground truth here involves no model at all. Each doc section's label comes from its policy JSON: who is named as the principal. The text that gets embedded is the prose with the code stripped out. We collected 375 sections from 78 services.</p>
+<p>The theory that started the second half: across AWS, "give this service access to a bucket" reads almost the same everywhere, and what differs is the part that bites, which is how access is actually granted. Sometimes the bucket's own policy names the service. Sometimes you create a role and the permissions live there. If a ruler can isolate one concept from everything else in a passage, can it pull that difference out of documentation that otherwise looks alike?</p>
+<p>The ground truth here is mechanical. Each doc section's label is read from its policy JSON: who is named as the principal. The text that gets embedded is the prose with the code stripped out. We collected 375 sections from 78 services.</p>
 <p>Each row below is one service that documents it both ways. A direction is doing its job when the violet dots sit to the right of the amber ones.</p>
 
 <div class="panel" id="intents">
@@ -171,16 +180,16 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
 </div>
 
 <p>Three things came out of this, and two of them corrected what we expected.</p>
-<p><strong>Our guesses about plain similarity were wrong twice.</strong> We expected shared topic to swamp the mechanism entirely. On the first 23 pages it did not: a page's nearest neighbour had the same mechanism 87% of the time. Then, on 85 sections, a section's closest match was usually the same service with <em>different</em> facts (75%), which looked like the theory after all. On 375 sections that fell to 45%. Plain similarity carries both signals, and small samples told us whichever story we were ready to hear.</p>
+<p><strong>Our guesses about plain similarity were wrong twice.</strong> We expected shared topic to swamp the mechanism entirely. On the first 23 pages the mechanism came through anyway: a page's nearest neighbour had the same mechanism 87% of the time. Then, on 85 sections, a section's closest match was usually the same service with <em>different</em> facts (75%), which looked like the theory after all. On 375 sections that fell to 45%. Plain similarity carries both signals, and small samples told us whichever story we were ready to hear.</p>
 <p><strong>A ruler from invented pairs works, with wide error bars.</strong> Built from passages about fictional services, it orders real sections correctly about 84% of the time, averaged over five anchor draws (95% interval 71% to 95%). The chart shows one draw, which happens to be a good one.</p>
-<p><strong>The best ruler was already in the docs.</strong> Take the real sections of every <em>other</em> service, subtract one mechanism from the other, average, and use that on the service you held out. It reaches 0.99 for service against role and 0.93 for account against role. The difference between "the bucket policy names the service" and "a role carries the permissions" points the same way across AWS, and you do not need a generator to find it.</p>
-<p>And a model that simply reads each section gets them all right. The ruler's advantage is cost and repeatability, not accuracy.</p>
+<p><strong>The best ruler was already in the docs.</strong> Take the real sections of every <em>other</em> service, subtract one mechanism from the other, average, and use that on the service you held out. It reaches 0.99 for service against role and 0.93 for account against role. The difference between "the bucket policy names the service" and "a role carries the permissions" points the same way across AWS, and the docs themselves are enough to find it.</p>
+<p>A model that reads each section gets every one right. What the ruler offers is cost and repeatability: one embedding and one dot product, with the same answer every time.</p>
 </section>
 
 <section>
 <p class="eyebrow">04 · Order</p>
 <h2>One task, <em>six pages open</em></h2>
-<p>The second idea came from experience, not from the paper. You set out to turn on logging for a web firewall. The procedure needs a destination. The destination page needs a bucket. The bucket needs a policy. You started with one job and now have several lines of reading open, none finished.</p>
+<p>The second idea came from experience. You set out to turn on logging for a web firewall. The procedure needs a destination. The destination page needs a bucket. The bucket needs a policy. You started with one job and now have several lines of reading open, all of them half done.</p>
 <p>We traced that exact job through the AWS docs by listing each page's prerequisites and following every one whose steps live on another page. Follow it yourself.</p>
 
 <div class="panel" id="chain">
@@ -203,8 +212,8 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
 <section>
 <p class="eyebrow">05 · Detours</p>
 <h2>Springing it on the reader</h2>
-<p>To count this across many pages it needs a definition. A prerequisite is a <strong>detour</strong> when two things are true: the page does not mention it until the point where you need it (or later, or never), and the page gives no steps for it. Either you are <em>sent elsewhere</em> by a link, or you are <em>left alone</em> with nothing.</p>
-<p>A model read 281 AWS pages and listed each one's prerequisites, where each is first needed, where it is first mentioned, and where its steps are. 219 of the pages are procedures, with 842 prerequisites between them. The definition has judgement calls in it, so they are yours to change.</p>
+<p>Counting this across many pages takes a definition. A prerequisite is a <strong>detour</strong> when two things are true: the page first mentions it at the point where you need it (or later, or never), and the steps for it live somewhere else or nowhere. Either a link <em>sends you elsewhere</em>, or you're <em>left alone</em> to work it out.</p>
+<p>A model read 281 AWS pages and listed each one's prerequisites, where each is first needed, where it is first mentioned, and where its steps are. 219 of the pages are procedures, with 842 prerequisites between them. The definition has judgement calls in it, so they're yours to change.</p>
 
 <div class="panel" id="detours">
   <div class="controls">
@@ -212,7 +221,7 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
     <div class="ctl"><span>Pages whose access is granted by</span><div class="seg" id="d-mech"></div></div>
   </div>
   <div class="chk" style="margin-bottom:14px">
-    <label><input type="checkbox" id="d-onpage" checked> steps on the page are not a detour</label>
+    <label><input type="checkbox" id="d-onpage" checked> having the steps on the page counts as fair</label>
     <label><input type="checkbox" id="d-doubt"> drop the ones our checks flag as doubtful</label>
   </div>
   <div class="tiles">
@@ -227,14 +236,14 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
 </div>
 
 <p>At the default setting 21% of prerequisites are detours and close to half of all procedure pages have at least one. Ask for more warning and the number climbs fast, because most late mentions are <em>very</em> late: 128 of the 181 are first mentioned at the exact step that needs them.</p>
-<p>At the default setting one row is empty. In 58 cases a page needed a bucket policy, and not one was a detour: the policy is on the page, or the page says so in advance. The things readers are left alone with are the ones writers assume: a bucket, a key, a command-line tool.</p>
-<p>The mechanism from section 03 shows up here too. Switch between pages that grant access through a service principal and pages that use an identity policy. On pages we had not looked at before forming the idea, service-principal pages sent the reader away for a permission in 2 of 21 cases; identity-policy pages in 34 of 98.</p>
+<p>At the default setting one row is empty. In 58 cases a page needed a bucket policy, and all 58 were handled: the policy is on the page, or the page says so in advance. Writers leave readers alone with the things they assume: a bucket, a key, a command-line tool.</p>
+<p>The mechanism from section 03 shows up here too. Switch between pages that grant access through a service principal and pages that use an identity policy. On pages we first opened after forming the idea, service-principal pages sent the reader away for a permission in 2 of 21 cases; identity-policy pages in 34 of 98.</p>
 </section>
 
 <section>
 <p class="eyebrow">06 · Dead ends</p>
-<h2>When the link <em>does not deliver</em></h2>
-<p>Being sent elsewhere is tolerable if the other page has what you need. So we followed all 254 links that a procedure gives for a prerequisite's steps, and asked of each landing page one question: does it give steps for that specific thing?</p>
+<h2>Does the link <em>deliver?</em></h2>
+<p>Being sent elsewhere is fine when the other page has what you need. So we followed all 254 links that a procedure gives for a prerequisite's steps, and asked of each landing page one question: does it give steps for that specific thing?</p>
 
 <div class="panel" id="dead">
   <div class="chk" style="margin-bottom:14px">
@@ -250,21 +259,21 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
     <div class="tile ref"><b>98%</b><span>Agreement between two runs</span></div>
   </div>
 </div>
-<p>More than a third of the time the link does not get you to steps. Usually you land on a page that explains the concept, or a hub that lists more links. Four of the 197 distinct links point at pages that no longer exist and now redirect to a guide's front page, including the bucket-creation link on the firewall logging page from section 04.</p>
-<p>Following one more link gets about half of the pass-alongs to real steps. A fifth of the time, two pages in, you still have no steps.</p>
+<p>More than a third of the time the link stops short of steps. Usually you land on a page that explains the concept, or a hub that lists more links. Four of the 197 distinct links point at retired pages that now redirect to a guide's front page, including the bucket-creation link on the firewall logging page from section 04.</p>
+<p>Following one more link gets about half of the pass-alongs to real steps. A fifth of the time, two pages in, you're still looking for steps.</p>
 </section>
 
 <section>
-<p class="eyebrow">07 · What did not hold</p>
+<p class="eyebrow">07 · What fell through</p>
 <h2>Four ideas the data <em>turned down</em></h2>
 <div class="panel">
   <svg id="j-svg" viewBox="0 0 720 260" role="img" aria-label="Scatter of mechanism mismatch against permission detours"></svg>
   <p class="note" id="j-note"></p>
 </div>
 <div class="two">
-  <div class="card"><h3>Surprises cluster where a page differs from its look-alikes</h3><p>The idea that joined both halves. For each page we found its five most similar pages in other services and measured how far its mechanism differs from theirs. No relationship with detours, by the facts or by a ruler. The chart above is that null result.</p></div>
-  <div class="card"><h3>Pages with several mechanisms send you away more</h3><p>It appeared on the first 48 pages (p = 0.01) and did not survive the next 167 (39% against 29%, p = 0.27). It was one of sixteen things tested on the first sample.</p></div>
-  <div class="card"><h3>Surprise rates by type, from 60 pages</h3><p>Identity policies came out at 34%, 32% and 15% in three reads of the same pages. Too few pages. With 281 the three reads agree to within a few points.</p></div>
+  <div class="card"><h3>Surprises cluster where a page differs from its look-alikes</h3><p>The idea that joined both halves. For each page we found its five most similar pages in other services and measured how far its mechanism differs from theirs. Detours came out unrelated, by the facts or by a ruler. The chart above is that flat result.</p></div>
+  <div class="card"><h3>Pages with several mechanisms send you away more</h3><p>It appeared on the first 48 pages (p = 0.01) and faded on the next 167 (39% against 29%, p = 0.27). It was one of sixteen things tested on the first sample.</p></div>
+  <div class="card"><h3>Surprise rates by type, from 60 pages</h3><p>Identity policies came out at 34%, 32% and 15% in three reads of the same pages. Sixty pages was too small a sample. With 281 the three reads agree to within a few points.</p></div>
   <div class="card"><h3>"Mentioned after the procedure begins"</h3><p>An earlier way to measure lateness. It collapsed on inspection: the reading model often marks the top of the page as where the procedure starts, which makes everything late.</p></div>
 </div>
 </section>
@@ -272,7 +281,7 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
 <section>
 <p class="eyebrow">08 · How far to trust it</p>
 <h2>A reading, <em>checked where it can be</em></h2>
-<p>Every prerequisite in sections 04 to 06 comes from a language model reading a page. That is a reading and not ground truth. What we can say about it:</p>
+<p>Every prerequisite in sections 04 to 06 comes from a language model reading a page. That makes each one a reading, a step short of ground truth. Here's what we can say about it:</p>
 <div class="tw"><table>
 <thead><tr><th>Measured on all 281 pages</th><th class="n">Read 1</th><th class="n">Read 2</th><th class="n">Read 3</th></tr></thead>
 <tbody>
@@ -282,15 +291,15 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
 <tr><td>No steps at all</td><td class="n">41%</td><td class="n">42%</td><td class="n">42%</td></tr>
 </tbody></table></div>
 <p>Three independent reads agree on the totals. Item by item, two reads agree on where the steps are 95% of the time and on whether something is a surprise 92% of the time; 15% of prerequisites are found by one read and missed by the other.</p>
-<p>Agreement is not correctness. A blind sheet of 60 prerequisites, half of them detours by this measure and half not, is being labelled by a person as this is written. Until that is scored, treat the rates above as repeatable and unvalidated.</p>
-<p class="note">Other limits. The pages were chosen because their policy JSON grants S3 access, so permission-heavy jobs are over-represented. The dead-end check counts a partial answer as success unless you tick the box. The page parser understands AWS documentation and nothing else.</p>
+<p>Agreement shows the reading repeats. Whether it's right takes a person. Someone is labelling a blind sheet of 60 prerequisites by hand as this is written, half of them detours by this measure and half clean. Until that score is in, treat the rates above as repeatable and still awaiting validation.</p>
+<p class="note">Other limits. We chose the pages because their policy JSON grants S3 access, so permission-heavy jobs are over-represented. The dead-end check counts a partial answer as success until you tick the box. The page parser is built for AWS documentation only.</p>
 </section>
 
 <footer>
 <p>J. Abonyi and R. Tombor, "Semantic rulers: Continuous measurement of abstract concepts in LLM embedding spaces", Array 32 (2026) 101249.</p>
 <p>The detour findings as a map you can walk, page by page: the companion page <a href="detour-map.html"><em>The Detour Map</em></a>.</p>
 <p>Code and results: the <a href="https://github.com/aaronmarkham/semantic-ruler">semantic-ruler repository</a>, <code>experiments/</code> and <code>semantic_ruler/ordering.py</code>. Built on spiritwriter-core.</p>
-<p>The ruler is recomputed live from stored projections of each passage onto each domain's direction. Section 03 uses one anchor draw of five. Sections 05 and 06 use the first of the repeated reads. Nothing is staged.</p>
+<p>The ruler is recomputed live from stored projections of each passage onto each domain's direction. Section 03 uses one anchor draw of five. Sections 05 and 06 use the first of the repeated reads. Every number is measured output.</p>
 </footer>
 </div>
 
@@ -359,7 +368,7 @@ const BC = ["--b1", "--b2", "--b3", "--b4"].map(css);
     $("r-qv").textContent = `${st.q} and ${100 - st.q}`;
     const off = R.blocks.map((n, b) => { const d = mean(R.levels.map((x, i) => x.b === b ? p[i] - x.lam : null).filter(v => v != null)); return `${n} ${d >= 0 ? "+" : "−"}${Math.abs(d).toFixed(2)}`; });
     const used = st.on.filter(Boolean).length;
-    $("r-off").textContent = `Mean reading above or below the intended level, by domain: ${off.join(" · ")}.` + (used < 4 ? ` Direction built from ${used} of 4 domains; faded dots are domains it never saw.` : "");
+    $("r-off").textContent = `Mean reading above or below the intended level, by domain: ${off.join(" · ")}.` + (used < 4 ? ` Direction built from ${used} of 4 domains; faded dots are the domains held out.` : "");
   }
   draw();
 }
@@ -400,7 +409,7 @@ const BC = ["--b1", "--b2", "--b3", "--b4"].map(css);
         hover(c, tipLines(name, NAMES[p.pos ? C.pos : C.neg], p.h)); }); });
     S("text", { x: L, y: Hh - 4 }, svg, "← lower"); S("text", { x: L + W, y: Hh - 4, "text-anchor": "end" }, svg, "higher →"); S("text", { x: L + W + 12, y: Hh - 4 }, svg, "correct");
     $("i-acc").textContent = mean(accs).toFixed(2); $("i-n").textContent = n;
-    $("i-note").textContent = { raw: "Generic similarity here is each section's closeness to the centre of the whole corpus: a direction that knows nothing about permissions. 0.50 is chance.",
+    $("i-note").textContent = { raw: "Generic similarity here is each section's closeness to the centre of the whole corpus: a direction blind to permissions. 0.50 is chance.",
       gen: "Direction built from generated passage pairs about fictional services (one anchor draw; the average over five draws is 0.84 for service vs role and 0.85 for account vs role).",
       nat: "Direction built from the real sections of every service except the one being scored." }[st.dir] + " Each row is scaled to its own range; only the order within a row matters.";
   }
@@ -499,7 +508,7 @@ const BC = ["--b1", "--b2", "--b3", "--b4"].map(css);
   S("text", { x: 12, y: T + Hh / 2, "text-anchor": "middle", transform: `rotate(-90 12 ${T + Hh / 2})` }, svg, "permission detours");
   J.rows.forEach((r, i) => { const c = S("circle", { cx: X(r.x) + ((i * 7) % 9 - 4), cy: Y(r.y) - ((i * 5) % 7 - 3), r: 5, fill: css("--same"), opacity: .75, stroke: css("--paper"), "stroke-width": 1.5 }, svg);
     hover(c, tipLines(r.service, `mismatch ${r.x.toFixed(2)} · ${r.y.toFixed(1)} permission detours`, `mechanism ${r.mech}`)); });
-  $("j-note").textContent = `48 procedure pages. Rank correlation ${J.r.spearman.toFixed(2)} (95% interval ${J.r.lo.toFixed(2)} to ${J.r.hi >= 0 ? "+" : ""}${J.r.hi.toFixed(2)}). If the idea were right the cloud would rise to the right. It does not, though with 48 pages a moderate effect in either direction cannot be excluded.`;
+  $("j-note").textContent = `48 procedure pages. Rank correlation ${J.r.spearman.toFixed(2)} (95% interval ${J.r.lo.toFixed(2)} to ${J.r.hi >= 0 ? "+" : ""}${J.r.hi.toFixed(2)}). If the idea were right the cloud would rise to the right. It stays flat, and with 48 pages a moderate effect in either direction is still possible.`;
 }
 })();
 </script>
