@@ -50,11 +50,12 @@ To run on Amazon Bedrock with your own AWS account instead, no API keys needed:
 ```bash
 pip install -e ".[bedrock]"
 export AWS_PROFILE=<your-profile> AWS_REGION=us-east-1 AWS_DEFAULT_REGION=us-east-1
-export CLAUDE_CODE_USE_BEDROCK=1   # Claude generation through Bedrock
-semantic-ruler --embedder bedrock --model <bedrock-claude-model-id>
+semantic-ruler --llm bedrock --embedder bedrock
 ```
 
-`--embedder bedrock` defaults to `cohere.embed-english-v3`. Pass
+`--llm bedrock` calls Claude through the Bedrock Converse API and defaults to
+the `us.anthropic.claude-sonnet-5-5` inference profile; pass `--model` for
+another. `--embedder bedrock` defaults to `cohere.embed-english-v3`. Pass
 `--embedding-model` to use another Bedrock embedding model. The scores depend
 on the embedder, so don't compare them directly with the OpenAI results below.
 On the stored Case Study I texts (one run each, 2026-11-24), the ruler's

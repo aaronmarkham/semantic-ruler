@@ -78,6 +78,25 @@ class OpenAIEmbedder:
         return np.asarray(rows, dtype=np.float64)
 
 
+def bedrock_runtime_client(region: str | None = None):
+    """A bedrock-runtime client from the standard AWS credential chain."""
+    try:
+        import boto3
+        from botocore.config import Config
+    except ImportError:
+        raise RuntimeError("Bedrock needs boto3: pip install -e '.[bedrock]'") from None
+    # botocore reads AWS_DEFAULT_REGION and the profile's region, but not
+    # AWS_REGION (which the AWS CLI does honour), so check it too.
+    region = region or boto3.Session().region_name or os.environ.get("AWS_REGION")
+    if not region:
+        raise RuntimeError("No AWS region for Bedrock: pass --aws-region or set AWS_DEFAULT_REGION")
+    return boto3.client(
+        "bedrock-runtime",
+        region_name=region,
+        config=Config(retries={"max_attempts": 8, "mode": "adaptive"}, read_timeout=300),
+    )
+
+
 class BedrockEmbedder:
     """Amazon Bedrock embeddings (Cohere Embed or Titan Text) through boto3.
 
@@ -111,29 +130,7 @@ class BedrockEmbedder:
     @property
     def client(self):
         if self._client is None:
-            try:
-                import boto3
-                from botocore.config import Config
-            except ImportError:
-                raise RuntimeError(
-                    "BedrockEmbedder needs boto3: pip install -e '.[bedrock]'"
-                ) from None
-            # botocore reads AWS_DEFAULT_REGION and the profile's region, but
-            # not AWS_REGION (which the AWS CLI does honour), so check it too.
-            region = (
-                self._region
-                or boto3.Session().region_name
-                or os.environ.get("AWS_REGION")
-            )
-            if not region:
-                raise RuntimeError(
-                    "No AWS region for Bedrock: pass --aws-region or set AWS_DEFAULT_REGION"
-                )
-            self._client = boto3.client(
-                "bedrock-runtime",
-                region_name=region,
-                config=Config(retries={"max_attempts": 8, "mode": "adaptive"}),
-            )
+            self._client = bedrock_runtime_client(self._region)
         return self._client
 
     def _invoke(self, body: dict) -> dict:

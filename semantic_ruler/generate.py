@@ -112,8 +112,9 @@ async def _query_json(llm: LLMProvider, prompt: str, model: str | None, attempts
     kwargs = {"model": model} if model else {}
     last: Exception | None = None
     for _ in range(attempts):
+        reply = await llm.query(prompt, **kwargs)  # provider errors propagate as-is
         try:
-            return _parse_json(await llm.query(prompt, **kwargs))
+            return _parse_json(reply)
         except ValueError as e:  # unparseable reply: ask again
             last = e
     raise RuntimeError(f"LLM did not return parseable JSON after {attempts} attempts: {last}")
