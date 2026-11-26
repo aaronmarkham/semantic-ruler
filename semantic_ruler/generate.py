@@ -16,6 +16,7 @@ from spiritwriter.llm import LLMProvider
 from spiritwriter.llm.anthropic import JSONExtractor
 
 from .concepts import Block, Concept
+from .llm_bedrock import RetryableReply
 
 PAIR_PROMPT = """\
 Task: Provide {n} different {subject}s for the {block} domain ({focus}) and, for each one, \
@@ -112,8 +113,13 @@ async def _query_json(llm: LLMProvider, prompt: str, model: str | None, attempts
     kwargs = {"model": model} if model else {}
     last: Exception | None = None
     for _ in range(attempts):
+        try:  # other provider errors (auth, access, throttling) propagate as-is
+            reply = await llm.query(prompt, **kwargs)
+        except RetryableReply as e:  # empty or truncated reply: ask again
+            last = e
+            continue
         try:
-            return _parse_json(await llm.query(prompt, **kwargs))
+            return _parse_json(reply)
         except ValueError as e:  # unparseable reply: ask again
             last = e
     raise RuntimeError(f"LLM did not return parseable JSON after {attempts} attempts: {last}")

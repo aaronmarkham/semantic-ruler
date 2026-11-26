@@ -21,7 +21,14 @@ from spiritwriter.llm import LLMProvider
 
 from . import store as shards
 from .concepts import CONCEPTS, Concept
-from .embed import KEYCHAIN_SERVICE, CachedEmbedder, Embedder, HashEmbedder, OpenAIEmbedder
+from .embed import (
+    KEYCHAIN_SERVICE,
+    BedrockEmbedder,
+    CachedEmbedder,
+    Embedder,
+    HashEmbedder,
+    OpenAIEmbedder,
+)
 from .generate import generate_level_texts, generate_pairs, judge_texts
 from .ruler import (
     Ruler,
@@ -326,8 +333,17 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--concept", default="sustainability", choices=sorted(CONCEPTS))
     ap.add_argument("--pairs", type=int, default=8, help="anchor pairs per block (paper: 8)")
     ap.add_argument("--variants", type=int, default=3, help="test texts per block per level")
-    ap.add_argument("--model", default="claude-sonnet-5-5", help="generator model")
-    ap.add_argument("--embedding-model", default="text-embedding-3-large")
+    ap.add_argument("--llm", default="anthropic", choices=["anthropic", "bedrock"],
+                    help="generator backend (bedrock calls Claude through the Converse API)")
+    ap.add_argument("--model", default=None,
+                    help="generator model; default: claude-sonnet-5-5 (anthropic), "
+                    "us.anthropic.claude-sonnet-5-5 (bedrock)")
+    ap.add_argument("--embedder", default="openai", choices=["openai", "bedrock"],
+                    help="embedding backend (bedrock uses your AWS credential chain)")
+    ap.add_argument("--embedding-model", default=None,
+                    help="default: text-embedding-3-large (openai), "
+                    "cohere.embed-english-v3 (bedrock)")
+    ap.add_argument("--aws-region", default=None, help="Bedrock region for --llm/--embedder bedrock (default: AWS config)")
     ap.add_argument("--store", type=Path, default=None, help="shard store directory")
     ap.add_argument("--out", type=Path, default=Path("out"), help="plots and traces")
     ap.add_argument("--regenerate", action="store_true", help="ignore stored anchors and texts")
@@ -344,12 +360,29 @@ def main(argv: list[str] | None = None) -> int:
         embedder: Embedder = HashEmbedder()
         store_dir = args.store or args.out / "mock-store"
     else:
-        from spiritwriter.llm import AnthropicProvider
-        from spiritwriter.secrets import configure
+        if args.llm == "bedrock":
+            from .llm_bedrock import DEFAULT_BEDROCK_MODEL, BedrockLLMProvider
 
-        configure(service_name=KEYCHAIN_SERVICE)
-        llm, generator, model = AnthropicProvider(model=args.model), args.model, args.model
-        embedder = CachedEmbedder(OpenAIEmbedder(args.embedding_model), ".cache/embeddings")
+            model = args.model or DEFAULT_BEDROCK_MODEL
+            try:
+                llm = BedrockLLMProvider(model, region=args.aws_region)
+            except ValueError as e:
+                ap.error(str(e))
+        else:
+            from spiritwriter.llm import AnthropicProvider
+            from spiritwriter.secrets import configure
+
+            configure(service_name=KEYCHAIN_SERVICE)
+            model = args.model or "claude-sonnet-5-5"
+            llm = AnthropicProvider(model=model)
+        generator = model
+        if args.embedder == "bedrock":
+            inner: Embedder = BedrockEmbedder(
+                args.embedding_model or "cohere.embed-english-v3", region=args.aws_region
+            )
+        else:
+            inner = OpenAIEmbedder(args.embedding_model or "text-embedding-3-large")
+        embedder = CachedEmbedder(inner, ".cache/embeddings")
         store_dir = args.store or Path("data/store")
 
     trace_path = args.out / f"trace-{uuid.uuid4().hex[:8]}.jsonl"

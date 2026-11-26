@@ -78,6 +78,108 @@ class OpenAIEmbedder:
         return np.asarray(rows, dtype=np.float64)
 
 
+def bedrock_runtime_client(region: str | None = None):
+    """A bedrock-runtime client from the standard AWS credential chain."""
+    try:
+        import boto3
+        from botocore.config import Config
+    except ImportError:
+        raise RuntimeError("Bedrock needs boto3: pip install -e '.[bedrock]'") from None
+    # botocore reads AWS_DEFAULT_REGION and the profile's region, but not
+    # AWS_REGION (which the AWS CLI does honour), so check it too.
+    region = region or boto3.Session().region_name or os.environ.get("AWS_REGION")
+    if not region:
+        raise RuntimeError("No AWS region for Bedrock: pass --aws-region or set AWS_DEFAULT_REGION")
+    return boto3.client(
+        "bedrock-runtime",
+        region_name=region,
+        config=Config(retries={"max_attempts": 8, "mode": "adaptive"}, read_timeout=300),
+    )
+
+
+class BedrockEmbedder:
+    """Amazon Bedrock embeddings (Cohere Embed or Titan Text) through boto3.
+
+    Defaults to Cohere Embed English v3, which tracked the requested level best
+    of the Bedrock models on Case Study I (r = 0.82, against 0.65 for Titan v2).
+
+    Credentials and region come from the standard AWS chain (AWS_PROFILE,
+    AWS_REGION, ~/.aws/config, SSO, instance roles); nothing is read from the
+    keychain. Vectors are L2-normalised so they match the OpenAI embedder.
+    """
+
+    COHERE_BATCH = 96  # Cohere Embed's per-request text limit on Bedrock
+    # Bedrock rejects longer texts for Cohere Embed v3 before the model sees
+    # them (ValidationException "expected maxLength: 2048"), whatever
+    # `truncate` says. Cohere v4 accepts much longer input.
+    COHERE_V3_MAX_CHARS = 2048
+
+    def __init__(
+        self,
+        model: str = "cohere.embed-english-v3",
+        region: str | None = None,
+        dimensions: int = 1024,
+        client=None,
+    ):
+        if "titan-embed" not in model and "cohere.embed" not in model:
+            raise ValueError(
+                f"unsupported Bedrock embedding model {model!r}: "
+                "use an amazon.titan-embed-* or cohere.embed-* model ID"
+            )
+        self.model = model
+        self.dimensions = dimensions
+        self._region = region
+        self._client = client
+
+    @property
+    def client(self):
+        if self._client is None:
+            self._client = bedrock_runtime_client(self._region)
+        return self._client
+
+    def _invoke(self, body: dict) -> dict:
+        resp = self.client.invoke_model(
+            modelId=self.model,
+            body=json.dumps(body),
+            contentType="application/json",
+            accept="application/json",
+        )
+        return json.loads(resp["body"].read())
+
+    def _check_lengths(self, texts: Sequence[str]) -> None:
+        if "cohere.embed" not in self.model or "-v3" not in self.model:
+            return
+        too_long = [i for i, t in enumerate(texts) if len(t) > self.COHERE_V3_MAX_CHARS]
+        if too_long:
+            i = too_long[0]
+            raise ValueError(
+                f"{len(too_long)} text(s) exceed {self.model}'s {self.COHERE_V3_MAX_CHARS}-character "
+                f"limit on Bedrock; first is index {i} ({len(texts[i])} chars: {texts[i][:60]!r}...). "
+                "Shorten them or use --embedding-model cohere.embed-v4:0"
+            )
+
+    def embed(self, texts: Sequence[str]) -> np.ndarray:
+        if not texts:
+            return np.zeros((0, self.dimensions))
+        self._check_lengths(texts)
+        rows: list[list[float]] = []
+        if "cohere.embed" in self.model:
+            for i in range(0, len(texts), self.COHERE_BATCH):
+                batch = list(texts[i : i + self.COHERE_BATCH])
+                out = self._invoke({"texts": batch, "input_type": "search_document"})
+                emb = out["embeddings"]
+                rows.extend(emb["float"] if isinstance(emb, dict) else emb)
+        else:  # Titan takes one text per request
+            for text in texts:
+                out = self._invoke(
+                    {"inputText": text, "dimensions": self.dimensions, "normalize": True}
+                )
+                rows.append(out["embedding"])
+        mat = np.asarray(rows, dtype=np.float64).reshape(len(texts), -1)
+        norms = np.linalg.norm(mat, axis=1, keepdims=True)
+        return mat / np.where(norms == 0, 1.0, norms)
+
+
 class HashEmbedder:
     """Deterministic bag-of-words embedder for offline tests and --mock runs.
 
