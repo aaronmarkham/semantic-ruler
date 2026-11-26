@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="What a fact store can't hold: measuring semantic drift when documentation is distilled to atomic facts and regenerated.">
+<meta property="og:title" content="Drift in the Fact Store">
+<meta property="og:description" content="What a fact store can't hold: measuring semantic drift when documentation is distilled to atomic facts and regenerated.">
+<style>body{margin:0}</style>
+</head>
+<body>
+<title>Drift in the Fact Store</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --plate:#DCE0DC; --paper:#EFF1EE; --sunk:#E7EAE7; --ink:#131C21; --body:#2A363C; --muted:#55635F; --rule:#B7BFBA;
+  --ok:#3B3190; --ok-lit:#8B7FE8; --ok-pale:rgba(59,49,144,.09);
+  --bad:#8A6A18; --bad-lit:#C9A54A; --bad-deep:#4F3C0A; --bad-pale:rgba(138,106,24,.12);
+  --mid:#9AA5A0;
+  --serif:"Instrument Serif",Georgia,serif; --sans:"IBM Plex Sans",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--plate);color:var(--body);font:16.5px/1.55 var(--sans)}
+.col{max-width:760px;margin:0 auto;padding-block:44px 72px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.eyebrow{font:11px/1.5 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--ok);margin:0 0 12px}
+h1{font:400 clamp(40px,9vw,60px)/.98 var(--serif);letter-spacing:-.015em;color:var(--ink);margin:0 0 20px;text-wrap:balance}
+h1 em,h2 em{color:var(--ok);font-style:italic}
+h2{font:400 clamp(26px,5vw,33px)/1.08 var(--serif);color:var(--ink);margin:0 0 14px;text-wrap:balance}
+h3{font:600 15px/1.3 var(--sans);color:var(--ink);margin:22px 0 7px}
+p{margin:0 0 14px;max-width:64ch}
+.lede{font-size:18px;line-height:1.56;color:var(--ink)}
+section{margin-top:60px}
+a{color:var(--ok)}
+code{font:13px var(--mono);background:var(--sunk);padding:1px 5px;border-radius:3px}
+pre{font:12.5px/1.65 var(--mono);background:var(--sunk);border:1px solid var(--rule);border-radius:6px;padding:14px 16px;overflow-x:auto;margin:14px 0;white-space:pre}
+.note{font:12px/1.6 var(--mono);letter-spacing:.02em;color:var(--muted);max-width:70ch}
+.lab{font:11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.panel{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:16px;margin:20px 0;min-width:0}
+.seg{display:flex;flex-wrap:wrap;border:1px solid var(--rule);border-radius:5px;overflow:hidden}
+.seg button{flex:1 1 auto;font:12px var(--mono);letter-spacing:.03em;padding:8px 11px;min-height:38px;border:0;border-right:1px solid var(--rule);background:transparent;color:var(--body);cursor:pointer}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+button:focus-visible,a:focus-visible{outline:2px solid var(--ok);outline-offset:2px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin:22px 0 0}
+.tile{border-top:2px solid var(--ink);padding-top:8px;min-width:0}
+.tile b{display:block;font:400 36px/1 var(--serif);color:var(--ink);font-variant-numeric:tabular-nums}
+.tile span{font:11px/1.45 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:block;margin-top:6px}
+.tile.ok{border-top-color:var(--ok)}.tile.ok b{color:var(--ok)}
+.tile.bad{border-top-color:var(--bad)}.tile.bad b{color:var(--bad)}
+.tile.ref{border-top-color:var(--rule)}.tile.ref b,.tile.ref span{color:var(--muted)}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px}
+.card{border-top:2px solid var(--ink);padding-top:10px}
+.card h3{margin-top:0}
+.card p{font-size:15px;margin-bottom:0}
+.card.ok{border-top-color:var(--ok)}
+.card.bad{border-top-color:var(--bad)}
+svg{display:block;width:100%;height:auto;overflow:visible}
+svg text{font:11px var(--mono);fill:var(--muted)}
+/* stage switcher views */
+.stage{display:none;padding-top:14px}
+.stage.on{display:block}
+/* fact atom rows */
+.atom{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--rule);font-size:15px;line-height:1.5;align-items:baseline}
+.atom:first-of-type{border-top:1px solid var(--rule)}
+.fid{font:11px var(--mono);color:var(--muted);min-width:30px;padding-top:2px;flex:none}
+/* edge rows */
+.edges{margin:14px 0 0}
+.edges>.lab{margin-bottom:8px;display:block}
+.edge{display:flex;gap:8px;padding:7px 0;border-bottom:1px solid var(--rule);font-size:14px;align-items:baseline;line-height:1.45}
+.ek{font:10.5px var(--mono);letter-spacing:.05em;text-transform:uppercase;border-radius:3px;padding:2px 7px;flex:none;white-space:nowrap;border:1px solid}
+.ek.req{background:var(--bad-pale);color:var(--bad-deep);border-color:var(--bad-lit)}
+.ek.imp{background:var(--ok-pale);color:var(--ok);border-color:var(--ok-lit)}
+/* highlights in doc text */
+.hl{background:var(--ok-pale);border-radius:2px;padding:0 2px}
+.hl.lost{background:var(--bad-pale);text-decoration:underline;text-decoration-color:var(--bad-lit)}
+/* score bars */
+.scores{display:flex;flex-direction:column;gap:14px;margin:20px 0}
+.sr{display:grid;grid-template-columns:max(120px,22ch) 1fr 48px;gap:10px;align-items:center;font-size:14.5px}
+.sr .lab{font:10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase}
+.track{height:14px;background:var(--sunk);border-radius:7px;overflow:hidden;position:relative}
+.fill{height:100%;border-radius:7px;transition:width .5s ease}
+.fill.ok{background:var(--ok-lit)}
+.fill.bad{background:var(--bad-lit)}
+.fill.mid{background:#A8A860}
+.sr .val{font:500 14px var(--mono);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.sr .val.ok{color:var(--ok)}
+.sr .val.bad{color:var(--bad)}
+/* pipeline steps */
+.pipe{display:flex;flex-direction:column;gap:0;margin:20px 0}
+.pipe .step{display:grid;grid-template-columns:28px 1fr;gap:12px;padding:14px 0;border-bottom:1px solid var(--rule)}
+.pipe .step:first-child{border-top:1px solid var(--rule)}
+.pipe .num{font:400 22px/1 var(--serif);color:var(--ok);padding-top:3px}
+.pipe .body h3{margin:0 0 4px;font-size:14.5px}
+.pipe .body p{font-size:14.5px;margin:0}
+/* callout box */
+.callout{background:var(--bad-pale);border:1px solid var(--bad-lit);border-radius:5px;padding:14px 16px;margin:18px 0}
+.callout p{margin:0;font-size:15px;line-height:1.55;max-width:none}
+.callout p strong{color:var(--bad-deep)}
+footer{margin-top:64px;border-top:1px solid var(--rule);padding-top:16px}
+footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
+</style>
+
+<div class="col">
+<p class="eyebrow">Fact stores · Conditional logic · Semantic drift</p>
+<h1>You kept all the facts.<br><em>Lost half the meaning.</em></h1>
+<p class="lede">Distilling a document into atomic facts preserves most of the words. It discards the structure that makes the words mean something — the conditional connections, the conjunctions, the ordering that tells you what has to be true before something else can be true.</p>
+<p class="lede">That gap is semantic drift. It is wider than it looks, and atomic coverage alone will not show it to you.</p>
+<div class="tiles" id="found">
+  <div class="tile ok"><b id="t-af">94%</b><span>atomic facts preserved</span></div>
+  <div class="tile bad"><b id="t-cbr">33%</b><span>conditional bridges kept</span></div>
+  <div class="tile bad"><b id="t-ep">55%</b><span>compositional probes passed</span></div>
+  <div class="tile bad"><b id="t-dr">47%</b><span>composite drift</span></div>
+</div>
+<p class="note" style="margin-top:14px">Illustrative numbers from a Lambda logging example throughout this page. The library produces these for any source document.</p>
+
+<section id="passage">
+<p class="eyebrow">01 · The passage</p>
+<h2>Three facts that only matter <em>together.</em></h2>
+<p>A single paragraph of AWS documentation. An LLM extracts the facts. Another writes new documentation from those facts alone. Walk through what happens at each stage.</p>
+
+<div class="panel">
+  <div class="seg" id="stage-seg" style="margin-bottom:0">
+    <button data-s="orig" aria-pressed="true">1 · Original</button>
+    <button data-s="facts" aria-pressed="false">2 · Extracted facts</button>
+    <button data-s="regen" aria-pressed="false">3 · Regenerated</button>
+  </div>
+
+  <div id="s-orig" class="stage on">
+    <p class="lab" style="margin-bottom:10px">The source document. <span style="background:var(--ok-pale);border-radius:2px;padding:0 2px">Conjunctive structure highlighted.</span></p>
+    <div style="font-size:16px;line-height:1.65;max-width:60ch">
+      <p>The CloudWatch log group is created automatically, <span class="hl">but only when all three conditions hold</span>: the Lambda execution role has <code>logs:CreateLogGroup</code> and <code>logs:PutLogEvents</code> permissions, <span class="hl">and</span> the function completes at least one successful invocation.</p>
+      <p style="margin-bottom:0">Without all three, the function appears to run successfully — <span class="hl">but no logs are written and no error is surfaced.</span></p>
+    </div>
+    <p class="note" style="margin-top:14px">The phrase "only when all three conditions hold" explicitly encodes a conjunction. That conjunction lives in the relationship between facts, not in any single fact. When you atomize the document, you need to store the relationship separately — or it disappears.</p>
+  </div>
+
+  <div id="s-facts" class="stage">
+    <p class="lab" style="margin-bottom:2px">Five atoms stored in the fact store.</p>
+    <div class="atom"><span class="fid">f01</span><span>The Lambda execution role needs <code>logs:CreateLogGroup</code> permission to create the log group.</span></div>
+    <div class="atom"><span class="fid">f02</span><span>The Lambda execution role needs <code>logs:PutLogEvents</code> permission to create the log group.</span></div>
+    <div class="atom"><span class="fid">f03</span><span>At least one successful invocation is required to trigger log group creation.</span></div>
+    <div class="atom"><span class="fid">f04</span><span>The CloudWatch log group is created automatically.</span></div>
+    <div class="atom"><span class="fid">f05</span><span>Without all three conditions, the function appears to run but writes no logs and surfaces no error.</span></div>
+    <div class="edges">
+      <span class="lab">Conditional edges — extracted, not stored</span>
+      <div class="edge"><span class="ek req">requires</span><span>f01 + f02 + f03 → f04 &thinsp;·&thinsp; <em>all three must hold simultaneously for automatic creation</em></span></div>
+      <div class="edge" style="border-bottom:0"><span class="ek imp">implies</span><span>¬(f01 ∧ f02 ∧ f03) → f05 &thinsp;·&thinsp; <em>silent failure when any condition is missing</em></span></div>
+    </div>
+    <p class="note" style="margin-top:14px">Every atom is accurate. The store holds them all. The REQUIRES edge — that f01, f02, and f03 must hold <em>at the same time</em> — has no field in a flat atom store. It is extracted and then discarded.</p>
+  </div>
+
+  <div id="s-regen" class="stage">
+    <p class="lab" style="margin-bottom:10px">Regenerated from the atom list only. <span style="background:var(--bad-pale);border-radius:2px;padding:0 2px">Structural changes highlighted.</span></p>
+    <div style="font-size:16px;line-height:1.65;max-width:60ch">
+      <p>The CloudWatch log group is created automatically. The Lambda execution role needs <code>logs:CreateLogGroup</code> permission. <span class="hl lost">The role also needs</span> <code>logs:PutLogEvents</code> permission. <span class="hl lost">At least one successful invocation is needed.</span></p>
+      <p style="margin-bottom:0"><span class="hl lost">If any condition is unmet,</span> the function appears to run but writes no logs and surfaces no error.</p>
+    </div>
+    <div class="callout" style="margin-top:16px">
+      <p>Every fact survived. The conjunction <strong>"only when all three hold"</strong> did not. A developer reading this might add <code>logs:CreateLogGroup</code> alone and expect logs to appear. The original made clear that all three are required simultaneously — and the regen does not.</p>
+    </div>
+  </div>
+</div>
+</section>
+
+<section id="graph">
+<p class="eyebrow">02 · The conditional graph</p>
+<h2>Edges carry the logic <em>atoms can't.</em></h2>
+<p>The library extracts five types of relationship between facts. Each type captures a failure mode that flattening erases.</p>
+
+<div class="two" style="margin:18px 0 24px">
+  <div class="card bad">
+    <h3>Requires</h3>
+    <p>The consequent is true only when <em>all</em> listed antecedents hold simultaneously. Lost most often: a conjunction becomes three independent conditions. The developer satisfies one and considers themselves done.</p>
+  </div>
+  <div class="card bad">
+    <h3>Implies</h3>
+    <p>One fact alone is sufficient for another. Lost most often in causal chains: "A causes B causes C" becomes three unconnected claims. No one knows B is the cause.</p>
+  </div>
+  <div class="card">
+    <h3>Contradicts</h3>
+    <p>Two facts cannot both hold. Regenerations frequently state both as conditions without noting they are mutually exclusive — producing an impossible setup.</p>
+  </div>
+  <div class="card">
+    <h3>Sequence</h3>
+    <p>B presupposes A — order matters. Regenerated documents reorder steps because atoms carry no position. The reader tries step 3 before step 1 is done.</p>
+  </div>
+</div>
+
+<svg viewBox="0 0 720 190" role="img" aria-label="Conditional graph with edges on the left; flat atom store on the right">
+  <defs>
+    <marker id="arr" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+      <polygon points="0 0, 7 2.5, 0 5" fill="#3B3190" opacity=".85"/>
+    </marker>
+    <marker id="arr-g" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
+      <polygon points="0 0, 7 2.5, 0 5" fill="#B7BFBA"/>
+    </marker>
+  </defs>
+
+  <!-- left label -->
+  <text x="4" y="13" letter-spacing=".1em" text-transform="uppercase">ORIGINAL — WITH EDGES</text>
+
+  <!-- f01 -->
+  <circle cx="58" cy="58" r="22" fill="#E8E4F8" stroke="#3B3190" stroke-width="1.5"/>
+  <text x="58" y="62" text-anchor="middle" fill="#3B3190">f01</text>
+  <!-- f02 -->
+  <circle cx="58" cy="110" r="22" fill="#E8E4F8" stroke="#3B3190" stroke-width="1.5"/>
+  <text x="58" y="114" text-anchor="middle" fill="#3B3190">f02</text>
+  <!-- f03 -->
+  <circle cx="58" cy="162" r="22" fill="#E8E4F8" stroke="#3B3190" stroke-width="1.5"/>
+  <text x="58" y="166" text-anchor="middle" fill="#3B3190">f03</text>
+
+  <!-- bracket lines -->
+  <polyline points="80,58 100,58 100,162 80,162" fill="none" stroke="#3B3190" stroke-width="1.3" opacity=".6"/>
+  <line x1="100" y1="110" x2="186" y2="110" stroke="#3B3190" stroke-width="1.5" marker-end="url(#arr)"/>
+  <text x="140" y="104" text-anchor="middle" fill="#3B3190" font-size="10" letter-spacing=".06em">REQUIRES</text>
+
+  <!-- f04 -->
+  <circle cx="224" cy="90" r="22" fill="#D6EFE2" stroke="#1A5E34" stroke-width="1.5"/>
+  <text x="224" y="94" text-anchor="middle" fill="#1A5E34">f04</text>
+
+  <!-- implies -->
+  <line x1="224" y1="112" x2="224" y2="143" stroke="#55635F" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#arr-g)"/>
+  <text x="238" y="132" fill="#55635F" font-size="10">IMPLIES</text>
+
+  <!-- f05 -->
+  <circle cx="224" cy="166" r="22" fill="#E7EAE7" stroke="#B7BFBA" stroke-width="1.5"/>
+  <text x="224" y="170" text-anchor="middle">f05</text>
+
+  <!-- divider -->
+  <line x1="316" y1="8" x2="316" y2="184" stroke="#B7BFBA" stroke-width="1" stroke-dasharray="4 4"/>
+  <text x="362" y="98" text-anchor="middle" fill="#B7BFBA" font-size="10" transform="rotate(-90,362,98)">stored →</text>
+
+  <!-- right label -->
+  <text x="406" y="13" letter-spacing=".1em" text-transform="uppercase">ATOM STORE — EDGES DROPPED</text>
+
+  <!-- f01 gray -->
+  <circle cx="460" cy="52" r="22" fill="#E7EAE7" stroke="#B7BFBA" stroke-width="1.5"/>
+  <text x="460" y="56" text-anchor="middle">f01</text>
+  <!-- f02 gray -->
+  <circle cx="460" cy="110" r="22" fill="#E7EAE7" stroke="#B7BFBA" stroke-width="1.5"/>
+  <text x="460" y="114" text-anchor="middle">f02</text>
+  <!-- f03 gray -->
+  <circle cx="460" cy="168" r="22" fill="#E7EAE7" stroke="#B7BFBA" stroke-width="1.5"/>
+  <text x="460" y="172" text-anchor="middle">f03</text>
+  <!-- f04 gray -->
+  <circle cx="600" cy="80" r="22" fill="#E7EAE7" stroke="#B7BFBA" stroke-width="1.5"/>
+  <text x="600" y="84" text-anchor="middle">f04</text>
+  <!-- f05 gray -->
+  <circle cx="600" cy="158" r="22" fill="#E7EAE7" stroke="#B7BFBA" stroke-width="1.5"/>
+  <text x="600" y="162" text-anchor="middle">f05</text>
+
+  <!-- ghost edges -->
+  <line x1="482" y1="52" x2="577" y2="74" stroke="#B7BFBA" stroke-width="1" stroke-dasharray="3 4" opacity=".5" marker-end="url(#arr-g)"/>
+  <line x1="482" y1="110" x2="578" y2="82" stroke="#B7BFBA" stroke-width="1" stroke-dasharray="3 4" opacity=".5"/>
+  <line x1="482" y1="168" x2="578" y2="88" stroke="#B7BFBA" stroke-width="1" stroke-dasharray="3 4" opacity=".5"/>
+  <text x="530" y="66" text-anchor="middle" fill="#B7BFBA" font-size="10" opacity=".8">(dropped)</text>
+</svg>
+<p class="note" style="margin-top:8px">Left: the conditional graph the LLM extracts. Right: what the atom store holds. Ghost lines show where the REQUIRES junction was. Without it, f01, f02, and f03 look like independent options rather than simultaneous requirements.</p>
+</section>
+
+<section id="gap">
+<p class="eyebrow">03 · The measurement gap</p>
+<h2>The number that looks fine <em>isn't the story.</em></h2>
+<p>The obvious metric for a fact store round-trip is atom coverage: what fraction of the original facts survived in the regeneration? For this example the answer is 94% — four of five atoms are present, correctly expressed. That score is not wrong. It just only measures nodes.</p>
+
+<div class="panel">
+  <p class="lab" style="margin-bottom:16px">Same example, three metrics</p>
+  <div class="scores" id="score-bars">
+    <div class="sr">
+      <span class="lab">Atomic F1</span>
+      <div class="track"><div class="fill ok" id="b-af" style="width:94%"></div></div>
+      <span class="val ok" id="v-af">94%</span>
+    </div>
+    <div class="sr">
+      <span class="lab">Conditional bridge recall</span>
+      <div class="track"><div class="fill bad" id="b-cbr" style="width:33%"></div></div>
+      <span class="val bad" id="v-cbr">33%</span>
+    </div>
+    <div class="sr">
+      <span class="lab">Entailment probes</span>
+      <div class="track"><div class="fill mid" id="b-ep" style="width:55%"></div></div>
+      <span class="val" id="v-ep">55%</span>
+    </div>
+  </div>
+  <p class="note">Atomic F1 alone would read this as a 94% success. CBR reveals two of three conditional edges were lost. The entailment probes confirm the damage: more than half of questions requiring multiple facts to answer came back wrong from the regenerated document.</p>
+</div>
+
+<p>The gap between atomic F1 and CBR is what the library was built to surface. A distillation that scores 94% on atom coverage and 33% on conditional bridge recall did not preserve 94% of the document's meaning. It preserved the vocabulary and lost the logic.</p>
+</section>
+
+<section id="metrics">
+<p class="eyebrow">04 · What the library measures</p>
+<h2>Three layers, <em>one composite.</em></h2>
+<p>Each metric catches a different failure mode. All three are needed because a document can pass one test and fail another.</p>
+
+<div class="pipe" id="pipeline">
+  <div class="step">
+    <div class="num">1</div>
+    <div class="body">
+      <h3>Atomic F1 — did the content survive?</h3>
+      <p>The library embeds every fact from the original and the regenerated document. A regen fact "matches" an original when cosine similarity clears the threshold. Precision measures hallucination rate; recall measures coverage. F1 is the harmonic mean. <strong>Weight in composite: 25%.</strong> This is a floor check, not a ceiling — high F1 is necessary but tells you nothing about structure.</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="num">2</div>
+    <div class="body">
+      <h3>Conditional bridge recall — did the structure survive?</h3>
+      <p>Facts in both graphs are matched by embedding similarity. For each original conditional edge, the library checks whether the mapped edge of the same type exists in the regen graph. Edges are weighted by their extraction confidence. CBR broken out by edge type shows <em>which kind of relationship</em> the regeneration most reliably drops. <strong>Weight in composite: 50%</strong> — double, because atomic F1 cannot see this failure at all.</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="num">3</div>
+    <div class="body">
+      <h3>Entailment probes — does the regeneration behave correctly?</h3>
+      <p>The library generates yes/no questions that require multiple facts to answer — specifically targeting REQUIRES edges with two or more antecedents. It then queries the regenerated document with each question. The pass rate is a behavioral measure of whether the conjunctive structure actually disappeared from the reader's experience, even if CBR missed it. <strong>Weight in composite: 25%.</strong></p>
+    </div>
+  </div>
+  <div class="step" style="border-bottom:0">
+    <div class="num">4</div>
+    <div class="body">
+      <h3>Structural drift — did the prerequisite ordering survive?</h3>
+      <p>For procedure pages, the library runs the prerequisite extractor on both documents and compares: how many prerequisites survived, how much more detour-prone the regeneration became, how far introduction positions shifted. See §05 for the connection to the detour assessment. <strong>Added when applicable; renormalizes other weights.</strong></p>
+    </div>
+  </div>
+</div>
+
+<p>The composite drift score is the weighted average of the loss terms (1 − score) for applicable layers. Zero means perfect preservation. One means complete loss. For this example:</p>
+
+<div class="tiles" style="margin-top:16px">
+  <div class="tile ref"><b>6%</b><span>atomic loss</span></div>
+  <div class="tile bad"><b id="t-cbrl">67%</b><span>CBR loss</span></div>
+  <div class="tile bad"><b id="t-epl">45%</b><span>entailment loss</span></div>
+  <div class="tile bad"><b id="t-drift">47%</b><span>composite drift</span></div>
+</div>
+</section>
+
+<section id="structural">
+<p class="eyebrow">05 · The structural layer</p>
+<h2>Prerequisite ordering is <em>also drift.</em></h2>
+<p>The metrics above work at the paragraph and sentence level: did individual facts survive, did the conditional logic between adjacent claims survive? A document also carries structure at a higher level.</p>
+<p>A how-to page has a job. It tells the reader what to have ready before they start. It surfaces those prerequisites early, with enough context to satisfy them. That ordering is a form of meaning — and it can be lost in a fact store round-trip even when every individual fact is correctly preserved.</p>
+
+<div class="callout">
+  <p>The original document introduced all prerequisites in a checklist at the top. The regenerated document embedded them in the steps where they were needed — the classic detour pattern. <strong>The atoms were intact. The structure was not.</strong></p>
+</div>
+
+<p>The <a href="detour-map.html">detour assessment</a> measures this in original documents: what fraction of prerequisites are detours, how often links deliver what they promise. The drift pipeline extends that measurement to the round-trip: compare the prerequisite tree the original had to the tree the regeneration produced.</p>
+
+<div class="two" style="margin:18px 0 0">
+  <div class="card">
+    <h3>What structural drift measures</h3>
+    <p><strong>Prerequisite recall</strong> — what fraction of original prerequisites are present in the regeneration, matched by word overlap.</p>
+    <p style="margin-top:8px"><strong>Detour rate delta</strong> — how much more detour-prone the regenerated document became. A positive delta means the regeneration springs prerequisites on the reader at point-of-need rather than up front.</p>
+    <p style="margin-top:8px"><strong>Introduction position MAE</strong> — how far matched prerequisites moved within the document, normalized by page length.</p>
+  </div>
+  <div class="card">
+    <h3>For this example</h3>
+    <div class="scores" id="struct-bars" style="margin-top:4px">
+      <div class="sr" style="grid-template-columns:max(110px,18ch) 1fr 48px">
+        <span class="lab">Prereq recall</span>
+        <div class="track"><div class="fill bad" id="b-pr" style="width:60%"></div></div>
+        <span class="val bad" id="v-pr">60%</span>
+      </div>
+      <div class="sr" style="grid-template-columns:max(110px,18ch) 1fr 48px">
+        <span class="lab">Orig detour rate</span>
+        <div class="track"><div class="fill ok" id="b-do" style="width:20%"></div></div>
+        <span class="val ok" id="v-do">20%</span>
+      </div>
+      <div class="sr" style="grid-template-columns:max(110px,18ch) 1fr 48px">
+        <span class="lab">Regen detour rate</span>
+        <div class="track"><div class="fill bad" id="b-dr2" style="width:42%"></div></div>
+        <span class="val bad" id="v-dr2">42%</span>
+      </div>
+    </div>
+    <p class="note" style="margin-top:10px">The regeneration introduced 22 percentage points more detours. Two of five prerequisites were dropped entirely. The document that looked fine on atomic coverage sends the reader on more unplanned side trips than the original.</p>
+  </div>
+</div>
+</section>
+
+<section id="run">
+<p class="eyebrow">06 · Running it</p>
+<h2>One script. <em>One report.</em></h2>
+<p>The pipeline is a single script in <code>experiments/doc_drift/</code>. Pass a URL or a local file. It fetches, extracts, regenerates, re-extracts, and scores.</p>
+
+<pre>python -I experiments/doc_drift/run.py &lt;url-or-file&gt;
+python -I experiments/doc_drift/run.py &lt;url&gt; --no-structural   # skip ordering layer
+python -I experiments/doc_drift/run.py &lt;url&gt; --json            # machine-readable</pre>
+
+<p>The report separates loss at every layer:</p>
+
+<pre>Source:  a3f8c2b1d9e04f17
+  orig   5 facts, 3 edges
+  regen  5 facts, 2 edges
+
+Atomic F1 .............. 94.0%
+  recall                 94.0%
+  precision              92.0%
+
+Cond. bridge recall .... 33.3%  (3 edges)
+  implies               50.0%
+  requires               0.0%
+
+Entailment probes ...... 55.0%  (20 probes)
+
+Structural (procedure)
+  prereq recall          60.0%  (5 → 3)
+  detour rate  orig 20.0%  regen 42.0%  delta +22.0%
+
+Drift score ............ 47.1%  (0=perfect, 1=complete loss)
+  atomic_loss            6.0%
+  cbr_loss              66.7%
+  entailment_loss       45.0%
+  structural_loss       45.2%</pre>
+
+<div class="two" style="margin-top:20px">
+  <div class="card ok">
+    <h3>Reading the report</h3>
+    <p>Atomic loss below 10% with CBR loss above 50% is the typical pattern for a well-formed but structurally hollow regeneration. Entailment loss above 40% confirms readers will encounter wrong answers. A composite above 40% warrants investigation regardless of atomic coverage.</p>
+  </div>
+  <div class="card">
+    <h3>Using the Python API</h3>
+    <p>The metrics are importable from <code>semantic_ruler.drift</code> as pure functions: <code>atomic_f1</code>, <code>cond_bridge_recall</code>, <code>entailment_rate</code>, <code>structural_drift</code>, <code>drift_score</code>. The shared shard store caches extracted graphs, so the LLM extraction cost is paid once per document.</p>
+  </div>
+</div>
+</section>
+
+<footer>
+<p>Part of <a href="index.html">semantic-ruler</a> · <a href="detour-map.html">The Detour Map</a> · Source: <a href="https://github.com/aaronmarkham/semantic-ruler">github.com/aaronmarkham/semantic-ruler</a> · Apache 2.0</p>
+</footer>
+
+</div>
+
+<script>
+fetch("drift-explainer.json").then(r=>r.json()).then(D=>{
+  const s=D.s, st=D.struct;
+  const pct=v=>Math.round(v*100)+'%';
+  const el=id=>document.getElementById(id);
+  function set(id,v){const e=el(id);if(e)e.textContent=v}
+  function bar(bid,v){const e=el(bid);if(e)e.style.width=pct(v)}
+
+  if(s){
+    set('t-af',pct(s.af)); set('t-cbr',pct(s.cbr)); set('t-ep',pct(s.ep)); set('t-dr',pct(s.drift));
+    bar('b-af',s.af); set('v-af',pct(s.af));
+    bar('b-cbr',s.cbr); set('v-cbr',pct(s.cbr));
+    bar('b-ep',s.ep); set('v-ep',pct(s.ep));
+    set('t-cbrl',pct(1-s.cbr)); set('t-epl',pct(1-s.ep)); set('t-drift',pct(s.drift));
+  }
+  if(st){
+    bar('b-pr',st.recall); set('v-pr',pct(st.recall));
+    bar('b-do',st.det_orig); set('v-do',pct(st.det_orig));
+    bar('b-dr2',st.det_regen); set('v-dr2',pct(st.det_regen));
+  }
+  if(D.edge_types){
+    const et=D.edge_types;
+  }
+}).catch(()=>{});
+
+// stage switcher
+const seg=document.getElementById('stage-seg');
+seg.querySelectorAll('button').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    seg.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed','false'));
+    btn.setAttribute('aria-pressed','true');
+    document.querySelectorAll('.stage').forEach(v=>v.classList.remove('on'));
+    document.getElementById('s-'+btn.dataset.s).classList.add('on');
+  });
+});
+</script>
+</body>
+</html>
