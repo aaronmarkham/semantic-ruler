@@ -58,7 +58,7 @@ body #deep .story{top:calc(var(--sn-h) + 8px)}
 <p class="sn-h sn-only-narrow">Pages</p>
 <ul class="sn-pages sn-only-narrow"><li><a href="index.html">Rulers and Detours</a></li><li><a href="detour-map.html">The Detour Map</a></li><li><a href="drift.html" aria-current="page">Drift</a></li></ul>
 <p class="sn-h">On this page</p>
-<ul><li><a href="#passage">01 · The passage</a></li><li><a href="#graph">02 · The conditional graph</a></li><li><a href="#gap">03 · The measurement gap</a></li><li><a href="#metrics">04 · What the library measures</a></li><li><a href="#structural">05 · The structural layer</a></li><li><a href="#run">06 · Running it</a></li></ul>
+<ul><li><a href="#passage">01 · The hypothesis, on one paragraph</a></li><li><a href="#atomizer">02 · The extractor&#x27;s thumb on the scale</a></li><li><a href="#contravention">03 · A passage built to lose</a></li><li><a href="#graph">04 · The conditional graph</a></li><li><a href="#metrics">05 · The evaluation</a></li><li><a href="#cohort">06 · Ten pages, two extractors</a></li><li><a href="#structural">07 · The structural layer, up close</a></li><li><a href="#load">08 · How many ifs, ands and buts</a></li><li><a href="#loop">09 · The repair loop</a></li><li><a href="#run">10 · Running it</a></li></ul>
 <a class="sn-gh" href="https://github.com/aaronmarkham/semantic-ruler">GitHub</a>
 </div>
 </details>
@@ -163,87 +163,201 @@ svg text{font:11px var(--mono);fill:var(--muted)}
 .callout p strong{color:var(--bad-deep)}
 footer{margin-top:64px;border-top:1px solid var(--rule);padding-top:16px}
 footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
+.tile small{display:block;margin-top:6px;font:11px/1.4 var(--mono);color:var(--muted);letter-spacing:.02em;text-transform:none}
+td.n,th.n{text-align:right;padding:6px 8px;border-bottom:1px solid var(--rule);vertical-align:top}
+#cohort-table td{padding:6px 8px 6px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+#cohort-table td:first-child{min-width:230px}
+#cohort-table td.n,#cohort-table th.n{padding-left:6px;padding-right:6px}
+#cohort-table th.n{font:11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:400;border-bottom:1px solid var(--ink)}
+#atomizer-table td,#atomizer-table th{padding:6px 8px 6px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+#atomizer-table th{font:11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:400;border-bottom:1px solid var(--ink)}
+#cohort-table th{font:11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:400;border-bottom:1px solid var(--ink);padding:6px 8px 6px 0}
 </style>
 
 <div class="col">
-<p class="eyebrow">Fact stores · Conditional logic · Semantic drift</p>
-<h1>You kept all the facts.<br><em>Lost half the meaning.</em></h1>
-<p class="lede">Distilling a document into atomic facts preserves most of the words. It discards the structure that makes the words mean something: the conditional connections, the conjunctions, the ordering that tells you what has to be true before something else can be.</p>
-<p class="lede">That gap is semantic drift. It is wider than it looks, and atomic coverage alone will not show it to you.</p>
+<p class="eyebrow">A hypothesis · An evaluation · A repair loop</p>
+<h1>You kept the facts.<br><em>What did you lose?</em></h1>
+<p class="lede">Distil a document into atomic facts and store them, and you keep the words. The hypothesis behind this page is that what you lose is the connective tissue: the conjunctions, the conditions, and the order that says what to have ready first. The questions were whether an evaluation can see that loss where atom coverage can't, whether, once seen, it can be sent back to be rebuilt, and, after a first round of runs, whether the extractor had been answering the question before the round trip could.</p>
+<p class="lede">It had. The first extractor kept half the conditions inside the atoms, and under it two short passages came through the round trip almost untouched. An extractor that is forbidden to do that produces the loss the hypothesis predicted: the regeneration gets half the multi-fact questions wrong on both passages, and on ten how-to pages it springs half the prerequisites on the reader. Fed back what the evaluation found missing, the regeneration recovers most of the order and, under the strict extractor, most of the bridges.</p>
 <div class="tiles" id="found">
-  <div class="tile ok"><b id="t-af">94%</b><span>atomic facts preserved</span></div>
-  <div class="tile bad"><b id="t-cbr">33%</b><span>conditional bridges kept</span></div>
-  <div class="tile bad"><b id="t-ep">55%</b><span>compositional probes passed</span></div>
-  <div class="tile bad"><b id="t-dr">47%</b><span>composite drift</span></div>
+  <div class="tile bad"><b id="t-fold">51% → 29%</b><span>atoms carrying a condition, sentence → strict extractor</span><small>medians over the ten pages</small></div>
+  <div class="tile bad"><b id="t-probes">25 of 50</b><span>multi-fact probes passed on the two passages, strict</span><small id="t-probes-r">48 of 50 under the sentence extractor</small></div>
+  <div class="tile bad"><b id="t-det">35%</b><span>prerequisites sprung on the reader after the round trip, strict</span><small id="t-det-r">17% under the sentence extractor; rose on 8 of 10 pages</small></div>
+  <div class="tile ok"><b id="t-rep">8 of 10</b><span>pages where repair raised text bridge recall, strict</span><small id="t-rep-r">read from the regenerated text, not re-extracted</small></div>
 </div>
-<p class="note" style="margin-top:14px">Illustrative numbers from a Lambda logging example throughout this page. The library produces these for any source document.</p>
+<p class="note" style="margin-top:14px">Every number on this page is pipeline output. The cohort is ten how-to pages from the <a href="detour-map.html">Detour Map</a>'s set, chosen because three independent reads all called them procedures, run twice each with a repair pass, under each of two extractors. Two passages are walked in detail, five runs each per extractor, and the CloudWatch Logs export page three. Headline figures are medians, with ranges beside them. The runs are recorded in <code>experiments/doc_drift/results/</code>, and <code>build_drift.py</code> rebuilds this page's data from them.</p>
 
 <section id="passage">
-<p class="eyebrow">01 · The passage</p>
+<p class="eyebrow">01 · The hypothesis, on one paragraph</p>
 <h2>Three facts that only matter <em>together.</em></h2>
-<p>A single paragraph of AWS documentation. An LLM extracts the facts. Another writes new documentation from those facts alone. Walk through what happens at each stage.</p>
+<p>A single paragraph about Lambda logging. An LLM extracts the facts. It then writes new documentation from those facts alone, with the edges withheld: that is the round trip a fact store imposes. Walk through what happened at each stage under the first extractor, in the run closest to the median of five.</p>
 
 <div class="panel">
   <div class="seg" id="stage-seg" style="margin-bottom:0">
     <button data-s="orig" aria-pressed="true">1 · Original</button>
     <button data-s="facts" aria-pressed="false">2 · Extracted facts</button>
     <button data-s="regen" aria-pressed="false">3 · Regenerated</button>
+    <button data-s="fixed" aria-pressed="false">4 · Repaired</button>
   </div>
 
   <div id="s-orig" class="stage on">
-    <p class="lab" style="margin-bottom:10px">The source document. <span style="background:var(--ok-pale);border-radius:2px;padding:0 2px">Conjunctive structure highlighted.</span></p>
+    <p class="lab" style="margin-bottom:10px">The source passage. <span style="background:var(--ok-pale);border-radius:2px;padding:0 2px">Conjunctive structure highlighted.</span></p>
     <div style="font-size:16px;line-height:1.65;max-width:60ch">
       <p>The CloudWatch log group is created automatically, <span class="hl">but only when all three conditions hold</span>: the Lambda execution role has <code>logs:CreateLogGroup</code> and <code>logs:PutLogEvents</code> permissions, <span class="hl">and</span> the function completes at least one successful invocation.</p>
-      <p style="margin-bottom:0">Without all three, the function appears to run successfully — <span class="hl">but no logs are written and no error is surfaced.</span></p>
+      <p style="margin-bottom:0">Without all three, the function appears to run successfully, <span class="hl">but no logs are written and no error is surfaced.</span></p>
     </div>
-    <p class="note" style="margin-top:14px">The phrase "only when all three conditions hold" encodes a conjunction. The conjunction lives in the relationship between the facts, and no single fact carries it. Atomize the document and you have to store that relationship separately, or it disappears.</p>
+    <p class="note" style="margin-top:14px">The phrase "only when all three conditions hold" encodes a conjunction. The hypothesis says atomization strips it: the conjunction lives between the facts, and a flat store has no field for it. Whether that happens depends on where the extractor puts it.</p>
   </div>
 
   <div id="s-facts" class="stage">
-    <p class="lab" style="margin-bottom:2px">Five atoms stored in the fact store.</p>
-    <div class="atom"><span class="fid">f01</span><span>The Lambda execution role needs <code>logs:CreateLogGroup</code> permission to create the log group.</span></div>
-    <div class="atom"><span class="fid">f02</span><span>The Lambda execution role needs <code>logs:PutLogEvents</code> permission to create the log group.</span></div>
-    <div class="atom"><span class="fid">f03</span><span>At least one successful invocation is required to trigger log group creation.</span></div>
-    <div class="atom"><span class="fid">f04</span><span>The CloudWatch log group is created automatically.</span></div>
-    <div class="atom"><span class="fid">f05</span><span>Without all three conditions, the function appears to run but writes no logs and surfaces no error.</span></div>
+    <p class="lab" style="margin-bottom:2px">Six atoms stored in the fact store.</p>
+    <div class="atom"><span class="fid">f01</span><span>The CloudWatch log group is created automatically only when all three conditions hold.</span></div>
+    <div class="atom"><span class="fid">f02</span><span>The Lambda execution role has the <code>logs:CreateLogGroup</code> permission.</span></div>
+    <div class="atom"><span class="fid">f03</span><span>The Lambda execution role has the <code>logs:PutLogEvents</code> permission.</span></div>
+    <div class="atom"><span class="fid">f04</span><span>The function completes at least one successful invocation.</span></div>
+    <div class="atom"><span class="fid">f05</span><span>Without all three conditions, the function appears to run successfully but no logs are written.</span></div>
+    <div class="atom"><span class="fid">f06</span><span>Without all three conditions, no error is surfaced.</span></div>
     <div class="edges">
-      <span class="lab">Conditional edges: extracted, then dropped</span>
-      <div class="edge"><span class="ek req">requires</span><span>f01 + f02 + f03 → f04 &thinsp;·&thinsp; <em>all three must hold simultaneously for automatic creation</em></span></div>
-      <div class="edge" style="border-bottom:0"><span class="ek imp">implies</span><span>¬(f01 ∧ f02 ∧ f03) → f05 &thinsp;·&thinsp; <em>silent failure when any condition is missing</em></span></div>
+      <span class="lab">Conditional edges: extracted, then withheld from the regeneration</span>
+      <div class="edge"><span class="ek req">requires</span><span>f02 + f03 + f04 → f01 &thinsp;·&thinsp; <em>confidence 0.95</em></span></div>
+      <div class="edge" style="border-bottom:0"><span class="ek">sequence</span><span>f04 → f01 &thinsp;·&thinsp; <em>confidence 0.55</em></span></div>
     </div>
-    <p class="note" style="margin-top:14px">Every atom is accurate. The store holds them all. The REQUIRES edge, that f01, f02, and f03 must hold <em>at the same time</em>, has no field in a flat atom store. The extractor finds it and the store drops it.</p>
+    <p class="note" style="margin-top:14px">Six atoms, where a clean atomization would give five. The extractor kept the conjunction inside f01: "created automatically <em>only when all three conditions hold</em>." It also recorded the conjunction as a REQUIRES edge, and the store drops the edge. On this passage, under this extractor, the hypothesis cannot fail: the sentence that held the meaning was kept whole as an atom.</p>
   </div>
 
   <div id="s-regen" class="stage">
-    <p class="lab" style="margin-bottom:10px">Regenerated from the atom list only. <span style="background:var(--bad-pale);border-radius:2px;padding:0 2px">Structural changes highlighted.</span></p>
+    <p class="lab" style="margin-bottom:10px">Regenerated from the six atoms only. <span style="background:var(--ok-pale);border-radius:2px;padding:0 2px">Conjunction kept.</span> <span style="background:var(--bad-pale);border-radius:2px;padding:0 2px">Added.</span></p>
     <div style="font-size:16px;line-height:1.65;max-width:60ch">
-      <p>The CloudWatch log group is created automatically. The Lambda execution role needs <code>logs:CreateLogGroup</code> permission. <span class="hl lost">The role also needs</span> <code>logs:PutLogEvents</code> permission. <span class="hl lost">At least one successful invocation is needed.</span></p>
-      <p style="margin-bottom:0"><span class="hl lost">If any condition is unmet,</span> the function appears to run but writes no logs and surfaces no error.</p>
+      <p>The CloudWatch log group for a Lambda function is created automatically <span class="hl">only when all three of the following conditions hold</span>. First, the Lambda execution role must have the <code>logs:CreateLogGroup</code> permission. Second, the execution role must also have the <code>logs:PutLogEvents</code> permission. Third, the function must complete at least one successful invocation.</p>
+      <p style="margin-bottom:0"><span class="hl">If any of these conditions is not met</span>, the function appears to run successfully, but no logs are written. No error is surfaced in this case, <span class="hl lost">so the missing log group can go unnoticed unless you check for it explicitly.</span></p>
     </div>
     <div class="callout" style="margin-top:16px">
-      <p>Every fact survived. The conjunction <strong>"only when all three hold"</strong> did not. A developer reading this might add <code>logs:CreateLogGroup</code> alone and expect logs to appear. The original said all three are required at once. The regeneration says nothing of the kind.</p>
+      <p>The conjunction survived, in all five runs. A developer reading this adds all three permissions. What the regeneration added is the closing advice, which no atom supports. The probes, which read the text, got 24 of 25 right. The graph bridge score is noisier, 0% in three runs, because the re-extraction phrased an antecedent far enough from the original atom to miss the match; a reader asked whether the text states each edge finds the REQUIRES edge in all five drafts and the SEQUENCE edge in none, <span id="l-tbr">63%</span> every time.</p>
+    </div>
+  </div>
+
+  <div id="s-fixed" class="stage">
+    <p class="lab" style="margin-bottom:10px">Repaired: regenerated again with the two relationships the evaluation reported lost, stated in words. <span style="background:var(--ok-pale);border-radius:2px;padding:0 2px">Rebuilt.</span></p>
+    <div style="font-size:16px;line-height:1.65;max-width:60ch">
+      <p>The CloudWatch log group for a Lambda function is created automatically only when all three of the following conditions hold. First, the Lambda execution role has the <code>logs:CreateLogGroup</code> permission. Second, the execution role has the <code>logs:PutLogEvents</code> permission. Third, the function completes at least one successful invocation. <span class="hl">The successful invocation must happen before the log group can be created, so the log group never appears ahead of that first successful run.</span></p>
+      <p style="margin-bottom:0">If any of these three conditions is missing, the function appears to run successfully, but no logs are written. No error is surfaced in that case, so the absence of logs gives no indication of what is wrong. Check that the execution role has both permissions and that the function has completed at least one successful invocation.</p>
+    </div>
+    <div class="callout" style="margin-top:16px">
+      <p>The repaired draft states the SEQUENCE edge the first draft dropped. The text reader finds both edges in all five repaired drafts, <span id="l-rtbr">100%</span>; the graph matcher finds them in three, and in the other two the repaired draft re-split its sentences and lost the match it had. On six atoms the graph score is a coin flip; the text reader and the probes are the steadier instruments.</p>
+    </div>
+  </div>
+</div>
+
+<div class="callout" style="margin-top:18px">
+  <p><strong>The same passage under a strict extractor.</strong> Forbid conditions inside atoms and the passage becomes seven unconditional claims: "The CloudWatch log group is created automatically", "The Lambda execution role has the <code>logs:CreateLogGroup</code> permission", and so on, with one REQUIRES edge carrying the conjunction and one IMPLIES edge. Regenerated from those atoms alone, the drafts still often say "only if", but the probes now get <span id="l-strict-probes">12 of 25</span> right against 24 of 25, and drift is <span id="l-strict-drift">42%</span>. That is the hypothesis holding where the first extractor had hidden it. Section 02 says how much hiding there was.</p>
+</div>
+
+<h3>What the scores say about it</h3>
+<div class="panel">
+  <div class="scores" id="lambda-bars">
+    <div class="sr"><span class="lab">Atomic F1</span><div class="track"><div class="fill ok" id="l-af" style="width:79%"></div></div><span class="val ok" id="l-af-v">79%</span></div>
+    <div class="sr"><span class="lab">Conditional bridge recall</span><div class="track"><div class="fill bad" id="l-cbr" style="width:0%"></div></div><span class="val bad" id="l-cbr-v">0%</span></div>
+    <div class="sr"><span class="lab">Entailment probes</span><div class="track"><div class="fill ok" id="l-ep" style="width:96%"></div></div><span class="val ok" id="l-ep-v">96%</span></div>
+    <div class="sr"><span class="lab">Drift, first draft</span><div class="track"><div class="fill bad" id="l-dr" style="width:55%"></div></div><span class="val bad" id="l-dr-v">55%</span></div>
+    <div class="sr"><span class="lab">Drift, repaired</span><div class="track"><div class="fill ok" id="l-rdr" style="width:7%"></div></div><span class="val ok" id="l-rdr-v">7%</span></div>
+  </div>
+  <p class="note" id="lambda-note">Sentence extractor, medians over 5 runs. Atomic F1 ranged from 74% to 88%, bridge recall was 63% in 2 runs and 0% in 3, the probes got 24 of 25 right, and the first draft's drift ran from 22% to 61%. Repaired, drift ran from 4% to 62%.</p>
+</div>
+<p>One calibration note. The matcher accepts a paraphrase at 0.70 cosine with this embedding model; an earlier 0.85 cut read every run of this passage as near-total loss while the probes passed, and those runs are kept in <code>before-fix/</code>.</p>
+</section>
+
+<section id="atomizer">
+<p class="eyebrow">02 · The extractor's thumb on the scale</p>
+<h2>Half the conditions never <em>left the atoms.</em></h2>
+<p>The first extraction prompt asked for "one complete, self-contained sentence" per fact and told the model to "preserve negations, conditions, quantifiers, and scope word-for-word." It did. Across every source run under it, <span id="g-corpus">49%</span> of the atoms carry a conditional word: "only when", "if", "unless", "must", "before". The extractor was storing half the connective tissue inside the facts, and the round trip was being asked how much of that the regeneration keeps. That is a real question about regeneration, and a different one from the hypothesis.</p>
+<p>The strict extractor forbids conditions inside atoms: when the source says A holds only when B and C, it writes A, B and C as three facts and the dependence as an edge. It is the extractor a fact store under test should have. On the two passages it folds nothing. On the pages it still folds between a tenth and a half of the atoms, because a step like "you must create the bucket before you enable logging" resists being split, so the two extractors differ in degree on pages and in kind on passages.</p>
+
+<div class="panel">
+  <p class="lab" style="margin-bottom:12px">Three sources under both extractors. Medians over runs; probes summed.</p>
+  <div style="overflow-x:auto">
+  <table id="atomizer-table" style="border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums;min-width:720px">
+    <thead><tr style="text-align:left"><th>Source</th><th>Extractor</th><th class="n">Atoms</th><th class="n">Carry a condition</th><th class="n">Atoms per sentence</th><th class="n">Edges</th><th class="n">Atomic F1</th><th class="n">Bridges, graph</th><th class="n">Bridges, text</th><th class="n">Probes</th><th class="n">Drift</th><th class="n">Repaired</th></tr></thead>
+    <tbody id="atomizer-body"><tr><td>Lambda passage</td><td>sentence</td><td class="n">6</td><td class="n">33%</td><td class="n">3.0</td><td class="n">2</td><td class="n">79%</td><td class="n">0%</td><td class="n">63%</td><td class="n">24/25</td><td class="n">55%</td><td class="n">7%</td></tr><tr><td>Lambda passage</td><td>strict</td><td class="n">7</td><td class="n">0%</td><td class="n">3.5</td><td class="n">2</td><td class="n">88%</td><td class="n">64%</td><td class="n">64%</td><td class="n">12/25</td><td class="n">42%</td><td class="n">43%</td></tr><tr><td>Block Public Access passage</td><td>sentence</td><td class="n">9</td><td class="n">67%</td><td class="n">1.5</td><td class="n">6</td><td class="n">90%</td><td class="n">87%</td><td class="n">74%</td><td class="n">24/25</td><td class="n">9%</td><td class="n">22%</td></tr><tr><td>Block Public Access passage</td><td>strict</td><td class="n">16</td><td class="n">0%</td><td class="n">2.7</td><td class="n">9</td><td class="n">90%</td><td class="n">46%</td><td class="n">69%</td><td class="n">13/25</td><td class="n">43%</td><td class="n">29%</td></tr><tr><td>CloudWatch Logs export page</td><td>sentence</td><td class="n">35</td><td class="n">46%</td><td class="n">–</td><td class="n">10</td><td class="n">99%</td><td class="n">44%</td><td class="n">34%</td><td class="n">14/15</td><td class="n">31%</td><td class="n">25%</td></tr><tr><td>CloudWatch Logs export page</td><td>strict</td><td class="n">49</td><td class="n">27%</td><td class="n">–</td><td class="n">13</td><td class="n">98%</td><td class="n">9%</td><td class="n">57%</td><td class="n">30/30</td><td class="n">44%</td><td class="n">39%</td></tr></tbody>
+  </table>
+  </div>
+  <p class="note" style="margin-top:12px">Atoms per sentence is shown for the passages only; the pages' text comes through an HTML strip that leaves many fragments, so the sentence count is not comparable. The CloudWatch page's probe count is higher under the strict extractor because it exposed more REQUIRES edges to write probes from.</p>
+</div>
+
+<p>Read across a row. The sentence extractor's atoms keep each sentence's conditions inside them, so the regeneration is close to a paraphrase and the probes pass. The strict extractor's atoms are claims, the regeneration has to reassemble the logic from a list, and on the passages it fails half the probes while atom coverage stays at 88 to 90%. On the CloudWatch page the probes hold either way and the graph bridge score goes to 9%: thirteen edges extracted, one matched again. A reader of the same text finds <span id="cw-strict-tbr">57%</span> of them stated, which is the gap the next section is about. The hypothesis is about the second row of each pair. The first row was the extractor answering it in advance.</p>
+</section>
+
+<section id="contravention">
+<p class="eyebrow">03 · A passage built to lose</p>
+<h2>The condition arrives late. <em>Then it reverses.</em></h2>
+<p>The Lambda passage states its condition up front, in one sentence, which is the easiest case for an extractor to keep whole. This one does what documentation does more often: it states a rule, qualifies it two sentences later, and overrides the qualification with an account-level setting after that. Five runs under each extractor.</p>
+
+<div class="panel">
+  <div class="seg" id="c-seg" style="margin-bottom:0">
+    <button data-s="c-orig" aria-pressed="true">1 · Original</button>
+    <button data-s="c-facts" aria-pressed="false">2 · Strict atoms</button>
+    <button data-s="c-regen" aria-pressed="false">3 · Regenerated, strict</button>
+  </div>
+  <div id="s-c-orig" class="stage on">
+    <p class="lab" style="margin-bottom:10px">The source passage. <span style="background:var(--ok-pale);border-radius:2px;padding:0 2px">The rule, its qualification, and the override.</span></p>
+    <div style="font-size:16px;line-height:1.65;max-width:60ch">
+      <p>New buckets block public access by default, so objects in them cannot be read anonymously <span class="hl">even when a bucket policy grants s3:GetObject to everyone</span>. Attaching such a policy succeeds without any error.</p>
+      <p><span class="hl">If you turn off the bucket's Block Public Access settings</span>, the policy takes effect and the objects become readable by anyone. <span class="hl">However, if Block Public Access is also enabled at the account level, the account setting overrides the bucket setting</span>, and the objects stay private no matter what the bucket policy says.</p>
+      <p style="margin-bottom:0">Enabling static website hosting on the bucket does not change any of this: the website endpoint returns 403 <span class="hl">until both the account-level and the bucket-level settings allow public access</span>. Unless you check the account setting first, you can spend a long time editing a policy that is being ignored.</p>
+    </div>
+    <p class="note" style="margin-top:14px">Under the sentence extractor this passage becomes nine atoms, six of them carrying their own condition, and the round trip keeps 71 to 87% of the bridges and 24 of 25 probes. Under the strict extractor it becomes sixteen unconditional atoms and nine edges.</p>
+  </div>
+  <div id="s-c-facts" class="stage">
+    <p class="lab" style="margin-bottom:2px">Sixteen strict atoms. Nine edges carry everything that made the passage hard.</p>
+    <div class="atom"><span class="fid">f01</span><span>New buckets block public access by default.</span></div>
+    <div class="atom"><span class="fid">f03</span><span>A bucket policy grants s3:GetObject to everyone.</span></div>
+    <div class="atom"><span class="fid">f05</span><span>The bucket's Block Public Access settings are turned off.</span></div>
+    <div class="atom"><span class="fid">f07</span><span>Objects in the bucket are readable by anyone.</span></div>
+    <div class="atom"><span class="fid">f08</span><span>Block Public Access is enabled at the account level.</span></div>
+    <div class="atom"><span class="fid">f10</span><span>Objects in the bucket stay private regardless of the bucket policy.</span></div>
+    <div class="atom"><span class="fid">f13</span><span>The website endpoint returns 403.</span></div>
+    <div class="atom"><span class="fid">…</span><span>and nine more of the same shape.</span></div>
+    <div class="edges">
+      <span class="lab">Edges, withheld from the regeneration</span>
+      <div class="edge"><span class="ek req">requires</span><span>f05 + f03 → f07 &thinsp;·&thinsp; <em>readable only when the setting is off and the policy grants it</em></span></div>
+      <div class="edge"><span class="ek imp">implies</span><span>f08 → f10 &thinsp;·&thinsp; <em>the account setting keeps objects private</em></span></div>
+      <div class="edge"><span class="ek">contradicts</span><span>f10 ↔ f07 &thinsp;·&thinsp; <em>private and readable cannot both hold</em></span></div>
+      <div class="edge" style="border-bottom:0"><span class="ek req">requires</span><span>f14 + f15 → f13 &thinsp;·&thinsp; <em>the 403 clears only when both levels allow access</em></span></div>
+    </div>
+    <p class="note" style="margin-top:14px">The override, "the account setting wins", is edge f08 → f10 plus the contradiction with f07. A regeneration that gets f07 and f10 as unordered facts has to guess which wins.</p>
+  </div>
+  <div id="s-c-regen" class="stage">
+    <p class="lab" style="margin-bottom:10px">Regenerated from the sixteen atoms only, run closest to the median.</p>
+    <div style="font-size:15px;line-height:1.6;max-width:62ch">
+      <p>New buckets block public access by default, and objects in a bucket with Block Public Access enabled cannot be read anonymously. This has a notable consequence for bucket policies: attaching a policy that grants s3:GetObject to everyone succeeds without any error, even while Block Public Access is on, so a successful attachment does not mean the objects are actually public.</p>
+      <p>The policy only takes effect if the bucket's Block Public Access settings are turned off. When they are off, and the bucket policy grants s3:GetObject to everyone, the policy takes effect and the objects in the bucket are readable by anyone.</p>
+      <p>Bucket-level settings are not the whole picture, however. If Block Public Access is enabled at the account level, the account-level setting overrides the bucket-level setting. In that case, the objects in the bucket stay private regardless of the bucket policy, even if the bucket's own settings have been turned off.</p>
+      <p>Static website hosting does not change any of this. Enabling it on the bucket does not alter the public access behavior, so if public access is still blocked, the website endpoint returns 403.</p>
+      <p style="margin-bottom:0">If you see a 403 from the website endpoint, check that both the account-level settings and the bucket-level settings allow public access. Checking the account setting first avoids spending a long time editing a policy that is being ignored.</p>
+    </div>
+    <div class="callout" style="margin-top:16px">
+      <p>This draft reads well and reassembles most of the logic; it still answered two of five probes wrong, and across five runs the probes came out <span id="c-strict-probes">13 of 25</span> against 24 of 25 under the sentence extractor, with drift <span id="c-strict-drift">43%</span> against 9%. Repaired, the probes rose to <span id="c-strict-rprobes">17 of 25</span> and drift fell in four runs of five. The regeneration is good at prose and unreliable at logic it was not handed, which is the whole claim.</p>
     </div>
   </div>
 </div>
 </section>
 
 <section id="graph">
-<p class="eyebrow">02 · The conditional graph</p>
+<p class="eyebrow">04 · The conditional graph</p>
 <h2>Edges carry the logic <em>atoms can't.</em></h2>
-<p>The library extracts five types of relationship between facts. Each type captures a failure mode that flattening erases.</p>
+<p>The library extracts five types of relationship between facts: requires, implies, contradicts, sequence, and negates. Each type names a failure mode that flattening can cause, and each is what the repair pass feeds back when the evaluation reports it lost.</p>
 
 <div class="two" style="margin:18px 0 24px">
   <div class="card bad">
     <h3>Requires</h3>
-    <p>The consequent is true only when <em>all</em> listed antecedents hold simultaneously. Lost most often: a conjunction becomes three independent conditions. The developer satisfies one and considers themselves done.</p>
+    <p>The consequent is true only when <em>all</em> listed antecedents hold at once. Lost most often: a conjunction becomes three independent conditions. The developer satisfies one and considers themselves done.</p>
   </div>
-  <div class="card bad">
+  <div class="card">
     <h3>Implies</h3>
     <p>One fact alone is sufficient for another. Lost most often in causal chains: "A causes B causes C" becomes three unconnected claims. No one knows B is the cause.</p>
   </div>
   <div class="card">
-    <h3>Contradicts</h3>
-    <p>Two facts cannot both hold. Regenerations often state both as conditions without saying they exclude each other, and the result is a setup nobody can build.</p>
+    <h3>Contradicts and negates</h3>
+    <p>Two facts cannot both hold, or one denies the other. Regenerations often state both as conditions without saying they exclude each other, and the result is a setup nobody can build.</p>
   </div>
   <div class="card">
     <h3>Sequence</h3>
@@ -251,7 +365,7 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
   </div>
 </div>
 
-<svg viewBox="0 0 720 190" role="img" aria-label="Conditional graph with edges on the left; flat atom store on the right">
+<svg viewBox="0 0 680 192" role="img" aria-label="Conditional graph of the Lambda passage before and after storage" style="display:block;width:100%;height:auto;max-width:680px;margin:0 auto">
   <defs>
     <marker id="arr" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto">
       <polygon points="0 0, 7 2.5, 0 5" fill="#3B3190" opacity=".85"/>
@@ -260,276 +374,320 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
       <polygon points="0 0, 7 2.5, 0 5" fill="#B7BFBA"/>
     </marker>
   </defs>
-
-  <!-- left label -->
-  <text x="4" y="13" letter-spacing=".1em" text-transform="uppercase">ORIGINAL — WITH EDGES</text>
-
-  <!-- f01 -->
+  <text x="4" y="13" letter-spacing=".1em" text-transform="uppercase">EXTRACTED — WITH EDGES</text>
   <circle cx="58" cy="58" r="22" fill="#E8E4F8" stroke="#3B3190" stroke-width="1.5"/>
-  <text x="58" y="62" text-anchor="middle" fill="#3B3190">f01</text>
-  <!-- f02 -->
+  <text x="58" y="62" text-anchor="middle" fill="#3B3190">f02</text>
   <circle cx="58" cy="110" r="22" fill="#E8E4F8" stroke="#3B3190" stroke-width="1.5"/>
-  <text x="58" y="114" text-anchor="middle" fill="#3B3190">f02</text>
-  <!-- f03 -->
+  <text x="58" y="114" text-anchor="middle" fill="#3B3190">f03</text>
   <circle cx="58" cy="162" r="22" fill="#E8E4F8" stroke="#3B3190" stroke-width="1.5"/>
-  <text x="58" y="166" text-anchor="middle" fill="#3B3190">f03</text>
-
-  <!-- bracket lines -->
+  <text x="58" y="166" text-anchor="middle" fill="#3B3190">f04</text>
   <polyline points="80,58 100,58 100,162 80,162" fill="none" stroke="#3B3190" stroke-width="1.3" opacity=".6"/>
   <line x1="100" y1="110" x2="186" y2="110" stroke="#3B3190" stroke-width="1.5" marker-end="url(#arr)"/>
   <text x="140" y="104" text-anchor="middle" fill="#3B3190" font-size="10" letter-spacing=".06em">REQUIRES</text>
-
-  <!-- f04 -->
-  <circle cx="224" cy="90" r="22" fill="#D6EFE2" stroke="#1A5E34" stroke-width="1.5"/>
-  <text x="224" y="94" text-anchor="middle" fill="#1A5E34">f04</text>
-
-  <!-- implies -->
-  <line x1="224" y1="112" x2="224" y2="143" stroke="#55635F" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#arr-g)"/>
-  <text x="238" y="132" fill="#55635F" font-size="10">IMPLIES</text>
-
-  <!-- f05 -->
-  <circle cx="224" cy="166" r="22" fill="#E7EAE7" stroke="#B7BFBA" stroke-width="1.5"/>
-  <text x="224" y="170" text-anchor="middle">f05</text>
-
-  <!-- divider -->
+  <circle cx="224" cy="110" r="22" fill="#D6EFE2" stroke="#1A5E34" stroke-width="1.5"/>
+  <text x="224" y="114" text-anchor="middle" fill="#1A5E34">f01</text>
   <line x1="316" y1="8" x2="316" y2="184" stroke="#B7BFBA" stroke-width="1" stroke-dasharray="4 4"/>
   <text x="362" y="98" text-anchor="middle" fill="#B7BFBA" font-size="10" transform="rotate(-90,362,98)">stored →</text>
-
-  <!-- right label -->
   <text x="406" y="13" letter-spacing=".1em" text-transform="uppercase">ATOM STORE — EDGES DROPPED</text>
-
-  <!-- f01 gray -->
   <circle cx="460" cy="52" r="22" fill="#E7EAE7" stroke="#B7BFBA" stroke-width="1.5"/>
-  <text x="460" y="56" text-anchor="middle">f01</text>
-  <!-- f02 gray -->
+  <text x="460" y="56" text-anchor="middle">f02</text>
   <circle cx="460" cy="110" r="22" fill="#E7EAE7" stroke="#B7BFBA" stroke-width="1.5"/>
-  <text x="460" y="114" text-anchor="middle">f02</text>
-  <!-- f03 gray -->
+  <text x="460" y="114" text-anchor="middle">f03</text>
   <circle cx="460" cy="168" r="22" fill="#E7EAE7" stroke="#B7BFBA" stroke-width="1.5"/>
-  <text x="460" y="172" text-anchor="middle">f03</text>
-  <!-- f04 gray -->
-  <circle cx="600" cy="80" r="22" fill="#E7EAE7" stroke="#B7BFBA" stroke-width="1.5"/>
-  <text x="600" y="84" text-anchor="middle">f04</text>
-  <!-- f05 gray -->
-  <circle cx="600" cy="158" r="22" fill="#E7EAE7" stroke="#B7BFBA" stroke-width="1.5"/>
-  <text x="600" y="162" text-anchor="middle">f05</text>
-
-  <!-- ghost edges -->
-  <line x1="482" y1="52" x2="577" y2="74" stroke="#B7BFBA" stroke-width="1" stroke-dasharray="3 4" opacity=".5" marker-end="url(#arr-g)"/>
-  <line x1="482" y1="110" x2="578" y2="82" stroke="#B7BFBA" stroke-width="1" stroke-dasharray="3 4" opacity=".5"/>
-  <line x1="482" y1="168" x2="578" y2="88" stroke="#B7BFBA" stroke-width="1" stroke-dasharray="3 4" opacity=".5"/>
-  <text x="530" y="66" text-anchor="middle" fill="#B7BFBA" font-size="10" opacity=".8">(dropped)</text>
+  <text x="460" y="172" text-anchor="middle">f04</text>
+  <circle cx="600" cy="110" r="22" fill="#E7EAE7" stroke="#B7BFBA" stroke-width="1.5"/>
+  <text x="600" y="114" text-anchor="middle">f01</text>
+  <line x1="482" y1="52" x2="577" y2="100" stroke="#B7BFBA" stroke-width="1" stroke-dasharray="3 4" opacity=".5"/>
+  <line x1="482" y1="110" x2="578" y2="110" stroke="#B7BFBA" stroke-width="1" stroke-dasharray="3 4" opacity=".5"/>
+  <line x1="482" y1="168" x2="577" y2="120" stroke="#B7BFBA" stroke-width="1" stroke-dasharray="3 4" opacity=".5"/>
+  <text x="530" y="80" text-anchor="middle" fill="#B7BFBA" font-size="10" opacity=".8">(dropped)</text>
+  <text x="600" y="150" text-anchor="middle" fill="#55635F" font-size="10">"created automatically", unconditionally</text>
 </svg>
-<p class="note" style="margin-top:8px">Left: the conditional graph the LLM extracts. Right: what the atom store holds. Ghost lines show where the REQUIRES junction was. Without it, f01, f02, and f03 look like independent options. The original needs all three at once.</p>
-</section>
-
-<section id="gap">
-<p class="eyebrow">03 · The measurement gap</p>
-<h2>The number that looks fine <em>counts only nodes.</em></h2>
-<p>The obvious metric for a fact store round-trip is atom coverage: what fraction of the original facts survived in the regeneration? For this example the answer is 94%: four of five atoms are present and correctly expressed. That score is accurate, and it measures nodes alone.</p>
-
-<div class="panel">
-  <p class="lab" style="margin-bottom:16px">Same example, three metrics</p>
-  <div class="scores" id="score-bars">
-    <div class="sr">
-      <span class="lab">Atomic F1</span>
-      <div class="track"><div class="fill ok" id="b-af" style="width:94%"></div></div>
-      <span class="val ok" id="v-af">94%</span>
-    </div>
-    <div class="sr">
-      <span class="lab">Conditional bridge recall</span>
-      <div class="track"><div class="fill bad" id="b-cbr" style="width:33%"></div></div>
-      <span class="val bad" id="v-cbr">33%</span>
-    </div>
-    <div class="sr">
-      <span class="lab">Entailment probes</span>
-      <div class="track"><div class="fill mid" id="b-ep" style="width:55%"></div></div>
-      <span class="val" id="v-ep">55%</span>
-    </div>
-  </div>
-  <p class="note">Atomic F1 alone reads this as a 94% success. CBR shows that two of three conditional edges are gone. The entailment probes confirm the damage: the regenerated document answered more than half of the multi-fact questions wrong.</p>
-</div>
-
-<p>The library exists to surface the gap between atomic F1 and CBR. A distillation that scores 94% on atom coverage and 33% on conditional bridge recall kept the vocabulary and lost the logic.</p>
+<p class="note" style="margin-top:8px">Left: the strict extractor's graph of the Lambda passage, with the conjunction as an edge. Right: what the atom store keeps. Under the sentence extractor f01 would read "created automatically only when all three conditions hold" and the dropped edge would cost nothing; under the strict one f01 is unconditional and the edge is the only place the condition lived.</p>
 </section>
 
 <section id="metrics">
-<p class="eyebrow">04 · What the library measures</p>
-<h2>Three layers, <em>one composite.</em></h2>
-<p>Each metric catches a different failure mode. You need all three because a document can pass one test and fail another.</p>
+<p class="eyebrow">05 · The evaluation</p>
+<h2>Four layers, <em>one composite.</em></h2>
+<p>Each metric catches a different failure mode. You need all of them because a document can pass one test and fail another, as every source here did. Each also reports what it could not find, which is what the repair pass feeds back, and the report now prints two numbers about the extraction itself beside them.</p>
 
-<div class="pipe" id="pipeline">
+<div class="pipe">
   <div class="step">
     <div class="num">1</div>
     <div class="body">
       <h3>Atomic F1 — did the content survive?</h3>
-      <p>The library embeds every fact from the original and the regenerated document. A regen fact "matches" an original when cosine similarity clears the threshold. Precision measures hallucination rate; recall measures coverage. F1 is the harmonic mean. <strong>Weight in composite: 25%.</strong> Treat it as a floor: a regeneration needs high F1, and high F1 says nothing about structure.</p>
+      <p>The library embeds every fact from the original and the regenerated document. Recall is the share of original atoms that claim a regenerated atom in a one-to-one assignment at or above 0.70 cosine, highest similarity first. Precision is the share of regenerated atoms within 0.70 of any original, so a fact the regeneration split in two is not two hallucinations. The unsupported atoms are listed. <strong>Weight in composite: 0.25.</strong> Treat it as a floor: a regeneration needs high F1, and high F1 says nothing about structure.</p>
     </div>
   </div>
   <div class="step">
     <div class="num">2</div>
     <div class="body">
       <h3>Conditional bridge recall — did the structure survive?</h3>
-      <p>The library matches facts across the two graphs by embedding similarity, then checks, for each original conditional edge, whether the regen graph has the mapped edge of the same type. Each edge counts by its extraction confidence. CBR broken out by edge type shows <em>which kind of relationship</em> the regeneration drops most often. <strong>Weight in composite: 50%</strong>, double the others, because atomic F1 cannot see this failure at all.</p>
+      <p>Using the same assignment, the library checks, for each original conditional edge, whether the regen graph has an edge of the same kind whose antecedents are exactly the mapped ones and whose consequent either is the mapped atom or is within 0.70 of the original consequent. Each edge counts by its extraction confidence, and the lost edges are returned by index. <strong>Weight in composite: 0.50</strong>, double the others, because atomic F1 cannot see this failure at all. The re-extraction is the noisy step, so <code>--repeats</code> reports the range.</p>
+    </div>
+  </div>
+  <div class="step">
+    <div class="num">2b</div>
+    <div class="body">
+      <h3>Text bridge recall — does the text state the relationship?</h3>
+      <p>The same original edges, rendered as sentences in the atoms' own words ("X holds only when all of the following hold: A; B; C"), put to a model reading the regenerated document in one call, with a supporting quote asked for. The confidence-weighted share of yes answers is text bridge recall; an "unknown" counts as lost. It asks about the text rather than a second extraction of it, so it does not inherit the re-extraction's noise. Across the recorded runs it agrees with the graph measure moderately under the strict extractor and not at all under the sentence one, and departs from it most where the re-extraction fails to find edges the text plainly states. It is the measure the repair comparison uses; the composite still carries the graph measure.</p>
     </div>
   </div>
   <div class="step">
     <div class="num">3</div>
     <div class="body">
       <h3>Entailment probes — does the regeneration behave correctly?</h3>
-      <p>The library writes yes/no questions that take several facts to answer, aimed at REQUIRES edges with two or more antecedents, and puts each one to the regenerated document. The pass rate measures behaviour: whether the conjunctive structure disappeared from the reader's experience, even where CBR missed it. <strong>Weight in composite: 25%.</strong></p>
+      <p>The library writes yes/no questions that take several facts to answer, aimed at REQUIRES edges with two or more antecedents, and puts each one to the regenerated document. The pass rate measures behaviour: whether the conjunctive structure disappeared from the reader's experience, even where the matchers say otherwise. An "unknown" counts as wrong. <strong>Weight in composite: 0.25.</strong> Under the strict extractor the probes are harder: with the logic in the edges, the generator writes contrapositives, "if the log group was not created and the role has both permissions, must the function have failed to run?", and those are the questions a reader of a flattened document gets wrong.</p>
     </div>
   </div>
-  <div class="step" style="border-bottom:0">
+  <div class="step">
     <div class="num">4</div>
     <div class="body">
       <h3>Structural drift — did the prerequisite ordering survive?</h3>
-      <p>For procedure pages, the library runs the prerequisite extractor on both documents and compares: how many prerequisites survived, how much more detour-prone the regeneration became, how far introduction positions shifted. See §05 for the connection to the detour assessment. <strong>Added when applicable; renormalizes other weights.</strong></p>
+      <p>For procedure pages, the library runs the prerequisite extractor from the detour work on both documents and compares them: how many prerequisites survived, matched by embedding at the same 0.70, and how much more detour-prone the regeneration became. The loss is 0.6 times the recall loss plus 0.4 times the detour-rate delta; if the regeneration no longer reads as a procedure, the loss is 1. Whether the original is a procedure is a vote over three reads. The unmatched prerequisites and the ones that arrive as detours are returned by name. <strong>Weight in composite: 0.20</strong>, added when applicable.</p>
     </div>
   </div>
-</div>
-
-<p>The composite drift score is the weighted average of the loss terms (1 − score) for applicable layers. Zero means perfect preservation. One means complete loss. For this example:</p>
-
-<div class="tiles" style="margin-top:16px">
-  <div class="tile ref"><b>6%</b><span>atomic loss</span></div>
-  <div class="tile bad"><b id="t-cbrl">67%</b><span>CBR loss</span></div>
-  <div class="tile bad"><b id="t-epl">45%</b><span>entailment loss</span></div>
-  <div class="tile bad"><b id="t-drift">47%</b><span>composite drift</span></div>
+  <div class="step">
+    <div class="num">+</div>
+    <div class="body">
+      <h3>Granularity and load — what the extractor did, and how much logic there was</h3>
+      <p><em>Granularity</em> is atoms per sentence and the share of atoms that carry a conditional word: the measure of how much the extractor kept inside the facts. <em>Conditional load</em> is how many ifs, ands and buts the source asks a reader to hold at once: condition words per sentence, edges per atom, the widest REQUIRES junction and the longest chain of dependences, scaled to one number from 0 for a list of independent facts to 1 for dense nested logic. Neither enters the composite. Both are printed beside it, because a drift score without them is a score of an unknown test.</p>
+    </div>
+  </div>
 </div>
 </section>
 
-<section id="structural">
-<p class="eyebrow">05 · The structural layer</p>
-<h2>Prerequisite ordering is <em>also drift.</em></h2>
-<p>The metrics above work at the paragraph and sentence level: did individual facts survive, did the conditional logic between adjacent claims survive? A document also carries structure at a higher level.</p>
-<p>A how-to page has a job. It tells the reader what to have ready before they start. It surfaces those prerequisites early, with enough context to satisfy them. That ordering is meaning too, and a fact store round-trip can lose it while preserving every individual fact.</p>
+<section id="cohort">
+<p class="eyebrow">06 · Ten pages, two extractors</p>
+<h2>The atoms come back. <em>The bridges and the order don't.</em></h2>
+<p>Ten how-to pages from the detour set, each about granting some service access to S3, each run twice per extractor: the first draft, then the repaired draft. One row per page, medians over its runs. Detour rate is the share of a page's prerequisites that arrive as a surprise with no steps: in the original, after the round trip, and after repair.</p>
 
-<div class="callout">
-  <p>The original document introduced every prerequisite in a checklist at the top. The regenerated document buried each one in the step that needs it: the detour pattern from the map. <strong>Intact atoms, scrambled order.</strong></p>
+<div class="panel" style="overflow-x:auto">
+  <div class="seg" id="cohort-seg" style="margin-bottom:14px"><button data-a="strict" aria-pressed="true">Strict extractor</button><button data-a="sentence" aria-pressed="false">Sentence extractor</button></div>
+  <table id="cohort-table" style="border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums;min-width:980px">
+    <thead><tr style="text-align:left"><th>Page</th><th class="n">Atoms</th><th class="n">Carry a condition</th><th class="n">Atomic F1</th><th class="n">Bridges, graph</th><th class="n">Bridges, text</th><th class="n">Probes</th><th class="n">Prereqs</th><th class="n">Detours before</th><th class="n">after</th><th class="n">repaired</th><th class="n">Structural loss</th><th class="n">repaired</th><th class="n">Text bridges repaired</th></tr></thead>
+    <tbody id="cohort-body"><tr><td>IoT · cross-account resources in rules</td><td class="n">26</td><td class="n">12%</td><td class="n">90%</td><td class="n">0%</td><td class="n">0%</td><td class="n">23/24</td><td class="n">11</td><td class="n">16%</td><td class="n">58%</td><td class="n">35%</td><td class="n">53%</td><td class="n">33%</td><td class="n">83%</td></tr><tr><td>Bedrock · knowledge base permissions</td><td class="n">72</td><td class="n">36%</td><td class="n">99%</td><td class="n">83%</td><td class="n">51%</td><td class="n">20/20</td><td class="n">7</td><td class="n">0%</td><td class="n">100%</td><td class="n">33%</td><td class="n">61%</td><td class="n">38%</td><td class="n">98%</td></tr><tr><td>Redshift · COPY job</td><td class="n">54</td><td class="n">33%</td><td class="n">100%</td><td class="n">51%</td><td class="n">79%</td><td class="n">9/10</td><td class="n">8</td><td class="n">0%</td><td class="n">100%</td><td class="n">21%</td><td class="n">63%</td><td class="n">27%</td><td class="n">97%</td></tr><tr><td>S3 · replication walkthrough</td><td class="n">55</td><td class="n">22%</td><td class="n">96%</td><td class="n">46%</td><td class="n">89%</td><td class="n">40/40</td><td class="n">6</td><td class="n">27%</td><td class="n">67%</td><td class="n">7%</td><td class="n">16%</td><td class="n">16%</td><td class="n">80%</td></tr><tr><td>Data Firehose · controlling access</td><td class="n">115</td><td class="n">29%</td><td class="n">96%</td><td class="n">50%</td><td class="n">98%</td><td class="n">12/12</td><td class="n">8</td><td class="n">33%</td><td class="n">no longer a procedure</td><td class="n">56%</td><td class="n">100%</td><td class="n">13%</td><td class="n">99%</td></tr><tr><td>Lake Formation · register an encrypted cross-account location</td><td class="n">31</td><td class="n">55%</td><td class="n">98%</td><td class="n">43%</td><td class="n">78%</td><td class="n">10/10</td><td class="n">7</td><td class="n">14%</td><td class="n">17%</td><td class="n">32%</td><td class="n">14%</td><td class="n">11%</td><td class="n">88%</td></tr><tr><td>CloudWatch Logs · cross-account vended logs</td><td class="n">30</td><td class="n">7%</td><td class="n">97%</td><td class="n">16%</td><td class="n">38%</td><td class="n">8/12</td><td class="n">9</td><td class="n">0%</td><td class="n">35%</td><td class="n">0%</td><td class="n">21%</td><td class="n">10%</td><td class="n">87%</td></tr><tr><td>RDS · export a snapshot to S3</td><td class="n">64</td><td class="n">13%</td><td class="n">98%</td><td class="n">36%</td><td class="n">60%</td><td class="n">15/16</td><td class="n">7</td><td class="n">0%</td><td class="n">7%</td><td class="n">17%</td><td class="n">7%</td><td class="n">11%</td><td class="n">96%</td></tr><tr><td>Lambda · S3 trigger tutorial</td><td class="n">66</td><td class="n">29%</td><td class="n">97%</td><td class="n">31%</td><td class="n">48%</td><td class="n">20/20</td><td class="n">7</td><td class="n">0%</td><td class="n">0%</td><td class="n">0%</td><td class="n">21%</td><td class="n">4%</td><td class="n">89%</td></tr><tr><td>Athena · cross-account federated query</td><td class="n">44</td><td class="n">14%</td><td class="n">98%</td><td class="n">45%</td><td class="n">88%</td><td class="n">39/40</td><td class="n">6</td><td class="n">0%</td><td class="n">7%</td><td class="n">8%</td><td class="n">3%</td><td class="n">3%</td><td class="n">75%</td></tr></tbody>
+  </table>
+  <p class="note" id="cohort-note" style="margin-top:12px">Strict extractor, across the 10 pages: atomic F1 median 97% (90 to 100), bridge recall median 44% (0 to 83), probes 196 of 204, drift median 31% (17 to 53). The structural layer applied on all 10. The detour rate rose on 8 pages, on 6 of them in every run, and 1 page came back as something other than a procedure in both runs. After repair: prerequisite recall median 75% to 88%, detour rate after the round trip median 35% to 19%, structural loss median 21% to 12%; detours fell on 5 pages, drift fell on 8, graph bridge recall rose on 9, and text bridge recall rose on 8 of 10.</p>
 </div>
 
-<p>The <a href="detour-map.html">detour assessment</a> measures this in original documents: what fraction of prerequisites are detours, how often links deliver what they promise. The drift pipeline extends that measurement to the round-trip: compare the prerequisite tree the original had to the tree the regeneration produced.</p>
+<p>Three things the table says, and the strict rows say them more plainly. The atoms survive on every page under either extractor. A third to a half of the bridges are lost on every page by the text reader's count, more by the graph matcher's. The prerequisites are displaced on most: under the strict extractor the median detour rate after the round trip is <span id="co-det-strict">35%</span> against <span id="co-det-sentence">17%</span> under the sentence extractor, from originals near zero, and it rose on <span id="co-rose-strict">8 of 10</span> pages. That displacement is the detour pattern the <a href="detour-map.html">Detour Map</a> counts in original documentation, produced here by the round trip. A page that stated its prerequisites up front comes back mentioning them at the step that needs them, with no steps.</p>
+</section>
 
-<div class="two" style="margin:18px 0 0">
-  <div class="card">
-    <h3>What structural drift measures</h3>
-    <p><strong>Prerequisite recall</strong> — what fraction of original prerequisites are present in the regeneration, matched by word overlap.</p>
-    <p style="margin-top:8px"><strong>Detour rate delta</strong> — how much more detour-prone the regenerated document became. A positive delta means the regeneration springs prerequisites on the reader at the step that needs them instead of listing them up front.</p>
-    <p style="margin-top:8px"><strong>Introduction position MAE</strong> — how far matched prerequisites moved within the document, normalized by page length.</p>
-  </div>
-  <div class="card">
-    <h3>For this example</h3>
-    <div class="scores" id="struct-bars" style="margin-top:4px">
-      <div class="sr" style="grid-template-columns:max(110px,18ch) 1fr 48px">
-        <span class="lab">Prereq recall</span>
-        <div class="track"><div class="fill bad" id="b-pr" style="width:60%"></div></div>
-        <span class="val bad" id="v-pr">60%</span>
-      </div>
-      <div class="sr" style="grid-template-columns:max(110px,18ch) 1fr 48px">
-        <span class="lab">Orig detour rate</span>
-        <div class="track"><div class="fill ok" id="b-do" style="width:20%"></div></div>
-        <span class="val ok" id="v-do">20%</span>
-      </div>
-      <div class="sr" style="grid-template-columns:max(110px,18ch) 1fr 48px">
-        <span class="lab">Regen detour rate</span>
-        <div class="track"><div class="fill bad" id="b-dr2" style="width:42%"></div></div>
-        <span class="val bad" id="v-dr2">42%</span>
-      </div>
+<section id="structural">
+<p class="eyebrow">07 · The structural layer, up close</p>
+<h2>Every fact survived. <em>Four prerequisites moved.</em></h2>
+<p>The CloudWatch Logs page for exporting log data to S3, run three times per extractor. It reads as a procedure in every read: nine prerequisites, seven with their steps on the page, and no detours in the run shown.</p>
+
+<div class="panel">
+  <div class="two">
+    <div class="card ok">
+      <h3>Original: a procedure</h3>
+      <p>A log group, a destination bucket in the same Region, a signed-in identity with the right policies, a bucket policy naming the CloudWatch Logs service, a KMS key policy, and for the cross-account case a second bucket, an identity policy, a role, and a second bucket policy. Stated before the steps, with the steps that follow.</p>
     </div>
-    <p class="note" style="margin-top:10px">The regeneration added 22 percentage points of detours and dropped two of five prerequisites outright. The document that looked fine on atomic coverage sends the reader on more side trips than the original.</p>
+    <div class="card bad">
+      <h3>Regenerated: still a procedure, rearranged</h3>
+      <p>Overview, Bucket requirements, Required permissions, Setting access permissions on the bucket, Exporting to a bucket encrypted with SSE-KMS, Cross-account export, Creating the export task. In two runs of three under either extractor, the cross-account prerequisites are mentioned where the export step needs them, with no steps anywhere.</p>
+    </div>
   </div>
+  <div class="scores" id="struct-bars" style="margin-top:18px">
+    <div class="sr" style="grid-template-columns:max(110px,18ch) 1fr 48px"><span class="lab">Detour rate, original</span><div class="track"><div class="fill ok" id="b-do" style="width:0%"></div></div><span class="val ok" id="v-do">0%</span></div>
+    <div class="sr" style="grid-template-columns:max(110px,18ch) 1fr 48px"><span class="lab">Detour rate, regenerated</span><div class="track"><div class="fill bad" id="b-dr2" style="width:40%"></div></div><span class="val bad" id="v-dr2">40%</span></div>
+    <div class="sr" style="grid-template-columns:max(110px,18ch) 1fr 48px"><span class="lab">Detour rate, repaired</span><div class="track"><div class="fill ok" id="b-dr3" style="width:0%"></div></div><span class="val ok" id="v-dr3">0%</span></div>
+    <div class="sr" style="grid-template-columns:max(110px,18ch) 1fr 48px"><span class="lab">Structural loss</span><div class="track"><div class="fill bad" id="b-sl" style="width:31%"></div></div><span class="val bad" id="v-sl">31%</span></div>
+    <div class="sr" style="grid-template-columns:max(110px,18ch) 1fr 48px"><span class="lab">Structural loss, repaired</span><div class="track"><div class="fill ok" id="b-sl2" style="width:15%"></div></div><span class="val ok" id="v-sl2">15%</span></div>
+  </div>
+  <p class="note" id="struct-note" style="margin-top:10px">Sentence extractor, medians over three runs. The detour rate after the round trip was 40%, 43% and 0%; after repair, 0% in every run. Structural loss ran from 12% to 44% and, repaired, from 0% to 20%. Under the strict extractor the detour rate after the round trip was <span id="cw-strict-det">33%, 67%, 0%</span>, repaired to 0% in every run, and bridge recall was <span id="cw-strict-cbr">9%</span>, repaired to <span id="cw-strict-rcbr">30%</span>.</p>
+</div>
+
+<div class="callout">
+  <p>Every atom about permissions survived the trip. What the regeneration moved is the frame that said <em>do these first</em>, and for the cross-account case it dropped the steps. <strong>Intact atoms, sprung prerequisites.</strong> That is the drift atom coverage cannot see, and it is the part the repair pass puts back.</p>
+</div>
+</section>
+
+<section id="load">
+<p class="eyebrow">08 · How many ifs, ands and buts</p>
+<h2>Does a harder passage <em>lose more?</em></h2>
+<p>Some passages you read five times and still aren't sure you have them. The conditional load number is an attempt to measure that from the text and its graph: condition words per sentence, edges per atom, the widest REQUIRES junction, the longest chain. The contravention passage scores <span id="ld-s3">0.56</span>, the Lambda passage <span id="ld-lambda">0.44</span>, the pages <span id="ld-range">0.34 to 0.66</span>. If the hypothesis is right, harder passages should lose more in the round trip. One point per source, drift on the vertical axis.</p>
+
+<div class="panel">
+  <div class="seg" id="load-seg" style="margin-bottom:10px"><button data-a="strict" aria-pressed="true">Strict extractor</button><button data-a="sentence" aria-pressed="false">Sentence extractor</button></div>
+  <svg id="load-svg" viewBox="0 0 680 300" role="img" aria-label="Conditional load against drift, one point per source" style="display:block;width:100%;height:auto"></svg>
+  <p class="note" id="load-note" style="margin-top:10px">Strict extractor. Amber: the passages and the two single pages; violet: the cohort pages. Rank correlation of load with drift +0.15 on 13 sources, bootstrap interval −0.51 to +0.69; with bridge loss −0.01, with structural loss +0.34.</p>
+</div>
+
+<p>No relation the data can support. Under the strict extractor the rank correlation between load and drift is <span id="ld-rho-strict">+0.15</span> on thirteen sources, with a bootstrap interval from <span id="ld-ci-strict">−0.51 to +0.69</span>; against bridge loss and structural loss the intervals are as wide. Under the sentence extractor it comes out <span id="ld-rho-sentence">−0.41</span>, which is the extractor folding the harder sentences into atoms, where they are safe. Two readings follow. The first is that thirteen or fourteen points cannot find a moderate effect, which is true and is what more pages are for. The second is that what the round trip loses is governed by what the extractor externalised, and the load number measures the source, so it predicts loss only through an extractor that respects it. The difficulty you feel reading a passage is real; it is not yet a quantity this evaluation can use. A reader-side measure, the probes put to the original rather than the regeneration, would be the next thing to try.</p>
+</section>
+
+<section id="loop">
+<p class="eyebrow">09 · The repair loop</p>
+<h2>Score it, name what's missing, <em>send it back.</em></h2>
+<p>The evaluation returns more than numbers. Bridge recall returns the edges it could not find. The structural layer returns the prerequisites it could not match and the ones that arrive as detours. The repair pass hands those to the regenerator with the same atoms: each lost relationship stated in words ("[f01] holds only when [f02] and [f03] and [f04] all hold"), and the prerequisites to state up front, with where their steps are. Then it scores the new draft with the same four layers. Two more model calls per page, and the loop can run again.</p>
+
+<div class="two" style="margin:18px 0">
+  <div class="card ok">
+    <h3>What it fixes: the order</h3>
+    <p>Under either extractor. On the ten pages, prerequisite recall rose from a median of <span id="rp-pr">72% to 89%</span> and structural loss halved; the detour rate after the round trip fell on five pages, and the one page that had come back as prose came back as a procedure. On the CloudWatch page the sprung prerequisites went to zero in every run. Telling the regenerator what to put first works.</p>
+  </div>
+  <div class="card ok">
+    <h3>What it fixes, read from the text: the bridges</h3>
+    <p>Measured by a reader of the regenerated text, feeding the lost edges back raises bridge recall on <span id="rp-tbr-strict">8 of 10</span> pages under the strict extractor, median <span id="rp-tbr-strict-med">69% to 89%</span>, and on <span id="rp-tbr-sentence">10 of 10</span> under the sentence extractor. On the CloudWatch page the reader finds <span id="cw-tbr-pair">57% of the edges stated in the first draft and 93% in the repaired one</span>; the graph matcher had read the same pair as 9% and 30%. The earlier conclusion that repair could not move the bridges was the matcher's noise, not the draft's. The passage's probes moved too, from 13 to 17 of 25 under the strict extractor.</p>
+  </div>
+</div>
+
+<p>The loop as it stands is a proof of the shape: a round trip that loses structure, an evaluation that names the loss, a regeneration that takes the names back, and now a reader that can tell a repaired bridge from a re-split one. Atom F1 drops a few points after repair, because the repaired draft restructures and the re-extraction splits it differently; the probes do not. What it needs next is more pages.</p>
+
+<div class="callout">
+  <p><strong>Which instrument to trust.</strong> Across every scored draft and repair under the strict extractor, the graph matcher and the text reader agree moderately, rank correlation <span id="ins-gt-strict">+0.43</span>; under the sentence extractor they do not agree at all, <span id="ins-gt-sentence">−0.00</span>, because the matcher is scoring how the re-extraction split sentences that already carried their conditions. The text reader agrees with the probes only loosely, <span id="ins-tp-strict">+0.14</span>, and that is expected: the probes ask contrapositive questions a document can entail without stating. Where the three disagree, read the quotes the reader returns.</p>
 </div>
 </section>
 
 <section id="run">
-<p class="eyebrow">06 · Running it</p>
+<p class="eyebrow">10 · Running it</p>
 <h2>One script. <em>One report.</em></h2>
-<p>The pipeline is a single script in <code>experiments/doc_drift/</code>. Pass a URL or a local file. It fetches, extracts, regenerates, re-extracts, and scores.</p>
-
+<p>The pipeline is a single script in <code>experiments/doc_drift/</code>. Pass a URL or a local file. It fetches, extracts, regenerates, re-extracts, and scores; with <code>--repair</code> it regenerates once more with what was lost and scores that too. It needs a Claude model for extraction and an OpenAI key for embeddings; <code>--mock</code> runs offline with a hash embedder and tells you nothing about meaning.</p>
 <pre>python -I experiments/doc_drift/run.py &lt;url-or-file&gt;
+python -I experiments/doc_drift/run.py &lt;url&gt; --atomizer strict   # no conditions inside atoms; the test the hypothesis needs
+python -I experiments/doc_drift/run.py &lt;url&gt; --repair            # feed back the lost edges and sprung prerequisites
+python -I experiments/doc_drift/run.py &lt;url&gt; --repeats 3        # regenerate and re-score three times, report the range
 python -I experiments/doc_drift/run.py &lt;url&gt; --no-structural   # skip ordering layer
 python -I experiments/doc_drift/run.py &lt;url&gt; --json            # machine-readable</pre>
+<p>The report separates loss at every layer, prints the extraction's granularity and the source's load beside it, the text reader's bridge recall under the graph matcher's, then the same scores for the repaired draft. This is the CloudWatch Logs run closest to the median of three, sentence extractor, recorded before the text line was added:</p>
+<pre>Source:  d86b534425c2026034405fd9
+  orig   35 facts, 10 edges   (sentence atomizer: 45.7% of atoms carry a condition)
+  regen  34 facts, 10 edges
+  load   0.51  (0.57 edges per atom, widest requires 2, longest chain 3)
 
-<p>The report separates loss at every layer:</p>
+Atomic F1 .............. 98.6%
+  recall                 97.1%
+  precision              100.0%
 
-<pre>Source:  a3f8c2b1d9e04f17
-  orig   5 facts, 3 edges
-  regen  5 facts, 2 edges
+Cond. bridge recall .... 30.5%  (10 edges)
+  contradicts          50.0%
+  implies              0.0%
+  requires             0.0%
+  sequence             43.3%
 
-Atomic F1 .............. 94.0%
-  recall                 94.0%
-  precision              92.0%
-
-Cond. bridge recall .... 33.3%  (3 edges)
-  implies               50.0%
-  requires               0.0%
-
-Entailment probes ...... 55.0%  (20 probes)
+Entailment probes ...... 100.0%  (5 probes)
 
 Structural (procedure)
-  prereq recall          60.0%  (5 → 3)
-  detour rate  orig 20.0%  regen 42.0%  delta +22.0%
+  prereq recall          80.0%  (5 → 6)
+  detour rate            orig 0.0%  regen 0.0%  delta +0.0%
+  intro position MAE     14.3%  (normalized by n_blocks)
 
-Drift score ............ 47.1%  (0=perfect, 1=complete loss)
-  atomic_loss            6.0%
-  cbr_loss              66.7%
-  entailment_loss       45.0%
-  structural_loss       45.2%</pre>
+Drift score ............ 31.3%  (0=perfect, 1=complete loss)
+  atomic_loss          1.4%
+  cbr_loss             69.5%
+  entailment_loss      0.0%
+  structural_loss      12.0%
 
-<div class="two" style="margin-top:20px">
-  <div class="card ok">
+After repair (fed back 7 relationship(s), 1 prerequisite(s))
+  Atomic F1              95.9%
+  Cond. bridge recall    45.8%
+  Entailment probes      80.0%
+  Structural             recall 100.0%  detour rate 0.0%  loss 0.0%
+  Drift score            27.6%</pre>
+
+<div class="two" style="margin-top:18px">
+  <div class="card">
     <h3>Reading the report</h3>
-    <p>Atomic loss below 10% with CBR loss above 50% is the typical pattern for a well-formed but structurally hollow regeneration. Entailment loss above 40% means readers will get wrong answers. A composite above 40% deserves a look whatever the atomic coverage says.</p>
+    <p>Look at the granularity line first: if half the atoms carry a condition, the bridge and probe scores are about regeneration, not about the store. Atomic loss near zero with a positive detour delta means the how-to kept its facts and moved its prerequisites; the repair line says whether they went back. Low precision on a short passage with the probes passing means the regeneration added advice the source never gave. Bridge recall that swings between runs means the re-extraction is the noisy part; use <code>--repeats</code> before quoting it.</p>
   </div>
   <div class="card">
-    <h3>Using the Python API</h3>
-    <p>Import the metrics from <code>semantic_ruler.drift</code> as pure functions: <code>atomic_f1</code>, <code>cond_bridge_recall</code>, <code>entailment_rate</code>, <code>structural_drift</code>, <code>drift_score</code>. The shared shard store caches extracted graphs, so you pay the LLM extraction cost once per document.</p>
+    <h3>How sure</h3>
+    <p>Ten cohort pages at two runs per extractor, three on the CloudWatch page, five on each passage; one model for extraction (Claude Sonnet 5.5) and one embedding model. The original graph is extracted once per extractor and cached, so the variation between runs comes from the regeneration and its re-extraction. The 0.70 threshold was set by looking at the Lambda runs, so it is calibrated on data it also scores. The cohort pages were chosen because three reads agreed they are procedures, which selects for clear how-tos. The strict extractor still folds between a tenth and a half of the atoms on pages, so the "strict" rows are stricter, not pure. The repair fed back only what the graph matcher flagged; feeding back every edge was tried on two sources and did no better, and feeding back what the text reader flagged is now an option that has not been run. The text reader is one model's judgement of one call per draft, with unknowns counted as lost; on long pages it answers unknown often. Ten pages is a rate, not a law.</p>
   </div>
 </div>
+
+<h3>Using the Python API</h3>
+<p>Import the metrics from <code>semantic_ruler.drift</code> as pure functions: <code>atomic_f1</code>, <code>cond_bridge_recall</code>, <code>entailment_rate</code>, <code>structural_drift</code>, <code>drift_score</code>, <code>granularity</code>, <code>conditional_load</code>, <code>bridge_entailment</code> for the text reader, and <code>summarize_repeats</code> for the spread over runs. <code>extract_facts</code> takes <code>atomizer="strict"</code>; <code>regenerate_doc</code> takes <code>repair_edges</code> and <code>prerequisites</code> for the repair pass. The shared shard store caches extracted graphs, so you pay the LLM extraction cost once per document and extractor.</p>
 </section>
 
 <footer>
-<p>Part of <a href="index.html">semantic-ruler</a> · <a href="detour-map.html">The Detour Map</a> · Source: <a href="https://github.com/aaronmarkham/semantic-ruler">github.com/aaronmarkham/semantic-ruler</a> · Apache 2.0</p>
+<p>Part of <a href="index.html">semantic-ruler</a> · <a href="detour-map.html">The Detour Map</a> · Source: <a href="https://github.com/aaronmarkham/semantic-ruler">github.com/aaronmarkham/semantic-ruler</a> · Apache 2.0 · Runs recorded in <code>experiments/doc_drift/results/</code> (sentence extractor) and <code>results/strict/</code>, November 2026; the runs made before the matcher calibration are in <code>before-fix/</code>.</p>
 </footer>
-
 </div>
 
 <script>
+const NAMES={"accessing-cross-account-resources-using-rules":"IoT · cross-account resources in rules","kb-permissions":"Bedrock · knowledge base permissions","loading-data-copy-job":"Redshift · COPY job","replication-walkthrough1":"S3 · replication walkthrough","controlling-access":"Data Firehose · controlling access","register-cross-encrypted":"Lake Formation · register an encrypted cross-account location","vended-logs-crossaccount-example":"CloudWatch Logs · cross-account vended logs","USER_ExportSnapshot":"RDS · export a snapshot to S3","with-s3-tutorial":"Lambda · S3 trigger tutorial","xacct-fed-query-enable":"Athena · cross-account federated query","lambda":"Lambda passage","s3public":"Block Public Access passage","cwlogs":"CloudWatch Logs export page","waf":"WAF logging page"};
+const ORDER=["accessing-cross-account-resources-using-rules","kb-permissions","loading-data-copy-job","replication-walkthrough1","controlling-access","register-cross-encrypted","vended-logs-crossaccount-example","USER_ExportSnapshot","with-s3-tutorial","xacct-fed-query-enable"];
+const pct=v=>(v==null||v!==v)?'–':Math.round(v*100)+'%', p100=v=>Math.round(v*100), sgn=v=>(v>=0?'+':'−')+Math.abs(v).toFixed(2);
+const el=id=>document.getElementById(id);
+function set(id,v){const e=el(id);if(e)e.textContent=v}
+function bar(bid,v){const e=el(bid);if(e)e.style.width=pct(v)}
+function cohortRows(CO){
+  const rows=ORDER.map(k=>CO.pages.find(p=>p.slug===k)).filter(Boolean).concat(CO.pages.filter(p=>!ORDER.includes(p.slug)));
+  return rows.map(p=>{const s=p.scores, st=p.structural, rp=p.repair||{scores:{},structural:{}};
+    const after=p.procedure_lost_runs>0&&st.regen_detour_rate==null?'no longer a procedure':pct(st.regen_detour_rate);
+    return `<tr><td>${NAMES[p.slug]||p.slug}</td><td class="n">${p.n_facts}</td><td class="n">${pct(p.granularity.folded)}</td><td class="n">${pct(s.f1)}</td><td class="n">${pct(s.cbr)}</td><td class="n">${pct(s.tbr)}</td><td class="n">${p.probes_total[0]}/${p.probes_total[1]}</td><td class="n">${p.n_prereqs??'–'}</td><td class="n">${pct(st.orig_detour_rate)}</td><td class="n">${after}</td><td class="n">${pct(rp.structural.regen_detour_rate)}</td><td class="n">${pct(st.structural_loss)}</td><td class="n">${pct(rp.structural.structural_loss)}</td><td class="n">${pct(rp.scores.tbr)}</td></tr>`;}).join('');
+}
+function cohortNote(CO,label){
+  const A=CO.across_pages, S=CO.structural, R=CO.repair;
+  return `${label}, across the ${CO.n_pages} pages: atomic F1 median ${pct(A.f1.median)} (${p100(A.f1.min)} to ${p100(A.f1.max)}), bridge recall median ${pct(A.cbr.median)} (${p100(A.cbr.min)} to ${p100(A.cbr.max)}), probes ${CO.probes_total[0]} of ${CO.probes_total[1]}, drift median ${pct(A.drift.median)} (${p100(A.drift.min)} to ${p100(A.drift.max)}). The structural layer applied on all ${S.pages_applicable}. The detour rate rose on ${S.pages_detours_rose} pages, on ${S.pages_detours_rose_every_run} of them in every run, and ${S.pages_procedure_lost} page came back as something other than a procedure in both runs.`+(R?` After repair: prerequisite recall median ${pct(S.prereq_recall.median)} to ${pct(R.structural.prereq_recall.median)}, detour rate after the round trip median ${pct(S.regen_detour_rate.median)} to ${pct(R.structural.regen_detour_rate.median)}, structural loss median ${pct(S.structural_loss.median)} to ${pct(R.structural.structural_loss.median)}; detours fell on ${R.pages_detours_fell} pages, drift fell on ${R.pages_drift_fell}, graph bridge recall rose on ${R.pages_cbr_rose}, and text bridge recall rose on ${R.pages_tbr_rose} of ${R.pages_tbr_scored}.`:'');
+}
+function drawLoad(points, corr, label){
+  const svg=el('load-svg'); if(!svg) return; const L=46,T=14,W=680-L-16,H=300-T-44; const X=v=>L+v*W, Y=v=>T+(1-v)*H;
+  let s='';
+  for(const v of [0,.25,.5,.75,1]){ s+=`<line x1="${L}" x2="${L+W}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--rule)" stroke-dasharray="2 4"/><text x="${L-8}" y="${Y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)">${pct(v)}</text><text x="${X(v)}" y="${T+H+18}" text-anchor="middle" font-size="11" fill="var(--muted)">${v.toFixed(2)}</text>`; }
+  s+=`<text x="${L+W/2}" y="${T+H+36}" text-anchor="middle" font-size="11" fill="var(--muted)">conditional load</text><text x="12" y="${T+H/2}" text-anchor="middle" font-size="11" fill="var(--muted)" transform="rotate(-90 12 ${T+H/2})">drift</text>`;
+  for(const p of points){ if(p.load==null||p.drift==null) continue; const page=!['lambda','s3public','cwlogs','waf'].includes(p.name);
+    s+=`<circle cx="${X(p.load)}" cy="${Y(p.drift)}" r="${page?5:6}" fill="${page?'var(--ok)':'var(--bad)'}" stroke="var(--paper)" stroke-width="1.5"><title>${NAMES[p.name]||p.name}: load ${p.load.toFixed(2)}, drift ${pct(p.drift)}</title></circle>`;
+    if(!page) s+=`<text x="${X(p.load)+9}" y="${Y(p.drift)+4}" font-size="11" fill="var(--body)">${(NAMES[p.name]||p.name).replace(' passage','').replace(' export page','').replace(' logging page','')}</text>`; }
+  svg.innerHTML=s;
+  const c=corr.drift; set('load-note',`${label}. Amber: the passages and the two single pages; violet: the cohort pages. Rank correlation of load with drift ${c?sgn(c.rho):'–'} on ${c?c.n:0} sources, bootstrap interval ${c?sgn(c.lo)+' to '+sgn(c.hi):'–'}; with bridge loss ${corr.cbr_loss?sgn(corr.cbr_loss.rho):'–'}, with structural loss ${corr.structural_loss?sgn(corr.structural_loss.rho):'–'}.`);
+}
 fetch("drift-explainer.json").then(r=>r.json()).then(D=>{
-  const s=D.s, st=D.struct;
-  const pct=v=>Math.round(v*100)+'%';
-  const el=id=>document.getElementById(id);
-  function set(id,v){const e=el(id);if(e)e.textContent=v}
-  function bar(bid,v){const e=el(bid);if(e)e.style.width=pct(v)}
-
-  if(s){
-    set('t-af',pct(s.af)); set('t-cbr',pct(s.cbr)); set('t-ep',pct(s.ep)); set('t-dr',pct(s.drift));
-    bar('b-af',s.af); set('v-af',pct(s.af));
-    bar('b-cbr',s.cbr); set('v-cbr',pct(s.cbr));
-    bar('b-ep',s.ep); set('v-ep',pct(s.ep));
-    set('t-cbrl',pct(1-s.cbr)); set('t-epl',pct(1-s.ep)); set('t-drift',pct(s.drift));
+  const SEN=D, STR=D.strict||{scenarios:{},cohort:null,load_correlation:null};
+  const L=SEN.scenarios.lambda, C=SEN.scenarios.cwlogs, P=SEN.scenarios.s3public, LS=STR.scenarios.lambda, CS=STR.scenarios.cwlogs, PS=STR.scenarios.s3public;
+  const CO=SEN.cohort, COS=STR.cohort;
+  // tiles
+  if(CO&&COS){ const fm=a=>{const v=a.pages.map(p=>p.granularity.folded).sort((x,y)=>x-y); return v[Math.floor(v.length/2)];};
+    set('t-fold',`${pct(fm(CO))} → ${pct(fm(COS))}`);
+    set('t-det',pct(COS.structural.regen_detour_rate.median)); set('t-det-r',`${pct(CO.structural.regen_detour_rate.median)} under the sentence extractor; rose on ${COS.structural.pages_detours_rose} of ${COS.structural.pages_applicable} pages`);
+    set('t-rep',`${COS.repair.pages_tbr_rose} of ${COS.repair.pages_tbr_scored}`);
+    set('rp-tbr-strict',`${COS.repair.pages_tbr_rose} of ${COS.repair.pages_tbr_scored}`); set('rp-tbr-sentence',`${CO.repair.pages_tbr_rose} of ${CO.repair.pages_tbr_scored}`);
+    if(COS.across_pages.tbr&&COS.repair.across_pages.tbr) set('rp-tbr-strict-med',`${pct(COS.across_pages.tbr.median)} to ${pct(COS.repair.across_pages.tbr.median)}`);
+    set('co-det-strict',pct(COS.structural.regen_detour_rate.median)); set('co-det-sentence',pct(CO.structural.regen_detour_rate.median)); set('co-rose-strict',`${COS.structural.pages_detours_rose} of ${COS.structural.pages_applicable}`);
+    set('rp-pr',`${pct(CO.structural.prereq_recall.median)} to ${pct(CO.repair.structural.prereq_recall.median)}`);
+    set('rp-cbr-strict',`${COS.repair.pages_cbr_rose} of ${COS.n_pages}`); set('rp-cbr-strict-med',`${pct(COS.across_pages.cbr.median)} to ${pct(COS.repair.across_pages.cbr.median)}`);
   }
-  if(st){
-    bar('b-pr',st.recall); set('v-pr',pct(st.recall));
-    bar('b-do',st.det_orig); set('v-do',pct(st.det_orig));
-    bar('b-dr2',st.det_regen); set('v-dr2',pct(st.det_regen));
-  }
-  if(D.edge_types){
-    const et=D.edge_types;
-  }
+  if(LS&&PS){ set('t-probes',`${LS.probes_total[0]+PS.probes_total[0]} of ${LS.probes_total[1]+PS.probes_total[1]}`); set('t-probes-r',`${L.probes_total[0]+P.probes_total[0]} of ${L.probes_total[1]+P.probes_total[1]} under the sentence extractor`);
+    set('l-strict-probes',`${LS.probes_total[0]} of ${LS.probes_total[1]}`); set('l-strict-drift',pct(LS.spread.drift.median));
+    set('c-strict-probes',`${PS.probes_total[0]} of ${PS.probes_total[1]}`); set('c-strict-drift',pct(PS.spread.drift.median)); if(PS.repair) set('c-strict-rprobes',`${PS.repair.probes_total[0]} of ${PS.repair.probes_total[1]}`); }
+  // corpus folded share, sentence extractor: every source's atoms
+  { const all=Object.values(SEN.scenarios).concat(CO?CO.pages:[]); let f=0,n=0; for(const s of all){ const g=s.granularity; f+=g.folded*g.n_atoms; n+=g.n_atoms; } if(n) set('g-corpus',pct(f/n)); }
+  // atomizer table
+  const tb=el('atomizer-body'); if(tb){ let rows='';
+    for(const [key,label] of [['lambda','Lambda passage'],['s3public','Block Public Access passage'],['cwlogs','CloudWatch Logs export page']]) for(const [src,ex] of [[SEN,'sentence'],[STR,'strict']]){ const s=src.scenarios[key]; if(!s) continue; const g=s.granularity, passage=key!=='cwlogs';
+      rows+=`<tr><td>${label}</td><td>${ex}</td><td class="n">${g.n_atoms}</td><td class="n">${pct(g.folded)}</td><td class="n">${passage&&g.atoms_per_sentence?g.atoms_per_sentence.toFixed(1):'–'}</td><td class="n">${g.n_edges}</td><td class="n">${pct(s.spread.f1.median)}</td><td class="n">${pct(s.spread.cbr.median)}</td><td class="n">${s.spread.tbr?pct(s.spread.tbr.median):'–'}</td><td class="n">${s.probes_total[0]}/${s.probes_total[1]}</td><td class="n">${pct(s.spread.drift.median)}</td><td class="n">${s.repair?pct(s.repair.spread.drift.median):'–'}</td></tr>`; }
+    tb.innerHTML=rows; }
+  // lambda bars (sentence)
+  if(L){ const probes=L.probes_total[0]/L.probes_total[1]; bar('l-af',L.spread.f1.median); set('l-af-v',pct(L.spread.f1.median)); bar('l-cbr',L.spread.cbr.median); set('l-cbr-v',pct(L.spread.cbr.median)); bar('l-ep',probes); set('l-ep-v',pct(probes)); bar('l-dr',L.spread.drift.median); set('l-dr-v',pct(L.spread.drift.median)); if(L.repair){ bar('l-rdr',L.repair.spread.drift.median); set('l-rdr-v',pct(L.repair.spread.drift.median)); }
+    const hi=L.runs.filter(r=>r.cbr>0).length; set('lambda-note',`Sentence extractor, medians over ${L.n_runs} runs. Atomic F1 ranged from ${p100(L.spread.f1.min)}% to ${p100(L.spread.f1.max)}%, bridge recall was ${pct(L.spread.cbr.max)} in ${hi} runs and 0% in ${L.n_runs-hi}, the probes got ${L.probes_total[0]} of ${L.probes_total[1]} right, and the first draft's drift ran from ${p100(L.spread.drift.min)}% to ${p100(L.spread.drift.max)}%.`+(L.repair?` Repaired, drift ran from ${p100(L.repair.spread.drift.min)}% to ${p100(L.repair.spread.drift.max)}%.`:'')); }
+  // cohort table with switch
+  const seg=el('cohort-seg'); function showCohort(a){ const co=a==='strict'?COS:CO; if(!co) return; el('cohort-body').innerHTML=cohortRows(co); set('cohort-note',cohortNote(co,a==='strict'?'Strict extractor':'Sentence extractor')); }
+  if(seg){ seg.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{ seg.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed','false')); b.setAttribute('aria-pressed','true'); showCohort(b.dataset.a); })); showCohort(COS?'strict':'sentence'); }
+  // structural bars (sentence cwlogs) + strict line
+  if(C){ const st=C.structural_spread||{}, rs=(C.repair||{}).structural_spread||{};
+    for(const [k,b,v,src] of [['orig_detour_rate','b-do','v-do',st],['regen_detour_rate','b-dr2','v-dr2',st],['regen_detour_rate','b-dr3','v-dr3',rs],['structural_loss','b-sl','v-sl',st],['structural_loss','b-sl2','v-sl2',rs]]) if(src[k]){ bar(b,src[k].median); set(v,pct(src[k].median)); } }
+  if(CS){ const det=CS.runs.map(r=>r.structural.regen_detour_rate).filter(x=>x!=null); set('cw-strict-det',det.map(pct).join(', ')); set('cw-strict-cbr',pct(CS.spread.cbr.median)); if(CS.repair) set('cw-strict-rcbr',pct(CS.repair.spread.cbr.median));
+    if(CS.spread.tbr){ set('cw-strict-tbr',pct(CS.spread.tbr.median)); if(CS.repair&&CS.repair.spread.tbr) set('cw-tbr-pair',`${pct(CS.spread.tbr.median)} of the edges stated in the first draft and ${pct(CS.repair.spread.tbr.median)} in the repaired one`); } }
+  if(L&&L.spread.tbr){ set('l-tbr',pct(L.spread.tbr.median)); if(L.repair&&L.repair.spread.tbr) set('l-rtbr',pct(L.repair.spread.tbr.median)); }
+  const IS=STR.instruments, IN=SEN.instruments; if(IS&&IS.graph_vs_text) set('ins-gt-strict',sgn(IS.graph_vs_text.rho)); if(IN&&IN.graph_vs_text) set('ins-gt-sentence',sgn(IN.graph_vs_text.rho)); if(IS&&IS.text_vs_probes) set('ins-tp-strict',sgn(IS.text_vs_probes.rho));
+  // load
+  if(P) set('ld-s3',P.load.load.toFixed(2)); if(L) set('ld-lambda',L.load.load.toFixed(2));
+  if(CO){ const v=CO.pages.map(p=>p.load.load).sort((a,b)=>a-b); set('ld-range',`${v[0].toFixed(2)} to ${v[v.length-1].toFixed(2)}`); }
+  const lseg=el('load-seg'); function showLoad(a){ const src=a==='strict'?STR:SEN; if(!src.load_correlation) return; drawLoad(src.load_correlation.points, src.load_correlation, a==='strict'?'Strict extractor':'Sentence extractor'); }
+  if(lseg){ lseg.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{ lseg.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed','false')); b.setAttribute('aria-pressed','true'); showLoad(b.dataset.a); })); showLoad(STR.load_correlation?'strict':'sentence'); }
+  if(STR.load_correlation&&STR.load_correlation.drift){ const c=STR.load_correlation.drift; set('ld-rho-strict',sgn(c.rho)); set('ld-ci-strict',`${sgn(c.lo)} to ${sgn(c.hi)}`); }
+  if(SEN.load_correlation&&SEN.load_correlation.drift) set('ld-rho-sentence',sgn(SEN.load_correlation.drift.rho));
 }).catch(()=>{});
 
-// stage switcher
-const seg=document.getElementById('stage-seg');
-seg.querySelectorAll('button').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    seg.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed','false'));
-    btn.setAttribute('aria-pressed','true');
-    document.querySelectorAll('.stage').forEach(v=>v.classList.remove('on'));
-    document.getElementById('s-'+btn.dataset.s).classList.add('on');
-  });
-});
+// stage switchers
+for(const [segId,prefix] of [['stage-seg',''],['c-seg','']]){ const seg=el(segId); if(!seg) continue;
+  seg.querySelectorAll('button').forEach(btn=>btn.addEventListener('click',()=>{
+    seg.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed','false')); btn.setAttribute('aria-pressed','true');
+    seg.parentElement.querySelectorAll('.stage').forEach(v=>v.classList.remove('on')); el('s-'+btn.dataset.s).classList.add('on'); })); }
 </script>
 </body>
 </html>
