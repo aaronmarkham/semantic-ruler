@@ -42,8 +42,10 @@ from semantic_ruler.drift import (
     analyse_structural,
     atomic_f1,
     cond_bridge_recall,
+    conditional_load,
     drift_score,
     entailment_rate,
+    granularity,
     structural_drift,
     summarize_repeats,
 )
@@ -97,6 +99,7 @@ async def run_drift(
     structural_reads: int = 3,
     repair: bool = False,
     repair_scope: str = "lost",
+    atomizer: str = "sentence",
     log=print,
 ) -> dict:
     """One round trip, or `repeats` of them from the same original graph.
@@ -109,11 +112,12 @@ async def run_drift(
     source_hash = hashlib.sha256(source_text.encode()).hexdigest()[:24]
 
     # 1. Extract orig graph (cached unless --regenerate) ----------------------
-    orig_graph = None if regenerate else shards.load_fact_graph(shard_store, f"orig:{source_hash}")
+    orig_key = f"orig:{source_hash}" if atomizer == "sentence" else f"orig-{atomizer}:{source_hash}"
+    orig_graph = None if regenerate else shards.load_fact_graph(shard_store, orig_key)
     if orig_graph is None:
-        log("Extracting facts from source...")
-        orig_graph = await extract_facts(llm, source_text, model)
-        shards.save_fact_graph(shard_store, f"orig:{source_hash}", orig_graph, label="orig")
+        log(f"Extracting facts from source ({atomizer} atomizer)...")
+        orig_graph = await extract_facts(llm, source_text, model, atomizer=atomizer)
+        shards.save_fact_graph(shard_store, orig_key, orig_graph, label="orig")
         log(f"  {len(orig_graph.facts)} facts, {len(orig_graph.edges)} edges")
     else:
         log(f"Loaded orig graph from store: {len(orig_graph.facts)} facts, {len(orig_graph.edges)} edges")
@@ -144,7 +148,7 @@ async def run_drift(
 
         # 3. Re-extract from regen ------------------------------------------------
         log("Re-extracting facts from regenerated doc...")
-        regen_graph = await extract_facts(llm, regen_doc, model)
+        regen_graph = await extract_facts(llm, regen_doc, model, atomizer=atomizer)
         shards.save_fact_graph(shard_store, f"regen:{source_hash}", regen_graph, label="regen")
         log(f"  {len(regen_graph.facts)} facts, {len(regen_graph.edges)} edges")
 
@@ -166,6 +170,10 @@ async def run_drift(
         d = drift_score(a, c, e, s if s.get("applicable") else None)
         result = {
             "source_hash": source_hash,
+            "atomizer": atomizer,
+            "granularity": granularity(orig_graph, source_text),
+            "load": conditional_load(orig_graph, source_text),
+            "regen_granularity": granularity(regen_graph, regen_doc),
             "orig": {"n_facts": len(orig_graph.facts), "n_edges": len(orig_graph.edges)},
             "regen": {"n_facts": len(regen_graph.facts), "n_edges": len(regen_graph.edges)},
             "atomic_f1": a,
@@ -191,7 +199,7 @@ async def run_drift(
                         wanted.append(f"{q['what']}{where}")
             log(f"Repairing: {len(lost_edges)} lost relationship(s), {len(wanted)} prerequisite(s) to state up front...")
             fixed_doc = await regenerate_doc(llm, atoms_only, model, repair_edges=lost_edges, prerequisites=wanted)
-            fixed_graph = await extract_facts(llm, fixed_doc, model)
+            fixed_graph = await extract_facts(llm, fixed_doc, model, atomizer=atomizer)
             shards.save_fact_graph(shard_store, f"repair:{source_hash}", fixed_graph, label="repair")
             fa = atomic_f1(orig_graph, fixed_graph, embedder)
             fc = cond_bridge_recall(orig_graph, fixed_graph, embedder)
@@ -246,8 +254,13 @@ def _fmt(result: dict) -> str:
     lines = [
         "",
         f"Source:  {result['source_hash']}" + (f"  (run {result['summary']['shown'] + 1} of {result['summary']['n']}, closest to the median drift)" if "summary" in result else ""),
-        f"  orig   {int(result['orig']['n_facts'])} facts, {int(result['orig']['n_edges'])} edges",
+        f"  orig   {int(result['orig']['n_facts'])} facts, {int(result['orig']['n_edges'])} edges"
+        + (f"   ({result['atomizer']} atomizer: {pct(result['granularity']['folded'])} of atoms carry a condition, "
+           f"{result['granularity']['atoms_per_sentence']:.1f} atoms per sentence)" if "granularity" in result else ""),
         f"  regen  {int(result['regen']['n_facts'])} facts, {int(result['regen']['n_edges'])} edges",
+    ] + ([f"  load   {result['load']['load']:.2f}  ({result['load']['markers_per_sentence']:.1f} condition words per sentence, "
+          f"{result['load']['edges_per_atom']:.2f} edges per atom, widest requires {int(result['load']['widest_requires'])}, "
+          f"longest chain {int(result['load']['longest_chain'])})"] if "load" in result else []) + [
         "",
         f"Atomic F1 .............. {pct(a.get('f1'))}",
         f"  recall                 {pct(a.get('recall'))}",
@@ -323,6 +336,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--structural-reads", type=int, default=3, help="reads of the original that vote on whether it is a procedure")
     ap.add_argument("--repair", action="store_true", help="regenerate once more with the lost relationships and sprung prerequisites fed back, and score that too")
     ap.add_argument("--repair-scope", choices=("lost", "all"), default="lost", help="feed back only the lost relationships, or every original one")
+    ap.add_argument("--atomizer", choices=("sentence", "strict"), default="sentence", help="sentence: one claim per sentence, conditions kept inside; strict: no conditions inside atoms, every dependence is an edge")
     ap.add_argument("--no-structural", action="store_true", help="skip the structural layer")
     ap.add_argument("--mock", action="store_true", help="offline: no LLM or embedder calls")
     ap.add_argument("--json", action="store_true", dest="as_json")
@@ -362,6 +376,7 @@ def main(argv: list[str] | None = None) -> int:
         structural_reads=args.structural_reads,
         repair=args.repair,
         repair_scope=args.repair_scope,
+        atomizer=args.atomizer,
     ))
 
     if args.as_json:

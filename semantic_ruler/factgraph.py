@@ -93,9 +93,50 @@ Facts:
 """
 
 
-async def extract_facts(llm: LLMProvider, text: str, model: str | None = None) -> FactGraph:
-    """Extract atomic facts and conditional edges from a text passage."""
-    prompt = EXTRACT_PROMPT.format(text=text)
+EXTRACT_PROMPT_STRICT = """\
+Extract a structured fact graph from the documentation below.
+
+STEP 1 — Atomic facts:
+List every distinct factual claim. Each fact must be:
+- One short, self-contained sentence that makes ONE unconditional claim
+- Assigned a short stable ID (f01, f02, ...)
+- Free of conditions: no "only when", "if", "unless", "before", "after", "requires", \
+"must ... in order to", "except", "otherwise". When the source says A holds only when B and C, \
+write A, B and C as three separate facts and put the dependence in STEP 2
+- Exact in what it does claim: preserve negations, quantifiers and scope
+
+STEP 2 — Logical relationships between facts:
+Every condition you removed in STEP 1 must appear here as an edge. For each relationship name the kind:
+- implies: antecedent alone is sufficient for the consequent
+- requires: consequent is true ONLY when ALL listed antecedents hold (use for 2+ conditions)
+- contradicts: antecedent and consequent cannot both hold simultaneously
+- sequence: consequent presupposes the antecedent (must happen first)
+- negates: antecedent is the direct logical negation of the consequent
+
+Add a confidence score (0.0–1.0). Omit low-confidence (<0.5) edges.
+
+Documentation:
+{text}
+
+Respond with JSON only:
+{{"facts": [{{"id": "f01", "text": "..."}}], "edges": [{{"kind": "requires", "antecedents": ["f01", "f02"], "consequent": "f03", "confidence": 0.9}}]}}
+"""
+
+MIN_EDGE_CONFIDENCE = 0.5
+
+ATOMIZERS = {"sentence": EXTRACT_PROMPT, "strict": EXTRACT_PROMPT_STRICT}
+
+
+async def extract_facts(llm: LLMProvider, text: str, model: str | None = None, atomizer: str = "sentence") -> FactGraph:
+    """Extract atomic facts and conditional edges from a text passage.
+
+    The "sentence" atomizer keeps each claim as one self-contained sentence,
+    conditions included, and records the conditions it notices as edges as
+    well. The "strict" atomizer forbids conditions inside atoms: every
+    dependence has to be an edge, which is what a fact store under test
+    actually drops.
+    """
+    prompt = ATOMIZERS[atomizer].format(text=text)
     kwargs = {"model": model} if model else {}
     for _ in range(3):
         reply = await llm.query(prompt, **kwargs)
@@ -109,14 +150,18 @@ async def extract_facts(llm: LLMProvider, text: str, model: str | None = None) -
             edges = []
             for e in data.get("edges", []):
                 try:
-                    edges.append(FactEdge(
+                    edge = FactEdge(
                         kind=EdgeKind(e["kind"]),
                         antecedents=list(e["antecedents"]),
                         consequent=e["consequent"],
                         confidence=float(e.get("confidence", 1.0)),
-                    ))
+                    )
                 except (KeyError, ValueError):
                     continue
+                # The prompt asks the model to omit edges under 0.5; it does not always. An edge it
+                # did not believe must not be scored, and must not be fed back by the repair pass.
+                if edge.confidence >= MIN_EDGE_CONFIDENCE:
+                    edges.append(edge)
             if facts:
                 return FactGraph(facts=facts, edges=edges)
         except (ValueError, KeyError, TypeError):

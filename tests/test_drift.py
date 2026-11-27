@@ -172,3 +172,36 @@ def test_repair_prompt_states_relationships_in_words():
     assert _edge_words(e) == "[f01] holds only when [f02] and [f03] all hold"
     s = FactEdge(kind=EdgeKind.SEQUENCE, antecedents=["f04"], consequent="f01", confidence=0.5)
     assert _edge_words(s) == "[f04] must happen before [f01]"
+
+
+def test_granularity_counts_folded_conditions_and_atoms_per_sentence():
+    from semantic_ruler.drift import granularity
+    text = "A is created only when B holds. C is enabled by default. D must happen before E."
+    g = _graph(["A is created only when B holds.", "C is enabled by default.", "D must happen before E."])
+    r = granularity(g, text)
+    assert r["n_sentences"] == 3 and r["atoms_per_sentence"] == 1.0
+    assert r["folded"] == 2 / 3
+
+
+def test_conditional_load_reads_the_graph_and_the_text():
+    from semantic_ruler.drift import conditional_load
+    flat = _graph(["A.", "B.", "C."])
+    assert conditional_load(flat, "A. B. C.")["load"] == 0.0
+    nested = _graph(["A.", "B.", "C.", "D."], [(EdgeKind.REQUIRES, ["f01", "f02", "f03"], "f04", 0.9), (EdgeKind.SEQUENCE, ["f04"], "f01", 0.5)])
+    r = conditional_load(nested, "A only when B and C. If D, then A.")
+    assert r["widest_requires"] == 3 and r["longest_chain"] >= 2 and 0 < r["load"] < 1
+    assert r["markers_per_sentence"] == 1.0
+
+
+def test_extraction_drops_edges_the_model_did_not_believe():
+    import asyncio
+    from semantic_ruler.factgraph import extract_facts
+
+    class Reply:
+        async def query(self, prompt, **kw):
+            return ('{"facts": [{"id": "f01", "text": "A."}, {"id": "f02", "text": "B."}], '
+                    '"edges": [{"kind": "requires", "antecedents": ["f01"], "consequent": "f02", "confidence": 0.9}, '
+                    '{"kind": "implies", "antecedents": ["f02"], "consequent": "f01", "confidence": 0.0}]}')
+
+    g = asyncio.run(extract_facts(Reply(), "A. B."))
+    assert [e.kind.value for e in g.edges] == ["requires"]

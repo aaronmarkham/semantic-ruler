@@ -291,6 +291,76 @@ def drift_score(
     return {"drift": drift, **{k: v for k, (v, _) in losses.items()}}
 
 
+CONDITION_WORDS = re.compile(
+    r"\b(only (?:when|if)|if|unless|when|whenever|before|after|until|requires?|required|must|provided that|"
+    r"except|otherwise|as long as|depends? on|in order to|however|but)\b", re.I)
+
+
+def _sentences(text: str) -> list[str]:
+    return [s for s in re.split(r"(?<=[.!?])\s+|\n{2,}", text) if s.strip()]
+
+
+def granularity(graph: FactGraph, text: str) -> dict[str, float]:
+    """How much of the connective tissue the extractor left inside the atoms.
+
+    atoms_per_sentence near 1 means the extractor split sentences rather than
+    claims. folded is the share of atoms that carry a conditional word, so the
+    condition was stored inside the fact instead of as an edge. An extractor
+    that folds half the conditions pre-empts half the question this library
+    asks, so the figure belongs beside every drift score.
+    """
+    n = len(graph.facts)
+    sents = _sentences(text)
+    folded = sum(bool(CONDITION_WORDS.search(f.text)) for f in graph.facts)
+    return {
+        "n_atoms": float(n),
+        "n_sentences": float(len(sents)),
+        "atoms_per_sentence": n / len(sents) if sents else float("nan"),
+        "folded": folded / n if n else float("nan"),
+        "edges_per_atom": len(graph.edges) / n if n else float("nan"),
+    }
+
+
+def conditional_load(graph: FactGraph, text: str) -> dict[str, float]:
+    """How many ifs, ands and buts a reader has to hold at once.
+
+    Measured on the text (condition words per sentence) and on the graph
+    (edges per atom, the widest REQUIRES junction, the longest chain of
+    dependences). The composite is the mean of the three graph terms after
+    each is scaled to [0, 1] by a fixed ceiling, so it compares across
+    documents: 0 is a list of independent facts, 1 is dense nested logic.
+    """
+    sents = _sentences(text)
+    markers = sum(len(CONDITION_WORDS.findall(s)) for s in sents)
+    n = len(graph.facts)
+    widest = max((len(e.antecedents) for e in graph.edges if e.kind == EdgeKind.REQUIRES), default=0)
+    # longest chain: follow edges from antecedent to consequent, no cycles
+    nxt: dict[str, list[str]] = {}
+    for e in graph.edges:
+        for a in e.antecedents:
+            nxt.setdefault(a, []).append(e.consequent)
+    best: dict[str, int] = {}
+
+    def depth(node: str, seen: frozenset) -> int:
+        if node in best:
+            return best[node]
+        d = 1 + max((depth(c, seen | {node}) for c in nxt.get(node, []) if c not in seen), default=0)
+        best[node] = d
+        return d
+
+    longest = max((depth(f.fact_id, frozenset()) for f in graph.facts), default=0)
+    edges_per_atom = len(graph.edges) / n if n else 0.0
+    per_sentence = markers / len(sents) if sents else 0.0
+    scaled = [min(1.0, edges_per_atom / 1.0), min(1.0, widest / 4.0), min(1.0, (longest - 1) / 4.0) if longest else 0.0]
+    return {
+        "markers_per_sentence": per_sentence,
+        "edges_per_atom": edges_per_atom,
+        "widest_requires": float(widest),
+        "longest_chain": float(longest),
+        "load": sum(scaled) / len(scaled),
+    }
+
+
 def summarize_repeats(results: list[dict]) -> dict:
     """Median and range of each score over repeated regenerations of one source.
 
