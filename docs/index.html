@@ -6,9 +6,73 @@
 <meta name="description" content="Measuring abstract concepts with a calibrated direction in embedding space, and how often AWS how-to pages send the reader on a detour.">
 <meta property="og:title" content="Rulers and Detours">
 <meta property="og:description" content="Measuring abstract concepts with a calibrated direction in embedding space, and how often AWS how-to pages send the reader on a detour.">
-<style>body{margin:0}</style>
+<style>body{margin:0}
+/* Shared navigation bar. Colours and faces come from each page's own palette, with fallbacks. */
+:root{--sn-h:46px}
+html{scroll-padding-top:calc(var(--sn-h) + 14px)}
+.sn{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:4px 18px;min-height:var(--sn-h);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  background:var(--paper,#EFF1EE);border-bottom:1px solid var(--rule,#B7BFBA);
+  font:12px/1.4 var(--mono,ui-monospace,Consolas,monospace);letter-spacing:.06em;color:var(--muted,#55635F)}
+.sn a{color:var(--ink,#131C21);text-decoration:none}
+.sn a:hover,.sn summary:hover{color:var(--invariant,var(--ok,#3B3190))}
+.sn-brand{font-weight:500;letter-spacing:.1em;text-transform:uppercase;margin-right:auto;white-space:nowrap}
+.sn-pages{display:flex;gap:16px;margin:0;padding:0;list-style:none}
+.sn-pages a{white-space:nowrap;padding:14px 0;display:inline-block;border-bottom:2px solid transparent}
+.sn-pages a[aria-current]{color:var(--invariant,var(--ok,#3B3190));border-bottom-color:currentColor}
+.sn-gh{white-space:nowrap}
+.sn-menu{position:relative}
+.sn-menu summary{list-style:none;cursor:pointer;white-space:nowrap;padding:14px 0;color:var(--ink,#131C21);display:inline-flex;align-items:center;gap:6px}
+.sn-menu summary::-webkit-details-marker{display:none}
+.sn-menu summary::after{content:"";width:6px;height:6px;border:solid currentColor;border-width:0 1.5px 1.5px 0;transform:translateY(-2px) rotate(45deg)}
+.sn-menu[open] summary::after{transform:translateY(1px) rotate(-135deg)}
+.sn-drop{position:absolute;right:0;top:calc(100% - 1px);min-width:260px;max-width:min(360px,calc(100vw - 32px));max-height:calc(100vh - var(--sn-h) - 16px);overflow:auto;
+  background:var(--paper,#EFF1EE);border:1px solid var(--rule,#B7BFBA);border-radius:0 0 6px 6px;box-shadow:0 10px 24px -12px rgba(19,28,33,.45);padding:8px 0 10px}
+.sn-h{margin:10px 16px 4px;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted,#55635F)}
+.sn-drop ul{margin:0;padding:0;list-style:none}
+.sn-drop a{display:block;padding:8px 16px;letter-spacing:.03em;font-size:13px}
+.sn-drop a:hover{background:var(--sunk,#E7EAE7)}
+.sn-drop .sn-pages{display:block}
+.sn-drop .sn-pages a{padding:8px 16px;border:0}
+.sn-drop a[aria-current]{color:var(--invariant,var(--ok,#3B3190))}
+.sn-drop .sn-gh{display:block;padding:8px 16px;margin-top:4px;border-top:1px solid var(--rule,#B7BFBA);padding-top:12px}
+.sn-only-narrow{display:none}
+@media (max-width:719px){
+  .sn > .sn-pages,.sn > .sn-gh,.sn-only-wide{display:none}
+  .sn-only-narrow{display:block}
+}
+@media (min-width:720px){.sn-drop > .sn-only-narrow{display:none}}
+/* Elements the pages pin to the top of the window sit below the bar. */
+body #deep .story{top:calc(var(--sn-h) + 8px)}
+@media (min-width:680px){body .walk .story{top:calc(var(--sn-h) + 12px)}}
+@media print{.sn{display:none}}
+</style>
 </head>
 <body>
+<nav class="sn" aria-label="Site">
+<a class="sn-brand" href="index.html">semantic-ruler</a>
+<ul class="sn-pages"><li><a href="index.html" aria-current="page">Rulers and Detours</a></li><li><a href="detour-map.html">The Detour Map</a></li><li><a href="drift.html">Drift</a></li></ul>
+<details class="sn-menu">
+<summary><span class="sn-only-wide">On this page</span><span class="sn-only-narrow">Menu</span></summary>
+<div class="sn-drop">
+<p class="sn-h sn-only-narrow">Pages</p>
+<ul class="sn-pages sn-only-narrow"><li><a href="index.html" aria-current="page">Rulers and Detours</a></li><li><a href="detour-map.html">The Detour Map</a></li><li><a href="drift.html">Drift</a></li></ul>
+<p class="sn-h">On this page</p>
+<ul><li><a href="#s01">01 · The paper</a></li><li><a href="#s02">02 · What it&#x27;s good for</a></li><li><a href="#s03">03 · A different question</a></li><li><a href="#s04">04 · Order</a></li><li><a href="#s05">05 · Detours</a></li><li><a href="#s06">06 · Dead ends</a></li><li><a href="#s07">07 · What fell through</a></li><li><a href="#s08">08 · How far to trust it</a></li></ul>
+<a class="sn-gh" href="https://github.com/aaronmarkham/semantic-ruler">GitHub</a>
+</div>
+</details>
+<a class="sn-gh" href="https://github.com/aaronmarkham/semantic-ruler">GitHub</a>
+</nav>
+<script>
+(() => {
+  const m = document.querySelector(".sn-menu"); if (!m) return;
+  const close = () => m.removeAttribute("open");
+  m.addEventListener("click", e => { if (e.target.closest("a")) close(); });
+  document.addEventListener("click", e => { if (m.open && !m.contains(e.target)) close(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && m.open) { close(); m.querySelector("summary").focus(); } });
+})();
+</script>
 <title>Rulers and Detours</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
@@ -104,7 +168,7 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
 <p class="lede">We rebuilt it on our own stack and got a ruler that works, holds steady across redraws, and carries to domains it has yet to see. Then we took the method somewhere new: cloud documentation, and the moment a how-to guide sends you off to do something else first.</p>
 <p class="note">Every chart below runs on the project's measured output. Move the controls and the numbers recompute in your browser.</p>
 
-<section>
+<section id="s01">
 <p class="eyebrow">01 · The paper</p>
 <h2>Two texts that differ in <em>one thing only</em></h2>
 <p>Ask how sustainable a process description is, or how urgent a support ticket is, and the usual answer is to have a language model read each text and rate it. That works, and it costs a model call per text, every time you ask. Abonyi and Tombor's paper offers an instrument in its place: build a ruler once, then measure as many texts as you like for the price of an embedding.</p>
@@ -134,7 +198,7 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
 <p>The colours show where the remaining error lives. The ruler reads one whole domain high and another low. Inside any one domain the points line up well (0.88 to 0.93); the offset <em>between</em> domains is what costs the correlation. The judge, shown as rings, reads every domain level.</p>
 </section>
 
-<section>
+<section id="s02">
 <p class="eyebrow">02 · What it's good for</p>
 <h2>A cheap, steady <em>instrument</em></h2>
 <p>One run is thin evidence, so we redrew the anchor pairs five more times with each of two generator models and scored every ruler on three separate test sets. That makes 36 rulers, and they land close together.</p>
@@ -157,11 +221,11 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
 <p>We used Claude to write the passages and OpenAI's <code>text-embedding-3-large</code> to embed them. <a href="https://spiritwriter.ai">spiritwriter</a> stores the passages, the ruler and a hash-chained record of what produced what as content-addressed shards, so a ruler's identifier names the exact instrument. And the judge prompt scores passages by an id, because asked for a plain list a model will sometimes return twenty scores for eighteen passages.</p>
 </section>
 
-<section>
+<section id="s03">
 <p class="eyebrow">03 · A different question</p>
 <h2>Same service, <em>different facts</em></h2>
-<p>The theory that started the second half: across AWS, "give this service access to a bucket" reads almost the same everywhere, and what differs is the part that bites, which is how access is actually granted. Sometimes the bucket's own policy names the service. Sometimes you create a role and the permissions live there. If a ruler can isolate one concept from everything else in a passage, can it pull that difference out of documentation that otherwise looks alike?</p>
-<p>The ground truth here is mechanical. Each doc section's label is read from its policy JSON: who is named as the principal. The text that gets embedded is the prose with the code stripped out. We collected 375 sections from 78 services.</p>
+<p>The theory that started the second half: across AWS, "give this service access to a bucket" reads almost the same everywhere, and what differs is the part that bites: how access is granted. Sometimes the bucket's own policy names the service. Sometimes you create a role and the permissions live there. If a ruler can isolate one concept from everything else in a passage, can it pull that difference out of documentation that otherwise looks alike?</p>
+<p>The ground truth here is mechanical. Each section's label comes from its policy JSON: who it names as the principal. We embed the prose with the code stripped out. We collected 375 sections from 78 services.</p>
 <p>Each row below is one service that documents it both ways. A direction is doing its job when the violet dots sit to the right of the amber ones.</p>
 
 <div class="panel" id="intents">
@@ -186,7 +250,7 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
 <p>A model that reads each section gets every one right. What the ruler offers is cost and repeatability: one embedding and one dot product, with the same answer every time.</p>
 </section>
 
-<section>
+<section id="s04">
 <p class="eyebrow">04 · Order</p>
 <h2>One task, <em>six pages open</em></h2>
 <p>The second idea came from experience. You set out to turn on logging for a web firewall. The procedure needs a destination. The destination page needs a bucket. The bucket needs a policy. You started with one job and now have several lines of reading open, all of them half done.</p>
@@ -209,7 +273,7 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
 <p>The starting page names one prerequisite. Four levels down there are twelve. Turned around, with each item placed after the things it depends on and duplicates merged, the same content is a list of four required steps and six that apply only in some setups.</p>
 </section>
 
-<section>
+<section id="s05">
 <p class="eyebrow">05 · Detours</p>
 <h2>Springing it on the reader</h2>
 <p>Counting this across many pages takes a definition. A prerequisite is a <strong>detour</strong> when two things are true: the page first mentions it at the point where you need it (or later, or never), and the steps for it live somewhere else or nowhere. Either a link <em>sends you elsewhere</em>, or you're <em>left alone</em> to work it out.</p>
@@ -236,14 +300,14 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
 </div>
 
 <p>At the default setting 21% of prerequisites are detours and close to half of all procedure pages have at least one. Ask for more warning and the number climbs fast, because most late mentions are <em>very</em> late: 128 of the 181 are first mentioned at the exact step that needs them.</p>
-<p>At the default setting one row is empty. In 58 cases a page needed a bucket policy, and all 58 were handled: the policy is on the page, or the page says so in advance. Writers leave readers alone with the things they assume: a bucket, a key, a command-line tool.</p>
+<p>At the default setting one row is empty. In 58 cases a page needed a bucket policy, and every one of those pages handles it: the policy is on the page, or the page says so in advance. Writers leave readers alone with the things they assume: a bucket, a key, a command-line tool.</p>
 <p>The mechanism from section 03 shows up here too. Switch between pages that grant access through a service principal and pages that use an identity policy. On pages we first opened after forming the idea, service-principal pages sent the reader away for a permission in 2 of 21 cases; identity-policy pages in 34 of 98.</p>
 </section>
 
-<section>
+<section id="s06">
 <p class="eyebrow">06 · Dead ends</p>
 <h2>Does the link <em>deliver?</em></h2>
-<p>Being sent elsewhere is fine when the other page has what you need. So we followed all 254 links that a procedure gives for a prerequisite's steps, and asked of each landing page one question: does it give steps for that specific thing?</p>
+<p>A link away is fine when the other page has what you need. So we followed all 254 links that a procedure gives for a prerequisite's steps, and asked of each landing page one question: does it give steps for that specific thing?</p>
 
 <div class="panel" id="dead">
   <div class="chk" style="margin-bottom:14px">
@@ -263,7 +327,7 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
 <p>Following one more link gets about half of the pass-alongs to real steps. A fifth of the time, two pages in, you're still looking for steps.</p>
 </section>
 
-<section>
+<section id="s07">
 <p class="eyebrow">07 · What fell through</p>
 <h2>Four ideas the data <em>turned down</em></h2>
 <div class="panel">
@@ -278,10 +342,10 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
 </div>
 </section>
 
-<section>
+<section id="s08">
 <p class="eyebrow">08 · How far to trust it</p>
 <h2>A reading, <em>checked where it can be</em></h2>
-<p>Every prerequisite in sections 04 to 06 comes from a language model reading a page. That makes each one a reading, a step short of ground truth. Here's what we can say about it:</p>
+<p>Every prerequisite in sections 04 to 06 comes from a language model reading a page. That makes each one a reading, a step short of ground truth. What we can measure is whether the reading repeats:</p>
 <div class="tw"><table>
 <thead><tr><th>Measured on all 281 pages</th><th class="n">Read 1</th><th class="n">Read 2</th><th class="n">Read 3</th></tr></thead>
 <tbody>

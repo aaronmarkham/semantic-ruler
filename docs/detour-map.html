@@ -6,9 +6,73 @@
 <meta name="description" content="Walk 219 AWS how-to pages as a map: where the prerequisites are, which links deliver, and which are dead ends.">
 <meta property="og:title" content="The Detour Map">
 <meta property="og:description" content="Walk 219 AWS how-to pages as a map: where the prerequisites are, which links deliver, and which are dead ends.">
-<style>body{margin:0}</style>
+<style>body{margin:0}
+/* Shared navigation bar. Colours and faces come from each page's own palette, with fallbacks. */
+:root{--sn-h:46px}
+html{scroll-padding-top:calc(var(--sn-h) + 14px)}
+.sn{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:4px 18px;min-height:var(--sn-h);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  background:var(--paper,#EFF1EE);border-bottom:1px solid var(--rule,#B7BFBA);
+  font:12px/1.4 var(--mono,ui-monospace,Consolas,monospace);letter-spacing:.06em;color:var(--muted,#55635F)}
+.sn a{color:var(--ink,#131C21);text-decoration:none}
+.sn a:hover,.sn summary:hover{color:var(--invariant,var(--ok,#3B3190))}
+.sn-brand{font-weight:500;letter-spacing:.1em;text-transform:uppercase;margin-right:auto;white-space:nowrap}
+.sn-pages{display:flex;gap:16px;margin:0;padding:0;list-style:none}
+.sn-pages a{white-space:nowrap;padding:14px 0;display:inline-block;border-bottom:2px solid transparent}
+.sn-pages a[aria-current]{color:var(--invariant,var(--ok,#3B3190));border-bottom-color:currentColor}
+.sn-gh{white-space:nowrap}
+.sn-menu{position:relative}
+.sn-menu summary{list-style:none;cursor:pointer;white-space:nowrap;padding:14px 0;color:var(--ink,#131C21);display:inline-flex;align-items:center;gap:6px}
+.sn-menu summary::-webkit-details-marker{display:none}
+.sn-menu summary::after{content:"";width:6px;height:6px;border:solid currentColor;border-width:0 1.5px 1.5px 0;transform:translateY(-2px) rotate(45deg)}
+.sn-menu[open] summary::after{transform:translateY(1px) rotate(-135deg)}
+.sn-drop{position:absolute;right:0;top:calc(100% - 1px);min-width:260px;max-width:min(360px,calc(100vw - 32px));max-height:calc(100vh - var(--sn-h) - 16px);overflow:auto;
+  background:var(--paper,#EFF1EE);border:1px solid var(--rule,#B7BFBA);border-radius:0 0 6px 6px;box-shadow:0 10px 24px -12px rgba(19,28,33,.45);padding:8px 0 10px}
+.sn-h{margin:10px 16px 4px;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted,#55635F)}
+.sn-drop ul{margin:0;padding:0;list-style:none}
+.sn-drop a{display:block;padding:8px 16px;letter-spacing:.03em;font-size:13px}
+.sn-drop a:hover{background:var(--sunk,#E7EAE7)}
+.sn-drop .sn-pages{display:block}
+.sn-drop .sn-pages a{padding:8px 16px;border:0}
+.sn-drop a[aria-current]{color:var(--invariant,var(--ok,#3B3190))}
+.sn-drop .sn-gh{display:block;padding:8px 16px;margin-top:4px;border-top:1px solid var(--rule,#B7BFBA);padding-top:12px}
+.sn-only-narrow{display:none}
+@media (max-width:719px){
+  .sn > .sn-pages,.sn > .sn-gh,.sn-only-wide{display:none}
+  .sn-only-narrow{display:block}
+}
+@media (min-width:720px){.sn-drop > .sn-only-narrow{display:none}}
+/* Elements the pages pin to the top of the window sit below the bar. */
+body #deep .story{top:calc(var(--sn-h) + 8px)}
+@media (min-width:680px){body .walk .story{top:calc(var(--sn-h) + 12px)}}
+@media print{.sn{display:none}}
+</style>
 </head>
 <body>
+<nav class="sn" aria-label="Site">
+<a class="sn-brand" href="index.html">semantic-ruler</a>
+<ul class="sn-pages"><li><a href="index.html">Rulers and Detours</a></li><li><a href="detour-map.html" aria-current="page">The Detour Map</a></li><li><a href="drift.html">Drift</a></li></ul>
+<details class="sn-menu">
+<summary><span class="sn-only-wide">On this page</span><span class="sn-only-narrow">Menu</span></summary>
+<div class="sn-drop">
+<p class="sn-h sn-only-narrow">Pages</p>
+<ul class="sn-pages sn-only-narrow"><li><a href="index.html">Rulers and Detours</a></li><li><a href="detour-map.html" aria-current="page">The Detour Map</a></li><li><a href="drift.html">Drift</a></li></ul>
+<p class="sn-h">On this page</p>
+<ul><li><a href="#trail">01 · Walk one</a></li><li><a href="#deep">02 · Go deeper</a></li><li><a href="#s03">03 · The territory</a></li><li><a href="#s04">04 · The odds at a fork</a></li><li><a href="#s05">05 · How sure</a></li></ul>
+<a class="sn-gh" href="https://github.com/aaronmarkham/semantic-ruler">GitHub</a>
+</div>
+</details>
+<a class="sn-gh" href="https://github.com/aaronmarkham/semantic-ruler">GitHub</a>
+</nav>
+<script>
+(() => {
+  const m = document.querySelector(".sn-menu"); if (!m) return;
+  const close = () => m.removeAttribute("open");
+  m.addEventListener("click", e => { if (e.target.closest("a")) close(); });
+  document.addEventListener("click", e => { if (m.open && !m.contains(e.target)) close(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && m.open) { close(); m.querySelector("summary").focus(); } });
+})();
+</script>
 <title>The Detour Map</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
@@ -190,7 +254,7 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
 </div>
 </section>
 
-<section>
+<section id="s03">
 <p class="eyebrow">03 · The territory</p>
 <h2>All 219 trails, <em>and what changes when you swap a part</em></h2>
 <p>One square per page, lightest to darkest by how many times it stops you: a detour counts once, a link that falls short counts once. Tap a square to walk that page.</p>
@@ -218,7 +282,7 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
 </div>
 </section>
 
-<section>
+<section id="s04">
 <p class="eyebrow">04 · The odds at a fork</p>
 <h2>What is at the end of <em>the link</em></h2>
 <p>Every time a page said "the steps are over there", we opened the page it pointed to and asked whether the steps for that one thing were on it.</p>
@@ -230,7 +294,7 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
 </div>
 </section>
 
-<section>
+<section id="s05">
 <p class="eyebrow">05 · How sure</p>
 <h2>Three kinds of <em>doubt</em></h2>
 <ul class="sure">
