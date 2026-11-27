@@ -65,6 +65,87 @@ Question: {question}
 Answer yes, no, or unknown:"""
 
 
+BRIDGE_PROMPT = """\
+Below is a document, then a numbered list of relationships between facts. For each
+relationship, decide whether the document STATES or clearly ENTAILS it. Judge the
+whole relationship: a "holds only when all of" relationship is stated only if the
+document makes every listed condition necessary, and makes clear the consequent
+does not hold without them. A document that lists the conditions as separate,
+unconnected facts does not state the relationship.
+
+Document:
+{doc}
+
+Relationships:
+{edges}
+
+Respond with JSON only, one entry per relationship, in order:
+{{"answers": [{{"i": 1, "verdict": "yes", "quote": "the shortest span of the document that states it, or empty"}}]}}
+verdict is "yes", "no" or "unknown".
+"""
+
+
+def edge_statement(edge, facts_by_id: dict) -> str:
+    """One edge as a sentence a reader could check, using the atoms' own words."""
+    t = lambda fid: facts_by_id[fid].text.rstrip(".") if fid in facts_by_id else fid
+    ants = [t(a) for a in edge.antecedents]
+    con = t(edge.consequent)
+    if edge.kind == EdgeKind.REQUIRES:
+        return f'"{con}" holds only when all of the following hold: ' + "; ".join(f'"{a}"' for a in ants) + "."
+    if edge.kind == EdgeKind.IMPLIES:
+        return f'If {" and ".join(f"\"{a}\"" for a in ants)}, then "{con}".'
+    if edge.kind == EdgeKind.CONTRADICTS:
+        return f'{" and ".join(f"\"{a}\"" for a in ants)} and "{con}" cannot both be true.'
+    if edge.kind == EdgeKind.SEQUENCE:
+        return f'{" and ".join(f"\"{a}\"" for a in ants)} must happen before "{con}".'
+    if edge.kind == EdgeKind.NEGATES:
+        return f'{" and ".join(f"\"{a}\"" for a in ants)} is the negation of "{con}".'
+    return f'{edge.kind.value}: {ants} -> "{con}"'
+
+
+async def bridge_entailment(orig: FactGraph, regen_doc: str, llm, model: str | None = None) -> dict:
+    """Text-reading bridge recall: the share of original edges, weighted by confidence, that the
+    regenerated text states or entails, as judged by a model reading the text.
+
+    cond_bridge_recall scores a second extraction of the regenerated text against the first graph,
+    and so inherits the re-extraction's noise: the same text can yield nine edges in one run and
+    sixteen in the next. This asks about the text itself, one question per edge, in one call.
+    Returns the per-edge verdicts and the indices the reader could not find, for the repair pass.
+    """
+    if not orig.edges:
+        return {"rate": float("nan"), "n_edges": 0, "verdicts": [], "lost": []}
+    by_id = orig.fact_by_id()
+    edges_text = "\n".join(f"{k + 1}. {edge_statement(e, by_id)}" for k, e in enumerate(orig.edges))
+    kwargs = {"model": model} if model else {}
+    reply = await llm.query(BRIDGE_PROMPT.format(doc=regen_doc, edges=edges_text), **kwargs)
+    verdicts = ["unknown"] * len(orig.edges)
+    quotes = [""] * len(orig.edges)
+    try:
+        start = reply.find("{")
+        for a in json.JSONDecoder().raw_decode(reply, start)[0].get("answers", []):
+            k = int(a.get("i", 0)) - 1
+            if 0 <= k < len(verdicts):
+                verdicts[k] = str(a.get("verdict", "unknown")).strip().lower()
+                quotes[k] = str(a.get("quote", ""))[:200]
+    except (ValueError, TypeError, KeyError):
+        return {"rate": float("nan"), "n_edges": len(orig.edges), "verdicts": [], "lost": [], "error": "unparseable reply"}
+    total = sum(e.confidence for e in orig.edges)
+    kept = sum(e.confidence for e, v in zip(orig.edges, verdicts) if v == "yes")
+    by_kind: dict[str, list[float]] = {}
+    for e, v in zip(orig.edges, verdicts):
+        by_kind.setdefault(e.kind.value, []).append(1.0 if v == "yes" else 0.0)
+    return {
+        "rate": kept / total if total else float("nan"),
+        "n_edges": len(orig.edges),
+        "n_yes": sum(v == "yes" for v in verdicts),
+        "n_unknown": sum(v == "unknown" for v in verdicts),
+        "by_kind": {k: float(np.mean(v)) for k, v in by_kind.items()},
+        "verdicts": verdicts,
+        "quotes": quotes,
+        "lost": [k for k, v in enumerate(verdicts) if v != "yes"],
+    }
+
+
 def _cosine_sim(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     """Pairwise cosine similarity: (m, d) × (n, d) → (m, n)."""
     a_n = a / np.linalg.norm(a, axis=1, keepdims=True).clip(1e-9)

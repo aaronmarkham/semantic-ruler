@@ -41,6 +41,7 @@ from semantic_ruler import CachedEmbedder, HashEmbedder, OpenAIEmbedder
 from semantic_ruler.drift import (
     analyse_structural,
     atomic_f1,
+    bridge_entailment,
     cond_bridge_recall,
     conditional_load,
     drift_score,
@@ -157,6 +158,7 @@ async def run_drift(
         a = atomic_f1(orig_graph, regen_graph, embedder)
         c = cond_bridge_recall(orig_graph, regen_graph, embedder)
         e = await entailment_rate(orig_graph, regen_doc, llm, n_probes=n_probes, model=model)
+        tb = await bridge_entailment(orig_graph, regen_doc, llm, model=model)
 
         # 5. Structural drift (procedure pages only) ------------------------------
         s: dict = {"applicable": False, "procedure_votes": votes}
@@ -179,6 +181,7 @@ async def run_drift(
             "atomic_f1": a,
             "cond_bridge_recall": c,
             "entailment": e,
+            "text_bridge": tb,
             "structural": s,
             "drift": d,
             "regen_doc": regen_doc,
@@ -188,7 +191,8 @@ async def run_drift(
         if repair:
             # "lost": feed back only what the evaluation flagged. "all": feed back every original edge, since a
             # draft told only about the lost ones has been seen to drop the ones it was not reminded of.
-            lost_edges = list(orig_graph.edges) if repair_scope == "all" else [orig_graph.edges[k] for k in c.get("lost", [])]
+            lost_idx = tb.get("lost", c.get("lost", [])) if repair_scope == "text" else c.get("lost", [])
+            lost_edges = list(orig_graph.edges) if repair_scope == "all" else [orig_graph.edges[k] for k in lost_idx]
             wanted = []
             if orig_struct and orig_struct.is_procedure:
                 flagged = set(s.get("unmatched", [])) | set(s.get("sprung", []))
@@ -204,6 +208,7 @@ async def run_drift(
             fa = atomic_f1(orig_graph, fixed_graph, embedder)
             fc = cond_bridge_recall(orig_graph, fixed_graph, embedder)
             fe = await entailment_rate(orig_graph, fixed_doc, llm, n_probes=n_probes, model=model)
+            ftb = await bridge_entailment(orig_graph, fixed_doc, llm, model=model)
             fs: dict = {"applicable": False, "procedure_votes": votes}
             if orig_struct and orig_struct.is_procedure:
                 fixed_struct = await analyse_structural(llm, fixed_doc, title="Repaired Documentation")
@@ -215,7 +220,7 @@ async def run_drift(
                 "scope": repair_scope,
                 "fed_back": {"edges": [_edge_dict(x) for x in lost_edges], "prerequisites": wanted},
                 "regen": {"n_facts": len(fixed_graph.facts), "n_edges": len(fixed_graph.edges)},
-                "atomic_f1": fa, "cond_bridge_recall": fc, "entailment": fe, "structural": fs, "drift": fd,
+                "atomic_f1": fa, "cond_bridge_recall": fc, "entailment": fe, "text_bridge": ftb, "structural": fs, "drift": fd,
                 "regen_doc": fixed_doc,
             }
         results.append(result)
@@ -274,6 +279,8 @@ def _fmt(result: dict) -> str:
     lines += [
         "",
         f"Entailment probes ...... {pct(e.get('rate'))}  ({int(e.get('n_probes', 0))} probes)",
+    ] + ([f"Text bridge recall ..... {pct(result['text_bridge'].get('rate'))}  ({int(result['text_bridge'].get('n_yes', 0))} of {int(result['text_bridge'].get('n_edges', 0))} edges stated in the text"
+          + (f", {int(result['text_bridge'].get('n_unknown', 0))} unknown" if result['text_bridge'].get('n_unknown') else "") + ")"] if result.get("text_bridge") else []) + [
     ]
 
     if s.get("applicable"):
@@ -305,6 +312,8 @@ def _fmt(result: dict) -> str:
         lines.append(f"  Atomic F1              {pct(rp['atomic_f1'].get('f1'))}")
         lines.append(f"  Cond. bridge recall    {pct(rp['cond_bridge_recall'].get('cbr'))}")
         lines.append(f"  Entailment probes      {pct(rp['entailment'].get('rate'))}")
+        if rp.get("text_bridge"):
+            lines.append(f"  Text bridge recall     {pct(rp['text_bridge'].get('rate'))}")
         if rp["structural"].get("applicable"):
             if rp["structural"].get("procedure_lost"):
                 lines.append("  Structural             no longer a procedure")
@@ -335,7 +344,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--repeats", type=int, default=1, help="regenerate and re-score this many times; report the spread")
     ap.add_argument("--structural-reads", type=int, default=3, help="reads of the original that vote on whether it is a procedure")
     ap.add_argument("--repair", action="store_true", help="regenerate once more with the lost relationships and sprung prerequisites fed back, and score that too")
-    ap.add_argument("--repair-scope", choices=("lost", "all"), default="lost", help="feed back only the lost relationships, or every original one")
+    ap.add_argument("--repair-scope", choices=("lost", "text", "all"), default="lost", help="feed back the relationships the graph matcher lost, the ones the text reader lost, or every original one")
     ap.add_argument("--atomizer", choices=("sentence", "strict"), default="sentence", help="sentence: one claim per sentence, conditions kept inside; strict: no conditions inside atoms, every dependence is an edge")
     ap.add_argument("--no-structural", action="store_true", help="skip the structural layer")
     ap.add_argument("--mock", action="store_true", help="offline: no LLM or embedder calls")

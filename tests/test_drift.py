@@ -205,3 +205,31 @@ def test_extraction_drops_edges_the_model_did_not_believe():
 
     g = asyncio.run(extract_facts(Reply(), "A. B."))
     assert [e.kind.value for e in g.edges] == ["requires"]
+
+
+def test_edge_statement_uses_the_atoms_words():
+    from semantic_ruler.drift import edge_statement
+    g = _graph(["The log group is created automatically.", "The role has CreateLogGroup.", "The role has PutLogEvents."],
+               [(EdgeKind.REQUIRES, ["f02", "f03"], "f01", 0.9), (EdgeKind.SEQUENCE, ["f03"], "f01", 0.5)])
+    by = g.fact_by_id()
+    assert edge_statement(g.edges[0], by) == '"The log group is created automatically" holds only when all of the following hold: "The role has CreateLogGroup"; "The role has PutLogEvents".'
+    assert edge_statement(g.edges[1], by) == '"The role has PutLogEvents" must happen before "The log group is created automatically".'
+
+
+def test_bridge_entailment_scores_the_readers_verdicts():
+    import asyncio
+    from semantic_ruler.drift import bridge_entailment
+
+    class Reader:
+        def __init__(self):
+            self.prompts = []
+
+        async def query(self, prompt, **kw):
+            self.prompts.append(prompt)
+            return '{"answers": [{"i": 1, "verdict": "yes", "quote": "only when"}, {"i": 2, "verdict": "no", "quote": ""}]}'
+
+    g = _graph(["A.", "B.", "C."], [(EdgeKind.REQUIRES, ["f02", "f03"], "f01", 0.8), (EdgeKind.SEQUENCE, ["f03"], "f01", 0.2)])
+    reader = Reader()
+    r = asyncio.run(bridge_entailment(g, "A only when B and C.", reader))
+    assert r["rate"] == 0.8 and r["n_yes"] == 1 and r["lost"] == [1] and r["verdicts"] == ["yes", "no"]
+    assert "A only when B and C." in reader.prompts[0] and '1. "A" holds only when' in reader.prompts[0]
