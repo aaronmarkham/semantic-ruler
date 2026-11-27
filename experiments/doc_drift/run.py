@@ -15,6 +15,7 @@ Usage:
     python -I experiments/doc_drift/run.py <url-or-file> --json
     python -I experiments/doc_drift/run.py <url-or-file> --no-structural
     python -I experiments/doc_drift/run.py <url-or-file> --repeats 3
+    python -I experiments/doc_drift/run.py <url-or-file> --repair
 """
 
 from __future__ import annotations
@@ -94,6 +95,8 @@ async def run_drift(
     run_structural: bool = True,
     repeats: int = 1,
     structural_reads: int = 3,
+    repair: bool = False,
+    repair_scope: str = "lost",
     log=print,
 ) -> dict:
     """One round trip, or `repeats` of them from the same original graph.
@@ -161,7 +164,7 @@ async def run_drift(
                     f"{len(regen_struct.detours)} detours" + (", no longer a procedure" if s.get("procedure_lost") else ""))
 
         d = drift_score(a, c, e, s if s.get("applicable") else None)
-        results.append({
+        result = {
             "source_hash": source_hash,
             "orig": {"n_facts": len(orig_graph.facts), "n_edges": len(orig_graph.edges)},
             "regen": {"n_facts": len(regen_graph.facts), "n_edges": len(regen_graph.edges)},
@@ -171,12 +174,52 @@ async def run_drift(
             "structural": s,
             "drift": d,
             "regen_doc": regen_doc,
-        })
+        }
+
+        # 6. Repair: hand the draft back what the evaluation found missing ----------
+        if repair:
+            # "lost": feed back only what the evaluation flagged. "all": feed back every original edge, since a
+            # draft told only about the lost ones has been seen to drop the ones it was not reminded of.
+            lost_edges = list(orig_graph.edges) if repair_scope == "all" else [orig_graph.edges[k] for k in c.get("lost", [])]
+            wanted = []
+            if orig_struct and orig_struct.is_procedure:
+                flagged = set(s.get("unmatched", [])) | set(s.get("sprung", []))
+                for q in orig_struct.prerequisites:
+                    # Say where the steps are only when the original has them; a draft told "no steps given" copies the phrase.
+                    where = {"on_page": " (steps on this page)", "other_page": f" (steps at {q.get('link') or 'the linked page'})"}.get(q.get("instructions"), "")
+                    if s.get("procedure_lost") or not s.get("applicable") or q["what"] in flagged or len(flagged) >= len(orig_struct.prerequisites) / 2:
+                        wanted.append(f"{q['what']}{where}")
+            log(f"Repairing: {len(lost_edges)} lost relationship(s), {len(wanted)} prerequisite(s) to state up front...")
+            fixed_doc = await regenerate_doc(llm, atoms_only, model, repair_edges=lost_edges, prerequisites=wanted)
+            fixed_graph = await extract_facts(llm, fixed_doc, model)
+            shards.save_fact_graph(shard_store, f"repair:{source_hash}", fixed_graph, label="repair")
+            fa = atomic_f1(orig_graph, fixed_graph, embedder)
+            fc = cond_bridge_recall(orig_graph, fixed_graph, embedder)
+            fe = await entailment_rate(orig_graph, fixed_doc, llm, n_probes=n_probes, model=model)
+            fs: dict = {"applicable": False, "procedure_votes": votes}
+            if orig_struct and orig_struct.is_procedure:
+                fixed_struct = await analyse_structural(llm, fixed_doc, title="Repaired Documentation")
+                if fixed_struct:
+                    fs = {**structural_drift(orig_struct, fixed_struct, embedder), "procedure_votes": votes}
+            fd = drift_score(fa, fc, fe, fs if fs.get("applicable") else None)
+            log(f"  repaired: F1 {fa['f1']:.2f}, CBR {fc.get('cbr', float('nan')):.2f}, probes {fe.get('rate')}, drift {fd['drift']:.2f}")
+            result["repair"] = {
+                "scope": repair_scope,
+                "fed_back": {"edges": [_edge_dict(x) for x in lost_edges], "prerequisites": wanted},
+                "regen": {"n_facts": len(fixed_graph.facts), "n_edges": len(fixed_graph.edges)},
+                "atomic_f1": fa, "cond_bridge_recall": fc, "entailment": fe, "structural": fs, "drift": fd,
+                "regen_doc": fixed_doc,
+            }
+        results.append(result)
 
     if len(results) == 1:
         return results[0]
     summary = summarize_repeats(results)
     return {**results[summary["shown"]], "repeats": results, "summary": summary}
+
+
+def _edge_dict(e) -> dict:
+    return {"kind": e.kind.value, "antecedents": list(e.antecedents), "consequent": e.consequent, "confidence": e.confidence}
 
 
 def _fmt(result: dict) -> str:
@@ -243,6 +286,18 @@ def _fmt(result: dict) -> str:
     for k in ("atomic_loss", "cbr_loss", "entailment_loss", "structural_loss"):
         if k in d:
             lines.append(f"  {k:<20} {pct(d[k])}")
+    if "repair" in result:
+        rp = result["repair"]; fb = rp["fed_back"]
+        lines += ["", f"After repair (fed back {len(fb['edges'])} relationship(s), {len(fb['prerequisites'])} prerequisite(s))"]
+        lines.append(f"  Atomic F1              {pct(rp['atomic_f1'].get('f1'))}")
+        lines.append(f"  Cond. bridge recall    {pct(rp['cond_bridge_recall'].get('cbr'))}")
+        lines.append(f"  Entailment probes      {pct(rp['entailment'].get('rate'))}")
+        if rp["structural"].get("applicable"):
+            if rp["structural"].get("procedure_lost"):
+                lines.append("  Structural             no longer a procedure")
+            else:
+                lines.append(f"  Structural             recall {pct(rp['structural'].get('prereq_recall'))}  detour rate {pct(rp['structural'].get('regen_detour_rate'))}  loss {pct(rp['structural'].get('structural_loss'))}")
+        lines.append(f"  Drift score            {pct(rp['drift'].get('drift'))}")
     if "summary" in result:
         sm = result["summary"]
         lines += ["", f"Over {sm['n']} repeats (median, min to max)"]
@@ -266,6 +321,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--regenerate", action="store_true", help="ignore cached graphs")
     ap.add_argument("--repeats", type=int, default=1, help="regenerate and re-score this many times; report the spread")
     ap.add_argument("--structural-reads", type=int, default=3, help="reads of the original that vote on whether it is a procedure")
+    ap.add_argument("--repair", action="store_true", help="regenerate once more with the lost relationships and sprung prerequisites fed back, and score that too")
+    ap.add_argument("--repair-scope", choices=("lost", "all"), default="lost", help="feed back only the lost relationships, or every original one")
     ap.add_argument("--no-structural", action="store_true", help="skip the structural layer")
     ap.add_argument("--mock", action="store_true", help="offline: no LLM or embedder calls")
     ap.add_argument("--json", action="store_true", dest="as_json")
@@ -303,12 +360,15 @@ def main(argv: list[str] | None = None) -> int:
         run_structural=not args.no_structural,
         repeats=args.repeats,
         structural_reads=args.structural_reads,
+        repair=args.repair,
+        repair_scope=args.repair_scope,
     ))
 
     if args.as_json:
-        out = {k: v for k, v in result.items() if k != "regen_doc"}
+        strip = lambda r: {k: ({kk: vv for kk, vv in v.items() if kk != "regen_doc"} if k == "repair" else v) for k, v in r.items() if k != "regen_doc"}
+        out = strip(result)
         if "repeats" in out:
-            out["repeats"] = [{k: v for k, v in r.items() if k != "regen_doc"} for r in out["repeats"]]
+            out["repeats"] = [strip(r) for r in out["repeats"]]
         print(json.dumps(out, indent=2))
     else:
         print(_fmt(result))

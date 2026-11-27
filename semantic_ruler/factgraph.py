@@ -124,11 +124,71 @@ async def extract_facts(llm: LLMProvider, text: str, model: str | None = None) -
     raise RuntimeError("LLM did not return a parseable fact graph after 3 attempts")
 
 
-async def regenerate_doc(llm: LLMProvider, graph: FactGraph, model: str | None = None) -> str:
-    """Reconstruct documentation prose from a fact graph."""
+REPAIR_PROMPT = """\
+Reconstruct documentation prose from the following facts. A first draft written
+from the facts alone lost what is listed below the facts; this draft must carry it.
+
+Rules:
+- Include every fact — omit nothing
+- Do not add facts not in the list, and do not comment on what the list lacks
+- Write coherent paragraphs, not a bulleted list{list_rule}
+{section_rules}
+Facts:
+{facts}
+{sections}"""
+
+REPAIR_EDGE_RULE = """\
+- State each relationship below in the prose, in the place where it applies: \
+a "requires" relationship means the consequent holds ONLY when ALL its antecedents hold, \
+say so; a "sequence" relationship means the antecedent must happen first, keep that order
+"""
+REPAIR_PREREQ_RULE = """\
+- Open with a short "Before you begin" section that names each prerequisite listed below, \
+with its steps or where to find them, before any step that needs it
+"""
+
+
+def _edge_words(e: FactEdge) -> str:
+    ants = " and ".join(f"[{a}]" for a in e.antecedents)
+    return {
+        EdgeKind.REQUIRES: f"[{e.consequent}] holds only when {ants} all hold",
+        EdgeKind.IMPLIES: f"{ants} is enough for [{e.consequent}]",
+        EdgeKind.CONTRADICTS: f"{ants} and [{e.consequent}] cannot both hold",
+        EdgeKind.SEQUENCE: f"{ants} must happen before [{e.consequent}]",
+        EdgeKind.NEGATES: f"{ants} is the negation of [{e.consequent}]",
+    }.get(e.kind, f"{e.kind.value}: {ants} -> [{e.consequent}]")
+
+
+async def regenerate_doc(
+    llm: LLMProvider,
+    graph: FactGraph,
+    model: str | None = None,
+    *,
+    repair_edges: list[FactEdge] | None = None,
+    prerequisites: list[str] | None = None,
+) -> str:
+    """Reconstruct documentation prose from a fact graph.
+
+    From the atoms alone by default: the edges in `graph` are not shown to the
+    model, which is the round trip under test. With `repair_edges` or
+    `prerequisites`, the draft is asked to carry those back: the relationships
+    the evaluation found missing and the prerequisites it found sprung on the
+    reader or dropped.
+    """
     facts_text = "\n".join(f"[{f.fact_id}] {f.text}" for f in graph.facts)
     kwargs = {"model": model} if model else {}
-    return await llm.query(REGEN_PROMPT.format(facts=facts_text), **kwargs)
+    if not repair_edges and not prerequisites:
+        return await llm.query(REGEN_PROMPT.format(facts=facts_text), **kwargs)
+    rules, sections = "", ""
+    if repair_edges:
+        rules += REPAIR_EDGE_RULE
+        sections += "\nRelationships to state:\n" + "\n".join(f"- {_edge_words(e)}" for e in repair_edges) + "\n"
+    if prerequisites:
+        rules += REPAIR_PREREQ_RULE
+        sections += "\nPrerequisites to state up front:\n" + "\n".join(f"- {p}" for p in prerequisites) + "\n"
+    prompt = REPAIR_PROMPT.format(facts=facts_text, sections=sections, section_rules=rules,
+                                  list_rule=", except for the prerequisites section" if prerequisites else "")
+    return await llm.query(prompt, **kwargs)
 
 
 def _parse_json(reply: str) -> Any:

@@ -162,7 +162,8 @@ def cond_bridge_recall(
     regen_index = {rid: j for j, rid in enumerate(regen_ids)}
 
     by_kind: dict[str, list[float]] = {}
-    for edge in orig.edges:
+    lost: list[int] = []
+    for k, edge in enumerate(orig.edges):
         mapped_ants = [orig_to_regen.get(a) for a in edge.antecedents]
         mapped_con = orig_to_regen.get(edge.consequent)
         oi = orig_index.get(edge.consequent)
@@ -176,6 +177,8 @@ def cond_bridge_recall(
                     preserved = True
                     break
         by_kind.setdefault(edge.kind.value, []).append(edge.confidence if preserved else 0.0)
+        if not preserved:
+            lost.append(k)
 
     total_conf = sum(e.confidence for e in orig.edges)
     all_weighted = [s for scores in by_kind.values() for s in scores]
@@ -184,6 +187,7 @@ def cond_bridge_recall(
         "cbr": cbr,
         "n_edges": float(len(orig.edges)),
         "by_kind": {k: float(np.mean(v)) for k, v in by_kind.items()},
+        "lost": lost,  # indices into orig.edges, for the repair pass
     }
 
 
@@ -372,6 +376,11 @@ def structural_drift(orig, regen, embedder: Embedder | None = None, threshold: f
         matched = [(orig.prerequisites[i], regen.prerequisites[j]) for i, j in sorted(_assign(sim, cut).items())]
 
     prereq_recall = len(matched) / len(orig.prerequisites) if orig.prerequisites else float("nan")
+    matched_orig = {id(oq) for oq, _ in matched}
+    found = {
+        "unmatched": [oq["what"] for oq in orig.prerequisites if id(oq) not in matched_orig],
+        "sprung": [rq["what"] for rq in regen.prerequisites if rq.get("detour")],
+    }
 
     if not regen.is_procedure:
         # Total loss by rule: the frame that ordered the prerequisites is gone. The recall says how many
@@ -387,6 +396,7 @@ def structural_drift(orig, regen, embedder: Embedder | None = None, threshold: f
             "detour_rate_delta": float("nan"),
             "intro_position_mae": float("nan"),
             "structural_loss": 1.0,
+            **found,
         }
     detour_delta = (regen_det - orig_det) if not (math.isnan(regen_det) or math.isnan(orig_det)) else float("nan")
 
@@ -413,6 +423,7 @@ def structural_drift(orig, regen, embedder: Embedder | None = None, threshold: f
         "detour_rate_delta": detour_delta,
         "intro_position_mae": intro_mae,
         "structural_loss": structural_loss,
+        **found,
     }
 
 

@@ -148,3 +148,27 @@ def test_summarize_repeats_reports_spread_and_median_run():
     assert s["drift"]["median"] == 0.68 and s["shown"] == 2
     assert "structural_loss" not in s
     assert MATCH_THRESHOLD == 0.70
+
+
+def test_bridge_recall_names_the_lost_edges():
+    emb = TableEmbedder(TABLE)
+    orig = _graph(ORIG, [(EdgeKind.REQUIRES, ["f02", "f03", "f04"], "f01", 0.9), (EdgeKind.SEQUENCE, ["f04"], "f01", 0.5)])
+    regen = _graph(PARA, [(EdgeKind.REQUIRES, ["f02", "f03", "f04"], "f01", 1.0)])
+    assert cond_bridge_recall(orig, regen, emb)["lost"] == [1]
+
+
+def test_structural_drift_names_unmatched_and_sprung_prerequisites():
+    table = {"a bucket": _axis(0), "a key policy": _axis(1), "the bucket for the logs": _near(_axis(0), 0.8, 8)}
+    orig = _report([("a bucket", "", 1), ("a key policy", "", 2)])
+    regen = _report([("the bucket for the logs", "alone", 9)])
+    r = structural_drift(orig, regen, TableEmbedder(table))
+    assert r["unmatched"] == ["a key policy"]
+    assert r["sprung"] == ["the bucket for the logs"]
+
+
+def test_repair_prompt_states_relationships_in_words():
+    from semantic_ruler.factgraph import _edge_words
+    e = FactEdge(kind=EdgeKind.REQUIRES, antecedents=["f02", "f03"], consequent="f01", confidence=0.9)
+    assert _edge_words(e) == "[f01] holds only when [f02] and [f03] all hold"
+    s = FactEdge(kind=EdgeKind.SEQUENCE, antecedents=["f04"], consequent="f01", confidence=0.5)
+    assert _edge_words(s) == "[f04] must happen before [f01]"
