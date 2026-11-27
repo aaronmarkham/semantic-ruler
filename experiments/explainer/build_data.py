@@ -137,7 +137,7 @@ print(f"detours: {len(pages)} pages, {len(items)} prerequisites")
 # --- 4. dead ends ------------------------------------------------------------------
 de = json.load(open(ordering / "dead_ends.json", encoding="utf-8"))
 out["dead_ends"] = {"rows": [{"type": r["type"], "detour": r["detour"], "o": r["outcomes"]["1"], "hop2": r.get("hop2")} for r in de["rows"]],
-                    "agreement": 0.98}
+                    "agreement": round(sum(r["outcomes"].get("1") == r["outcomes"].get("2") for r in de["rows"]) / len(de["rows"]), 3)}
 print(f"dead ends: {len(de['rows'])} links, hop2 on {sum(bool(r.get('hop2')) for r in de['rows'])}")
 
 # --- 5. the WAF chain and its checklist ------------------------------------------------
