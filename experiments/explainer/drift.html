@@ -93,7 +93,7 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
 <div class="col">
 <p class="eyebrow">Fact stores · Conditional logic · Semantic drift</p>
 <h1>You kept all the facts.<br><em>Lost half the meaning.</em></h1>
-<p class="lede">Distilling a document into atomic facts preserves most of the words. It discards the structure that makes the words mean something — the conditional connections, the conjunctions, the ordering that tells you what has to be true before something else can be true.</p>
+<p class="lede">Distilling a document into atomic facts preserves most of the words. It discards the structure that makes the words mean something: the conditional connections, the conjunctions, the ordering that tells you what has to be true before something else can be.</p>
 <p class="lede">That gap is semantic drift. It is wider than it looks, and atomic coverage alone will not show it to you.</p>
 <div class="tiles" id="found">
   <div class="tile ok"><b id="t-af">94%</b><span>atomic facts preserved</span></div>
@@ -121,7 +121,7 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
       <p>The CloudWatch log group is created automatically, <span class="hl">but only when all three conditions hold</span>: the Lambda execution role has <code>logs:CreateLogGroup</code> and <code>logs:PutLogEvents</code> permissions, <span class="hl">and</span> the function completes at least one successful invocation.</p>
       <p style="margin-bottom:0">Without all three, the function appears to run successfully — <span class="hl">but no logs are written and no error is surfaced.</span></p>
     </div>
-    <p class="note" style="margin-top:14px">The phrase "only when all three conditions hold" explicitly encodes a conjunction. That conjunction lives in the relationship between facts, not in any single fact. When you atomize the document, you need to store the relationship separately — or it disappears.</p>
+    <p class="note" style="margin-top:14px">The phrase "only when all three conditions hold" encodes a conjunction. The conjunction lives in the relationship between the facts, and no single fact carries it. Atomize the document and you have to store that relationship separately, or it disappears.</p>
   </div>
 
   <div id="s-facts" class="stage">
@@ -132,11 +132,11 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
     <div class="atom"><span class="fid">f04</span><span>The CloudWatch log group is created automatically.</span></div>
     <div class="atom"><span class="fid">f05</span><span>Without all three conditions, the function appears to run but writes no logs and surfaces no error.</span></div>
     <div class="edges">
-      <span class="lab">Conditional edges — extracted, not stored</span>
+      <span class="lab">Conditional edges: extracted, then dropped</span>
       <div class="edge"><span class="ek req">requires</span><span>f01 + f02 + f03 → f04 &thinsp;·&thinsp; <em>all three must hold simultaneously for automatic creation</em></span></div>
       <div class="edge" style="border-bottom:0"><span class="ek imp">implies</span><span>¬(f01 ∧ f02 ∧ f03) → f05 &thinsp;·&thinsp; <em>silent failure when any condition is missing</em></span></div>
     </div>
-    <p class="note" style="margin-top:14px">Every atom is accurate. The store holds them all. The REQUIRES edge — that f01, f02, and f03 must hold <em>at the same time</em> — has no field in a flat atom store. It is extracted and then discarded.</p>
+    <p class="note" style="margin-top:14px">Every atom is accurate. The store holds them all. The REQUIRES edge, that f01, f02, and f03 must hold <em>at the same time</em>, has no field in a flat atom store. The extractor finds it and the store drops it.</p>
   </div>
 
   <div id="s-regen" class="stage">
@@ -146,7 +146,7 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
       <p style="margin-bottom:0"><span class="hl lost">If any condition is unmet,</span> the function appears to run but writes no logs and surfaces no error.</p>
     </div>
     <div class="callout" style="margin-top:16px">
-      <p>Every fact survived. The conjunction <strong>"only when all three hold"</strong> did not. A developer reading this might add <code>logs:CreateLogGroup</code> alone and expect logs to appear. The original made clear that all three are required simultaneously — and the regen does not.</p>
+      <p>Every fact survived. The conjunction <strong>"only when all three hold"</strong> did not. A developer reading this might add <code>logs:CreateLogGroup</code> alone and expect logs to appear. The original said all three are required at once. The regeneration says nothing of the kind.</p>
     </div>
   </div>
 </div>
@@ -168,11 +168,11 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
   </div>
   <div class="card">
     <h3>Contradicts</h3>
-    <p>Two facts cannot both hold. Regenerations frequently state both as conditions without noting they are mutually exclusive — producing an impossible setup.</p>
+    <p>Two facts cannot both hold. Regenerations often state both as conditions without saying they exclude each other, and the result is a setup nobody can build.</p>
   </div>
   <div class="card">
     <h3>Sequence</h3>
-    <p>B presupposes A — order matters. Regenerated documents reorder steps because atoms carry no position. The reader tries step 3 before step 1 is done.</p>
+    <p>B presupposes A, so order matters. Regenerated documents reorder steps because atoms carry no position. The reader tries step 3 before step 1 is done.</p>
   </div>
 </div>
 
@@ -245,13 +245,13 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
   <line x1="482" y1="168" x2="578" y2="88" stroke="#B7BFBA" stroke-width="1" stroke-dasharray="3 4" opacity=".5"/>
   <text x="530" y="66" text-anchor="middle" fill="#B7BFBA" font-size="10" opacity=".8">(dropped)</text>
 </svg>
-<p class="note" style="margin-top:8px">Left: the conditional graph the LLM extracts. Right: what the atom store holds. Ghost lines show where the REQUIRES junction was. Without it, f01, f02, and f03 look like independent options rather than simultaneous requirements.</p>
+<p class="note" style="margin-top:8px">Left: the conditional graph the LLM extracts. Right: what the atom store holds. Ghost lines show where the REQUIRES junction was. Without it, f01, f02, and f03 look like independent options. The original needs all three at once.</p>
 </section>
 
 <section id="gap">
 <p class="eyebrow">03 · The measurement gap</p>
-<h2>The number that looks fine <em>isn't the story.</em></h2>
-<p>The obvious metric for a fact store round-trip is atom coverage: what fraction of the original facts survived in the regeneration? For this example the answer is 94% — four of five atoms are present, correctly expressed. That score is not wrong. It just only measures nodes.</p>
+<h2>The number that looks fine <em>counts only nodes.</em></h2>
+<p>The obvious metric for a fact store round-trip is atom coverage: what fraction of the original facts survived in the regeneration? For this example the answer is 94%: four of five atoms are present and correctly expressed. That score is accurate, and it measures nodes alone.</p>
 
 <div class="panel">
   <p class="lab" style="margin-bottom:16px">Same example, three metrics</p>
@@ -272,37 +272,37 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
       <span class="val" id="v-ep">55%</span>
     </div>
   </div>
-  <p class="note">Atomic F1 alone would read this as a 94% success. CBR reveals two of three conditional edges were lost. The entailment probes confirm the damage: more than half of questions requiring multiple facts to answer came back wrong from the regenerated document.</p>
+  <p class="note">Atomic F1 alone reads this as a 94% success. CBR shows that two of three conditional edges are gone. The entailment probes confirm the damage: the regenerated document answered more than half of the multi-fact questions wrong.</p>
 </div>
 
-<p>The gap between atomic F1 and CBR is what the library was built to surface. A distillation that scores 94% on atom coverage and 33% on conditional bridge recall did not preserve 94% of the document's meaning. It preserved the vocabulary and lost the logic.</p>
+<p>The library exists to surface the gap between atomic F1 and CBR. A distillation that scores 94% on atom coverage and 33% on conditional bridge recall kept the vocabulary and lost the logic.</p>
 </section>
 
 <section id="metrics">
 <p class="eyebrow">04 · What the library measures</p>
 <h2>Three layers, <em>one composite.</em></h2>
-<p>Each metric catches a different failure mode. All three are needed because a document can pass one test and fail another.</p>
+<p>Each metric catches a different failure mode. You need all three because a document can pass one test and fail another.</p>
 
 <div class="pipe" id="pipeline">
   <div class="step">
     <div class="num">1</div>
     <div class="body">
       <h3>Atomic F1 — did the content survive?</h3>
-      <p>The library embeds every fact from the original and the regenerated document. A regen fact "matches" an original when cosine similarity clears the threshold. Precision measures hallucination rate; recall measures coverage. F1 is the harmonic mean. <strong>Weight in composite: 25%.</strong> This is a floor check, not a ceiling — high F1 is necessary but tells you nothing about structure.</p>
+      <p>The library embeds every fact from the original and the regenerated document. A regen fact "matches" an original when cosine similarity clears the threshold. Precision measures hallucination rate; recall measures coverage. F1 is the harmonic mean. <strong>Weight in composite: 25%.</strong> Treat it as a floor: a regeneration needs high F1, and high F1 says nothing about structure.</p>
     </div>
   </div>
   <div class="step">
     <div class="num">2</div>
     <div class="body">
       <h3>Conditional bridge recall — did the structure survive?</h3>
-      <p>Facts in both graphs are matched by embedding similarity. For each original conditional edge, the library checks whether the mapped edge of the same type exists in the regen graph. Edges are weighted by their extraction confidence. CBR broken out by edge type shows <em>which kind of relationship</em> the regeneration most reliably drops. <strong>Weight in composite: 50%</strong> — double, because atomic F1 cannot see this failure at all.</p>
+      <p>The library matches facts across the two graphs by embedding similarity, then checks, for each original conditional edge, whether the regen graph has the mapped edge of the same type. Each edge counts by its extraction confidence. CBR broken out by edge type shows <em>which kind of relationship</em> the regeneration drops most often. <strong>Weight in composite: 50%</strong>, double the others, because atomic F1 cannot see this failure at all.</p>
     </div>
   </div>
   <div class="step">
     <div class="num">3</div>
     <div class="body">
       <h3>Entailment probes — does the regeneration behave correctly?</h3>
-      <p>The library generates yes/no questions that require multiple facts to answer — specifically targeting REQUIRES edges with two or more antecedents. It then queries the regenerated document with each question. The pass rate is a behavioral measure of whether the conjunctive structure actually disappeared from the reader's experience, even if CBR missed it. <strong>Weight in composite: 25%.</strong></p>
+      <p>The library writes yes/no questions that take several facts to answer, aimed at REQUIRES edges with two or more antecedents, and puts each one to the regenerated document. The pass rate measures behaviour: whether the conjunctive structure disappeared from the reader's experience, even where CBR missed it. <strong>Weight in composite: 25%.</strong></p>
     </div>
   </div>
   <div class="step" style="border-bottom:0">
@@ -328,10 +328,10 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
 <p class="eyebrow">05 · The structural layer</p>
 <h2>Prerequisite ordering is <em>also drift.</em></h2>
 <p>The metrics above work at the paragraph and sentence level: did individual facts survive, did the conditional logic between adjacent claims survive? A document also carries structure at a higher level.</p>
-<p>A how-to page has a job. It tells the reader what to have ready before they start. It surfaces those prerequisites early, with enough context to satisfy them. That ordering is a form of meaning — and it can be lost in a fact store round-trip even when every individual fact is correctly preserved.</p>
+<p>A how-to page has a job. It tells the reader what to have ready before they start. It surfaces those prerequisites early, with enough context to satisfy them. That ordering is meaning too, and a fact store round-trip can lose it while preserving every individual fact.</p>
 
 <div class="callout">
-  <p>The original document introduced all prerequisites in a checklist at the top. The regenerated document embedded them in the steps where they were needed — the classic detour pattern. <strong>The atoms were intact. The structure was not.</strong></p>
+  <p>The original document introduced every prerequisite in a checklist at the top. The regenerated document buried each one in the step that needs it: the detour pattern from the map. <strong>Intact atoms, scrambled order.</strong></p>
 </div>
 
 <p>The <a href="detour-map.html">detour assessment</a> measures this in original documents: what fraction of prerequisites are detours, how often links deliver what they promise. The drift pipeline extends that measurement to the round-trip: compare the prerequisite tree the original had to the tree the regeneration produced.</p>
@@ -340,7 +340,7 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
   <div class="card">
     <h3>What structural drift measures</h3>
     <p><strong>Prerequisite recall</strong> — what fraction of original prerequisites are present in the regeneration, matched by word overlap.</p>
-    <p style="margin-top:8px"><strong>Detour rate delta</strong> — how much more detour-prone the regenerated document became. A positive delta means the regeneration springs prerequisites on the reader at point-of-need rather than up front.</p>
+    <p style="margin-top:8px"><strong>Detour rate delta</strong> — how much more detour-prone the regenerated document became. A positive delta means the regeneration springs prerequisites on the reader at the step that needs them instead of listing them up front.</p>
     <p style="margin-top:8px"><strong>Introduction position MAE</strong> — how far matched prerequisites moved within the document, normalized by page length.</p>
   </div>
   <div class="card">
@@ -362,7 +362,7 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
         <span class="val bad" id="v-dr2">42%</span>
       </div>
     </div>
-    <p class="note" style="margin-top:10px">The regeneration introduced 22 percentage points more detours. Two of five prerequisites were dropped entirely. The document that looked fine on atomic coverage sends the reader on more unplanned side trips than the original.</p>
+    <p class="note" style="margin-top:10px">The regeneration added 22 percentage points of detours and dropped two of five prerequisites outright. The document that looked fine on atomic coverage sends the reader on more side trips than the original.</p>
   </div>
 </div>
 </section>
@@ -405,11 +405,11 @@ Drift score ............ 47.1%  (0=perfect, 1=complete loss)
 <div class="two" style="margin-top:20px">
   <div class="card ok">
     <h3>Reading the report</h3>
-    <p>Atomic loss below 10% with CBR loss above 50% is the typical pattern for a well-formed but structurally hollow regeneration. Entailment loss above 40% confirms readers will encounter wrong answers. A composite above 40% warrants investigation regardless of atomic coverage.</p>
+    <p>Atomic loss below 10% with CBR loss above 50% is the typical pattern for a well-formed but structurally hollow regeneration. Entailment loss above 40% means readers will get wrong answers. A composite above 40% deserves a look whatever the atomic coverage says.</p>
   </div>
   <div class="card">
     <h3>Using the Python API</h3>
-    <p>The metrics are importable from <code>semantic_ruler.drift</code> as pure functions: <code>atomic_f1</code>, <code>cond_bridge_recall</code>, <code>entailment_rate</code>, <code>structural_drift</code>, <code>drift_score</code>. The shared shard store caches extracted graphs, so the LLM extraction cost is paid once per document.</p>
+    <p>Import the metrics from <code>semantic_ruler.drift</code> as pure functions: <code>atomic_f1</code>, <code>cond_bridge_recall</code>, <code>entailment_rate</code>, <code>structural_drift</code>, <code>drift_score</code>. The shared shard store caches extracted graphs, so you pay the LLM extraction cost once per document.</p>
   </div>
 </div>
 </section>
