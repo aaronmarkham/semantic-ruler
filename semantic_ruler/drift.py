@@ -11,6 +11,17 @@ CBR carries double weight because it directly captures compositional loss —
 the structural failure mode that atomic F1 and entailment probes can both
 undercount when a regen doc paraphrases facts correctly but drops their
 logical connectives.
+
+Atoms are matched across the two graphs by embedding similarity, one-to-one
+for recall (each original atom claims at most one regenerated atom, highest
+similarity first) and many-to-one for precision (a regenerated atom is
+supported if any original atom is close enough). The threshold is 0.70 with
+text-embedding-3-large: in recorded runs, paraphrased atoms score 0.73 to
+0.97 against their original and unrelated atoms from the same passage 0.15
+to 0.60, while the earlier 0.85 cut rejected most paraphrases and read a
+faithful regeneration as 27% recall. Edges match by kind, the mapped
+antecedent set, and a consequent that either maps directly or clears the
+same threshold.
 """
 
 from __future__ import annotations
@@ -24,6 +35,8 @@ import numpy as np
 
 from .embed import Embedder
 from .factgraph import EdgeKind, FactGraph
+
+MATCH_THRESHOLD = 0.70
 
 
 PROBE_GEN_PROMPT = """\
@@ -59,16 +72,36 @@ def _cosine_sim(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     return a_n @ b_n.T
 
 
+def _assign(sim: np.ndarray, threshold: float) -> dict[int, int]:
+    """One-to-one matching of rows to columns: highest similarity first, at or above the threshold."""
+    pairs = sorted(((float(sim[i, j]), i, j) for i in range(sim.shape[0]) for j in range(sim.shape[1])), reverse=True)
+    rows, cols, out = set(), set(), {}
+    for s, i, j in pairs:
+        if s < threshold:
+            break
+        if i in rows or j in cols:
+            continue
+        out[i] = j
+        rows.add(i)
+        cols.add(j)
+    return out
+
+
 def atomic_f1(
     orig: FactGraph,
     regen: FactGraph,
     embedder: Embedder,
-    threshold: float = 0.85,
+    threshold: float = MATCH_THRESHOLD,
 ) -> dict[str, float]:
     """Embedding-based atomic fact recall/precision/F1.
 
-    A regen fact "matches" an orig fact when cosine similarity >= threshold.
-    Recall measures coverage; precision measures hallucination rate.
+    Recall: the share of original atoms that claim a regenerated atom in a
+    one-to-one assignment at or above the threshold, so two regenerated
+    paraphrases of one original atom do not cover two originals.
+    Precision: the share of regenerated atoms within the threshold of any
+    original atom, so a fact the regeneration split into several atoms is
+    not counted as several hallucinations. The ids of the unsupported
+    regenerated atoms are returned for the report.
     """
     result: dict[str, float] = {
         "n_orig": float(len(orig.facts)),
@@ -83,8 +116,11 @@ def atomic_f1(
         embedder.embed([f.text for f in orig.facts]),
         embedder.embed([f.text for f in regen.facts]),
     )
-    result["recall"] = float(np.mean(sim.max(axis=1) >= threshold))
-    result["precision"] = float(np.mean(sim.max(axis=0) >= threshold))
+    matched = _assign(sim, threshold)
+    supported = sim.max(axis=0) >= threshold
+    result["recall"] = len(matched) / len(orig.facts)
+    result["precision"] = float(np.mean(supported))
+    result["unsupported"] = [f.fact_id for f, ok in zip(regen.facts, supported) if not ok]  # type: ignore[assignment]
     p, r = result["precision"], result["recall"]
     result["f1"] = 2 * p * r / (p + r) if (p + r) > 0 else 0.0
     return result
@@ -94,14 +130,18 @@ def cond_bridge_recall(
     orig: FactGraph,
     regen: FactGraph,
     embedder: Embedder,
-    threshold: float = 0.85,
+    threshold: float = MATCH_THRESHOLD,
 ) -> dict[str, float]:
     """Fraction of orig conditional edges whose structure survives in regen.
 
-    Facts are matched across graphs by embedding similarity. An edge is
-    "preserved" when regen has an edge of the same kind where every antecedent
-    and the consequent map to matched regen facts. Scores are weighted by the
-    edge's extraction confidence so low-confidence edges don't dominate CBR.
+    Facts are matched across graphs by the same one-to-one assignment atomic_f1
+    uses. An edge is "preserved" when regen has an edge of the same kind whose
+    antecedents are exactly the mapped antecedents and whose consequent either
+    is the mapped consequent or is within the threshold of the original one.
+    The second clause is what a re-extraction needs when it restates the
+    consequent as a shorter atom: the edge is there, under a different id.
+    Scores are weighted by the edge's extraction confidence so low-confidence
+    edges don't dominate CBR.
     """
     if not orig.edges:
         return {"cbr": float("nan"), "n_edges": 0, "by_kind": {}}
@@ -115,26 +155,26 @@ def cond_bridge_recall(
         embedder.embed([f.text for f in regen.facts]),
     )
 
-    # Map each orig fact_id to its best-matching regen fact_id (None if below threshold)
-    orig_to_regen: dict[str, str | None] = {}
-    for i, oid in enumerate(orig_ids):
-        j = int(np.argmax(sim[i]))
-        orig_to_regen[oid] = regen_ids[j] if sim[i, j] >= threshold else None
-
-    # Index of edges present in the regen graph, expressed in regen fact IDs
-    regen_keys: set[tuple] = {
-        (e.kind, frozenset(e.antecedents), e.consequent) for e in regen.edges
-    }
+    # Map each orig fact_id to the regen fact_id the assignment gives it (None if unmatched)
+    assigned = _assign(sim, threshold)
+    orig_to_regen: dict[str, str | None] = {oid: regen_ids[assigned[i]] if i in assigned else None for i, oid in enumerate(orig_ids)}
+    orig_index = {oid: i for i, oid in enumerate(orig_ids)}
+    regen_index = {rid: j for j, rid in enumerate(regen_ids)}
 
     by_kind: dict[str, list[float]] = {}
     for edge in orig.edges:
         mapped_ants = [orig_to_regen.get(a) for a in edge.antecedents]
         mapped_con = orig_to_regen.get(edge.consequent)
-        preserved = (
-            all(a is not None for a in mapped_ants)
-            and mapped_con is not None
-            and (edge.kind, frozenset(mapped_ants), mapped_con) in regen_keys  # type: ignore[arg-type]
-        )
+        oi = orig_index.get(edge.consequent)
+        preserved = False
+        if all(a is not None for a in mapped_ants):
+            for e in regen.edges:
+                if e.kind != edge.kind or frozenset(e.antecedents) != frozenset(mapped_ants):  # type: ignore[arg-type]
+                    continue
+                rj = regen_index.get(e.consequent)
+                if e.consequent == mapped_con or (oi is not None and rj is not None and sim[oi, rj] >= threshold):
+                    preserved = True
+                    break
         by_kind.setdefault(edge.kind.value, []).append(edge.confidence if preserved else 0.0)
 
     total_conf = sum(e.confidence for e in orig.edges)
@@ -247,6 +287,36 @@ def drift_score(
     return {"drift": drift, **{k: v for k, (v, _) in losses.items()}}
 
 
+def summarize_repeats(results: list[dict]) -> dict:
+    """Median and range of each score over repeated regenerations of one source.
+
+    Re-extraction is the noisy step: the same regenerated text can yield one
+    conditional edge in one run and a dozen in the next, which swings bridge
+    recall by half. A single run's score is one draw; report the spread.
+    """
+    def pick(r: dict, path: tuple[str, ...]):
+        v: object = r
+        for k in path:
+            v = v.get(k) if isinstance(v, dict) else None
+        return float(v) if isinstance(v, (int, float)) and not math.isnan(float(v)) else None
+
+    keys = {
+        "f1": ("atomic_f1", "f1"), "precision": ("atomic_f1", "precision"), "recall": ("atomic_f1", "recall"),
+        "cbr": ("cond_bridge_recall", "cbr"), "probes": ("entailment", "rate"),
+        "structural_loss": ("structural", "structural_loss"), "drift": ("drift", "drift"),
+    }
+    out: dict = {"n": len(results)}
+    for name, path in keys.items():
+        vals = [v for v in (pick(r, path) for r in results) if v is not None]
+        if vals:
+            vals.sort()
+            out[name] = {"median": float(np.median(vals)), "min": vals[0], "max": vals[-1], "n": len(vals)}
+    drifts = [pick(r, ("drift", "drift")) for r in results]
+    med = out.get("drift", {}).get("median")
+    out["shown"] = min(range(len(results)), key=lambda i: abs((drifts[i] if drifts[i] is not None else 1.0) - med)) if med is not None else 0
+    return out
+
+
 # --- structural layer (prerequisite ordering, detour fidelity) ---------------
 
 
@@ -269,13 +339,18 @@ async def analyse_structural(llm, body: str, url: str = "regen://local", is_html
         return None
 
 
-def structural_drift(orig, regen) -> dict:
+def structural_drift(orig, regen, embedder: Embedder | None = None, threshold: float = MATCH_THRESHOLD) -> dict:
     """Compare prerequisite structure between original and regenerated PageReports.
 
     Only meaningful when orig.is_procedure is True. The key signal is
     detour_rate_delta: how much more detour-prone the regen doc became (positive = worse).
-    Prerequisites are matched across docs by word-overlap (Jaccard >= 0.4) since the
-    regen LLM may paraphrase prerequisite names.
+    Prerequisites are matched across docs one-to-one by embedding similarity at the
+    shared threshold when an embedder is given (a regeneration names the same
+    prerequisite in other words: in recorded runs the right pairs score 0.79 to 0.93
+    and the wrong ones about 0.5), and by word overlap (Jaccard >= 0.4) otherwise.
+
+    If the regeneration no longer reads as a procedure, the loss is 1.0 outright and
+    the recall and delta fields are not meaningful; procedure_lost says so.
 
     Returns structural_loss in [0, 1] for use as an optional term in drift_score().
     """
@@ -285,34 +360,34 @@ def structural_drift(orig, regen) -> dict:
     orig_det = _detour_rate(orig)
     regen_det = _detour_rate(regen)
 
+    matched: list[tuple[dict, dict]] = []
+    if orig.prerequisites and regen.prerequisites:
+        if embedder is not None:
+            sim = _cosine_sim(embedder.embed([q["what"] for q in orig.prerequisites]),
+                              embedder.embed([q["what"] for q in regen.prerequisites]))
+            cut = threshold
+        else:
+            sim = np.array([[_jaccard(oq["what"], rq["what"]) for rq in regen.prerequisites] for oq in orig.prerequisites])
+            cut = 0.4
+        matched = [(orig.prerequisites[i], regen.prerequisites[j]) for i, j in sorted(_assign(sim, cut).items())]
+
+    prereq_recall = len(matched) / len(orig.prerequisites) if orig.prerequisites else float("nan")
+
     if not regen.is_procedure:
+        # Total loss by rule: the frame that ordered the prerequisites is gone. The recall says how many
+        # of them the regeneration still names; the detour figures have no meaning without a procedure.
         return {
             "applicable": True,
             "procedure_lost": True,
             "n_orig_prereqs": len(orig.prerequisites),
             "n_regen_prereqs": len(regen.prerequisites),
-            "prereq_recall": 0.0,
+            "prereq_recall": prereq_recall,
             "orig_detour_rate": orig_det,
             "regen_detour_rate": float("nan"),
             "detour_rate_delta": float("nan"),
             "intro_position_mae": float("nan"),
             "structural_loss": 1.0,
         }
-
-    # Greedy best-match orig → regen by Jaccard on word tokens
-    regen_avail = list(range(len(regen.prerequisites)))
-    matched: list[tuple[dict, dict]] = []
-    for oq in orig.prerequisites:
-        if not regen_avail:
-            break
-        best_score, best_i = max(
-            (_jaccard(oq["what"], regen.prerequisites[i]["what"]), i) for i in regen_avail
-        )
-        if best_score >= 0.4:
-            matched.append((oq, regen.prerequisites[best_i]))
-            regen_avail.remove(best_i)
-
-    prereq_recall = len(matched) / len(orig.prerequisites) if orig.prerequisites else float("nan")
     detour_delta = (regen_det - orig_det) if not (math.isnan(regen_det) or math.isnan(orig_det)) else float("nan")
 
     n_blocks = max(orig.n_blocks, 1)
