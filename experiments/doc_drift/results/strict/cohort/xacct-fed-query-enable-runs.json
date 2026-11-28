@@ -67,9 +67,55 @@
     ]
    },
    "entailment": {
-    "rate": 0.95,
+    "rate": 1.0,
     "n_probes": 20,
-    "n_correct": 19
+    "n_correct": 20,
+    "n_generated": 20,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "no",
+     "no",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "no",
+     "no",
+     "yes",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes",
+     "Yes. The document says that when a connector's Lambda response exceeds the 6MB limit, Athena automatically encrypts, bat",
+     "yes",
+     "Yes",
+     "Yes",
+     "Yes. The document states that only Lambda type data sources can be shared, and that data sources that use AWS Glue conne",
+     "Yes",
+     "No. The document states that using federated queries across AWS Regions is not supported, even though cross-account fede",
+     "No",
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes",
+     "No. The document says Account A retains full control and ownership of the shared connector.",
+     "Yes",
+     "No. The document says the cross-account method is intended for federated data sources not registered with the AWS Glue D",
+     "No. The document says the entity running the query must have access to the spill location so that Athena can read the sp",
+     "Yes. The document says the Data sources and catalogs page is used to share a data connector with another account (the ad",
+     "Yes. The document says setup requires actions in both Account A and Account B. Account A adds a resource-based policy to",
+     "Yes"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -93,10 +139,10 @@
     ]
    },
    "drift": {
-    "drift": 0.2534632034632035,
+    "drift": 0.24304653679653682,
     "atomic_loss": 0.022727272727272707,
     "cbr_loss": 0.5490909090909091,
-    "entailment_loss": 0.050000000000000044,
+    "entailment_loss": 0.0,
     "structural_loss": 0.05714285714285714
    },
    "text_bridge": {
@@ -153,6 +199,11 @@
     "lost": [
      9
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 0.95,
+    "n_probes": 20,
+    "n_correct": 19
    }
   },
   "regen_doc": "# Cross-Account Federated Queries in Athena\n\nFederated query allows you to query data sources other than Amazon S3 using data source connectors deployed on AWS Lambda. The cross-account federated query feature allows the Lambda function and the data sources to be queried to be located in different accounts. This cross-account method is intended for federated data sources that are not registered with the AWS Glue Data Catalog. If a federated data source is registered with the AWS Glue Data Catalog, use the AWS Glue Data Catalog cross-account features and permissions model instead.\n\nA data administrator can enable cross-account federated queries by sharing a data connector with a data analyst's account. Alternatively, a data analyst can enable them by adding a shared Lambda ARN from a data administrator to their own account. Configuration changes made to a connector in the originating account are automatically applied to shared instances of the connector in other accounts.\n\n## Availability and limitations\n\nThe cross-account federated query feature is available for non-Hive metastore data connectors that use a Lambda-based data source. It is not available for the AWS Glue Data Catalog data source type. Using federated queries across AWS Regions is not supported.\n\n## Lambda response size and spilling\n\nThe Lambda response size limit is 6MB. When a connector's Lambda response exceeds that limit, Athena automatically encrypts, batches, and spills the response to a configured Amazon S3 bucket. The entity running the Athena query must have access to the spill location so that Athena can read the spilled data. Because spilled data is not needed after the query completes, AWS recommends setting an Amazon S3 lifecycle policy to delete objects from the spill location.\n\n## Required permissions\n\nSetting up the required permissions needs actions in both Account A and Account B. In this scenario, Account A shares a Lambda function with Account B, and Account B requires Lambda invoke function permission and spill bucket access.\n\nIn Account A, you should add a resource-based policy to the Lambda function, and grant principal access to its spill bucket in Amazon S3. If the Lambda function encrypts the spill bucket with an AWS KMS key instead of the default federation SDK encryption, the AWS KMS key policy in Account A must grant access to the user in Account B.\n\nAccount B must create a role called AthenaCrossAccountCreate-account-A-id, which Account A assumes by calling the AWS STS AssumeRole API action when Account A shares its connector with Account B. The role is created as a custom trust policy role using the IAM console or AWS CLI. The trust relationship has a principal object whose key is AWS and whose value is the ARN of Account A. Account B also creates a policy allowing the athena:CreateDataCatalog action and adds it to the AthenaCrossAccountCreate-account-A-id role.\n\n## Sharing a data connector\n\nOnce the permissions are in place, you can use the Data sources and catalogs page in the Athena console to share a data connector with another account. Account A retains full control and ownership of the shared connector. Only Lambda type data sources can be shared; data sources that use AWS Glue connections cannot be shared. Choosing Share creates the shared data connector in Account B.\n\n## Adding a shared Lambda ARN\n\nA data analyst can add a Lambda ARN provided by an administrator through the Data sources and catalogs page. When creating the data source, choose custom or shared connector on the Choose a data source page, and enter the Lambda ARN of Account A in the Select or enter a Lambda function field.\n\n## Troubleshooting\n\nIf you receive an error saying that Account A does not have permissions to assume a role in Account B, verify that the name of the role created in Account B is spelled correctly and that the role has the proper policy attached.",
@@ -1824,7 +1875,53 @@
    "entailment": {
     "rate": 0.95,
     "n_probes": 20,
-    "n_correct": 19
+    "n_correct": 19,
+    "n_generated": 20,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "no",
+     "no",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "no",
+     "no",
+     "yes",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes. The document says a federated data source registered with the AWS Glue Data Catalog should use the AWS Glue Data Ca",
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes. The document states: \"Only Lambda type data sources can be shared; data sources that use AWS Glue connections canno",
+     "yes",
+     "No. The document states that using federated queries across AWS Regions is not supported, and this applies even though c",
+     "No",
+     "Yes",
+     "Yes. The document says the role is created as a custom trust policy role whose trust relationship has a principal object",
+     "Yes",
+     "Yes. The document says an analyst can add a Lambda ARN provided by an administrator through the Data sources and catalog",
+     "No. The document says Account A retains full control and ownership of the shared connector.",
+     "Yes. The document says that because Account A shares the function, Account B requires Lambda invoke function permission ",
+     "No. The document says the cross-account method is for federated data sources not registered with the AWS Glue Data Catal",
+     "unknown",
+     "Yes. The document says the Data sources and catalogs page in the Athena console can be used to share a data connector wi",
+     "Yes. The document says setting up permissions needs actions in both Account A and Account B. If the Lambda function encr",
+     "Yes. The document says Account B must create the AthenaCrossAccountCreate-account-A-id role and a policy allowing athena"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -2005,6 +2102,11 @@
      15,
      16
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 0.95,
+    "n_probes": 20,
+    "n_correct": 19
    }
   },
   "log": [
