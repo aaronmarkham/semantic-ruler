@@ -53,7 +53,23 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes. The document says to use a different unique bucket name and substitute it wherever amzn-s3-demo-bucket appears in t",
+     "Yes. The document says that if you don't switch to /tmp/WordPress first, bundling starts at your current folder and may "
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 1.0,
@@ -99,6 +115,11 @@
     "cbr_loss": 0.0,
     "entailment_loss": 0.0,
     "structural_loss": 0.08000000000000002
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "regen_doc": "Step 3 prepares and uploads source content to a location from which CodeDeploy can deploy it. This involves provisioning an Amazon S3 bucket, preparing the application revision's files, bundling them, and pushing the revision to the bucket. CodeDeploy can also deploy applications from GitHub repositories to instances, but that is not covered in this tutorial.\n\n**Provision an Amazon S3 bucket.** You can create a new Amazon S3 bucket or use an existing one. Either way, you must be able to upload the revision to the bucket, and the Amazon EC2 instances used in deployments must be able to download the revision from it. You can create the bucket with the AWS CLI, the Amazon S3 console, or the Amazon S3 APIs. After creating the bucket, you must give access permissions to the bucket and your AWS account.\n\nBucket names must be unique across Amazon S3 for all AWS accounts. If you cannot use amzn-s3-demo-bucket, use a different unique bucket name and substitute it wherever amzn-s3-demo-bucket appears in the tutorial. The bucket must be created in the same AWS Region where the target Amazon EC2 instances are launched. For example, if the bucket is created in the US East (N. Virginia) Region, the target instances must also be launched in the US East (N. Virginia) Region.\n\nWith the AWS CLI, the aws s3 mb command creates the bucket. In the Amazon S3 console, you create a bucket by choosing Create bucket, typing a bucket name, choosing the target Region, and choosing Create.\n\n**Grant permissions.** You must have permissions to upload to the bucket, and these can be specified through an Amazon S3 bucket policy. The example bucket policy, which uses s3:PutObject with a wildcard resource, allows AWS account 111122223333 to upload files to any directory in the bucket amzn-s3-demo-bucket.\n\nYou should also verify that the bucket allows download requests from each participating Amazon EC2 instance. Download permissions can likewise be specified through a bucket policy. The example download policy, which uses s3:Get* and s3:List*, allows any Amazon EC2 instance with an attached IAM instance profile containing the ARN arn:aws:iam::444455556666:role/CodeDeployDemo to download files from any directory in the bucket amzn-s3-demo-bucket.\n\n**Prepare the application files.** The WordPress application files, the AppSpec file, and the scripts must be organized on the development machine in the layout shown, with appspec.yml and a scripts folder inside /tmp/WordPress. The scripts folder contains change_permissions.sh, create_test_db.sh, install_dependencies.sh, start_server.sh, and stop_server.sh.\n\n**Bundle and push the revision.** The WordPress application files and the AppSpec file are bundled into an archive file known as an application revision. You may be charged for storing objects in a bucket and for transferring application revisions into and out of a bucket.\n\nBefore bundling, switch to the /tmp/WordPress folder on the development machine. If you don't, file bundling starts at your current folder and may include more than the WordPress subfolder.\n\nThe create-application command registers a new application named WordPress_App. The CodeDeploy push command then bundles the files, uploads the revision to Amazon S3, and registers information with CodeDeploy about the uploaded revision, all in one action. Run with --ignore-hidden-files, the push command bundles the files from the current directory, excluding hidden files, into a single archive file named WordPressApp.zip, and uploads that revision to the amzn-s3-demo-bucket bucket.",
@@ -1215,7 +1236,23 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes. The document says that if you don't switch to /tmp/WordPress before bundling, file bundling starts at your current "
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.0,
@@ -1345,6 +1382,11 @@
       "automatic": false
      }
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "log": [
@@ -1498,9 +1540,25 @@
     "lost": []
    },
    "entailment": {
-    "rate": 1.0,
+    "rate": 0.8,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 4,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "no"
+    ],
+    "replies": [
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes",
+     "**Yes, then no.**\n\n- The upload policy (s3:PutObject with a wildcard resource) lets account 111122223333 upload files to"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 1.0,
@@ -1542,11 +1600,16 @@
     ]
    },
    "drift": {
-    "drift": 0.022419962335216585,
+    "drift": 0.06408662900188325,
     "atomic_loss": 0.016949152542372947,
     "cbr_loss": 0.0,
-    "entailment_loss": 0.0,
+    "entailment_loss": 0.19999999999999996,
     "structural_loss": 0.11333333333333331
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "regen_doc": "**Step 3: Upload your application to Amazon S3**\n\nIn this step, you prepare and upload source content to a location from which CodeDeploy can deploy it. The step involves provisioning an Amazon S3 bucket, preparing the application revision's files, bundling those files, and pushing the revision to the bucket. CodeDeploy can also be used to deploy applications from GitHub repositories to instances, but that is not covered in this tutorial.\n\n**Provision an Amazon S3 bucket**\n\nYou can create a new Amazon S3 bucket or use an existing one. Either way, you must be able to upload the revision to the bucket, and the Amazon EC2 instances used in deployments must be able to download the revision from it. To create the bucket, you can use the AWS CLI, the Amazon S3 console, or the Amazon S3 APIs. After creating the bucket, you must give access permissions to the bucket and to your AWS account.\n\nBucket names must be unique across Amazon S3 for all AWS accounts. If you cannot use amzn-s3-demo-bucket, use a different unique bucket name and substitute it wherever amzn-s3-demo-bucket appears in this tutorial. The bucket must also be created in the same AWS Region where the target Amazon EC2 instances are launched. For example, if you create the bucket in the US East (N. Virginia) Region, the target Amazon EC2 instances must be launched in the US East (N. Virginia) Region.\n\nWith the AWS CLI, the aws s3 mb command creates an Amazon S3 bucket. In the Amazon S3 console, you create a bucket by choosing Create bucket, typing a bucket name, choosing the target Region, and choosing Create.\n\n**Grant permissions**\n\nYou must have permissions to upload to the Amazon S3 bucket. You can specify these permissions through an Amazon S3 bucket policy. The example bucket policy, which uses s3:PutObject with a wildcard resource, allows AWS account 111122223333 to upload files to any directory in the bucket amzn-s3-demo-bucket.\n\nYou should also verify that the bucket allows download requests from each participating Amazon EC2 instance. This too can be specified through an Amazon S3 bucket policy. The example download policy, which uses s3:Get* and s3:List*, allows any Amazon EC2 instance with an attached IAM instance profile containing the ARN arn:aws:iam::444455556666:role/CodeDeployDemo to download files from any directory in the bucket amzn-s3-demo-bucket.\n\n**Prepare the application files**\n\nOn the development machine, the WordPress application files, the AppSpec file, and the scripts must be organized in the layout shown, with appspec.yml and a scripts folder inside /tmp/WordPress. The scripts folder contains change_permissions.sh, create_test_db.sh, install_dependencies.sh, start_server.sh, and stop_server.sh.\n\n**Bundle and push the application**\n\nThe WordPress application files and the AppSpec file are bundled into an archive file known as an application revision. Note that you may be charged for storing objects in a bucket and for transferring application revisions into and out of a bucket.\n\nBefore bundling, switch to the /tmp/WordPress folder on the development machine. If you don't, file bundling starts at your current folder and may include more than the WordPress subfolder.\n\nThe create-application command registers a new application named WordPress_App. The CodeDeploy push command then bundles the files, uploads the revision to Amazon S3, and registers information with CodeDeploy about the uploaded revision, all in one action. When run with --ignore-hidden-files, the push command bundles the files from the current directory, excluding hidden files, into a single archive file named WordPressApp.zip, and uploads that revision to the amzn-s3-demo-bucket bucket.",
@@ -2732,9 +2795,25 @@
     "lost": []
    },
    "entailment": {
-    "rate": 0.8,
+    "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 4
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "no"
+    ],
+    "replies": [
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes",
+     "**No.** The upload policy (s3:PutObject on a wildcard resource) does let account 111122223333 upload files to any direct"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 1.0,
@@ -2774,10 +2853,10 @@
     ]
    },
    "drift": {
-    "drift": 0.04497354497354498,
+    "drift": 0.0033068783068783184,
     "atomic_loss": 0.015873015873015928,
     "cbr_loss": 0.0,
-    "entailment_loss": 0.19999999999999996,
+    "entailment_loss": 0.0,
     "structural_loss": 0.0
    },
    "regen_doc": "# Step 3: Upload your application to Amazon S3\n\n## Before you begin\n\n- **An Amazon S3 bucket in the same AWS Region as the target Amazon EC2 instances.** You provision this bucket in this step. See \"Provision an Amazon S3 bucket\" and the permissions sections below for the steps.\n\n## Overview\n\nThis step prepares and uploads source content to a location from which CodeDeploy can deploy it. It involves provisioning an Amazon S3 bucket, preparing the application revision's files, bundling them, and pushing the revision to the bucket. CodeDeploy can also deploy applications from GitHub repositories to instances, but this tutorial does not cover that.\n\n## Provision an Amazon S3 bucket\n\nYou can create a new Amazon S3 bucket or use an existing one. Either way, you must be able to upload the revision to the bucket, and the Amazon EC2 instances used in deployments must be able to download the revision from it.\n\nYou can use the AWS CLI, the Amazon S3 console, or the Amazon S3 APIs to create the bucket. After creating it, you must give access permissions to the bucket and your AWS account. Bucket names must be unique across Amazon S3 for all AWS accounts. If you cannot use amzn-s3-demo-bucket, use a different unique bucket name and substitute it wherever amzn-s3-demo-bucket appears in this tutorial.\n\nThe bucket must be created in the same AWS Region where the target Amazon EC2 instances are launched. For example, if you create the bucket in the US East (N. Virginia) Region, the target instances must also be launched in the US East (N. Virginia) Region.\n\nTo create the bucket with the AWS CLI, use the `aws s3 mb` command. To create it in the Amazon S3 console, choose Create bucket, type a bucket name, choose the target Region, and choose Create.\n\n## Grant permissions to the bucket\n\nYou must have permissions to upload to the Amazon S3 bucket. You can specify these through an Amazon S3 bucket policy. The example policy, which uses s3:PutObject and a wildcard resource, allows AWS account 111122223333 to upload files to any directory in the bucket amzn-s3-demo-bucket.\n\nYou should also verify that the bucket allows download requests from each participating Amazon EC2 instance. You can specify this through an Amazon S3 bucket policy as well. The example download policy, which uses s3:Get* and s3:List*, allows any Amazon EC2 instance with an attached IAM instance profile containing the ARN arn:aws:iam::444455556666:role/CodeDeployDemo to download files from any directory in the bucket amzn-s3-demo-bucket.\n\n## Prepare the application files\n\nOn the development machine, organize the WordPress application files, the AppSpec file, and the scripts in the layout shown, with appspec.yml and a scripts folder inside /tmp/WordPress. The scripts folder contains change_permissions.sh, create_test_db.sh, install_dependencies.sh, start_server.sh, and stop_server.sh.\n\n## Bundle and push the revision\n\nThe WordPress application files and the AppSpec file are bundled into an archive file known as an application revision. You may be charged for storing objects in a bucket and for transferring application revisions into and out of a bucket.\n\nSwitch to the /tmp/WordPress folder on the development machine before bundling. If you don't, file bundling starts at your current folder and may include more than the WordPress subfolder.\n\nFirst, use the `create-application` command to register a new application named WordPress_App. Then call the CodeDeploy `push` command, which bundles the files, uploads the revision to Amazon S3, and registers information with CodeDeploy about the uploaded revision, all in one action. With the `--ignore-hidden-files` option, the command bundles the files from the current directory, excluding hidden files, into a single archive file named WordPressApp.zip. It then uploads the revision to the amzn-s3-demo-bucket bucket.",
@@ -2888,6 +2967,11 @@
       "automatic": false
      }
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 0.8,
+    "n_probes": 5,
+    "n_correct": 4
    }
   },
   "log": [

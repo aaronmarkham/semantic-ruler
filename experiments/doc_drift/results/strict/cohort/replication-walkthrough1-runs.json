@@ -67,7 +67,53 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 20,
-    "n_correct": 20
+    "n_correct": 20,
+    "n_generated": 20,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "no",
+     "no",
+     "no"
+    ],
+    "replies": [
+     "Yes. The document says a newly added replication rule is enabled by default, so it starts working as soon as you save it",
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes",
+     "yes",
+     "Yes. The document says that if you choose an existing IAM role that grants S3 insufficient permissions for the rule, rep",
+     "Yes",
+     "Yes",
+     "Yes. The document says the destination storage class is not changed, so replicated objects keep the same storage class a",
+     "Yes",
+     "Yes. The document says that specifying the IAM role in the replication configuration requires the profile to have iam:Pa",
+     "Yes",
+     "yes",
+     "Yes",
+     "Yes.\n\nThe document says the replication configuration is required as JSON for the CLI. It also says a prefix is a folder",
+     "no",
+     "No. The document says the number of destination buckets is limited to the number of Regions in a partition, and nothing ",
+     "**No.** The document says replication fails only if the existing role grants S3 *insufficient* permissions. If the role "
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -144,6 +190,11 @@
      6,
      11
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 20,
+    "n_correct": 20
    }
   },
   "regen_doc": "# Live Replication\n\nLive replication is the automatic, asynchronous copying of objects across general purpose buckets. It copies newly created objects and object updates from a source bucket to one or more destination buckets. The time it takes to replicate an object depends on the object's size. The number of destination buckets is limited to the number of Regions in a partition.\n\n## Replication rules\n\nYou add replication rules to the source bucket. Each rule defines which source objects to replicate and which buckets are the destinations. A rule can replicate all objects in the bucket, or only a subset selected by key name prefix, object tags, or both. When you use a prefix, it is a folder name and must end with a forward slash. As an example, the sample CLI rule replicates objects with the prefix Tax except those under Tax/drafts/.\n\nThe rule name is required and must be unique within the bucket. If the bucket already has replication rules, you must set a priority for the new rule. S3 uses rule priority to decide which rule applies when rules overlap, and a higher priority number means a higher priority.\n\nA newly added replication rule is enabled by default, so it starts working as soon as you save it.\n\nA destination bucket can be in the same account as the source bucket or in a different account. Versioning must be enabled on both the source and destination buckets. If versioning is not enabled on the destination bucket, the console shows a warning with an Enable versioning button.\n\n## Permissions and IAM roles\n\nAdding a replication rule requires the iam:PassRole permission. In the console, creating a new IAM role is highly recommended. If you instead choose an existing IAM role and that role grants S3 insufficient permissions for the rule, replication fails. The role's trust policy grants the S3 service principal permission to assume the role.\n\nIf the destination bucket is in a different account from the source bucket, a bucket policy on the destination bucket must grant the source bucket account owner permission to replicate objects.\n\nIf you want to replicate objects with Object Lock, the IAM role needs s3:GetObjectRetention and s3:GetObjectLegalHold on the source bucket. An s3:Get* permission statement satisfies this requirement. To replicate object annotations, the role needs s3:GetObjectVersionAnnotationForReplication on the source bucket.\n\nWhen you use the CLI or the S3 API, the replication configuration is required as JSON for the CLI and as XML for the S3 API. Specifying the IAM role in the replication configuration requires the profile to have iam:PassRole. The same profile is used for the source and destination buckets when they are in the same account.\n\n## Encrypted objects\n\nReplicating encrypted objects requires granting AWS KMS key permissions. Replicating KMS-encrypted objects doubles the KMS request rate in the source Region and also increases the KMS request rate in the destination Region. S3 supports only symmetric encryption KMS keys and does not support asymmetric KMS keys. Only KMS keys that are enabled in the same Region as the bucket can be used. The S3 console lists only 100 KMS keys per Region.\n\n## Replicas, storage class, and deletions\n\nReplicas in the destination bucket have the replication status REPLICA. By default, replicas are owned by the source bucket account. When the source and destination buckets are owned by different accounts, an optional configuration can change replica ownership to the destination account.\n\nThe destination storage class is not changed, so replicated objects have the same storage class as the originals.\n\nWhen you specify an object version ID for deletion, S3 deletes that version in the source bucket but does not replicate the version deletion to the destination bucket.\n\n## Fees\n\nUsing S3 RTC or replication metrics incurs additional fees.",
@@ -2306,7 +2357,53 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 20,
-    "n_correct": 20
+    "n_correct": 20,
+    "n_generated": 20,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "no",
+     "no",
+     "no"
+    ],
+    "replies": [
+     "Yes. The document says a newly added replication rule is enabled by default, and an enabled rule starts working as soon ",
+     "Yes",
+     "Yes. The document says that when the bucket already has replication rules, you must set a priority for the new rule, and",
+     "Yes. The document states that when you specify an object version ID for deletion, S3 deletes that version in the source ",
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes. The document says that if you choose an existing IAM role and the role grants S3 insufficient permissions for the r",
+     "Yes\n\nThe document says replicating encrypted objects requires granting AWS KMS key permissions. It also says S3 supports",
+     "Yes. The document says S3 supports only symmetric encryption KMS keys and does not support asymmetric KMS keys, so an as",
+     "Yes. The document says the destination storage class is not changed, so replicated objects have the same storage class a",
+     "Yes",
+     "Yes. The document says that specifying the IAM role in the replication configuration requires the profile to have iam:Pa",
+     "Yes",
+     "Yes",
+     "Yes. The document says replicating KMS-encrypted objects doubles the KMS request rate in the source Region and increases",
+     "Yes. The document says the CLI requires the replication configuration as JSON. It also says a prefix filter is a folder ",
+     "No. The document says the rule name is required and must be unique within the bucket, so a new rule cannot reuse the nam",
+     "No. The document says the number of destination buckets is limited to the number of Regions in a partition, and this lim",
+     "No. The document says replication fails only if the existing role grants S3 insufficient permissions for the rule. With "
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -2450,6 +2547,11 @@
      6,
      11
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 20,
+    "n_correct": 20
    }
   },
   "log": [
@@ -2732,7 +2834,53 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 20,
-    "n_correct": 20
+    "n_correct": 20,
+    "n_generated": 20,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "no",
+     "no",
+     "yes",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes. The exclusion is written as \"Tax/drafts/\", which ends with a forward slash. (The document describes the main prefix",
+     "Yes",
+     "Yes. According to the document, if you choose an existing IAM role and that role grants S3 insufficient permissions for ",
+     "No. The document says S3 supports only symmetric encryption KMS keys and does not support asymmetric KMS keys, so an asy",
+     "Yes",
+     "Yes",
+     "No. The document says replicas are owned by the source bucket account, and an optional configuration can change ownershi",
+     "yes",
+     "Yes. The document says that specifying the IAM role in the replication configuration (via the CLI or S3 API) requires th",
+     "Yes\n\nThe document says a rule can replicate a subset of objects filtered by key name prefix, object tags, or both, and a",
+     "yes",
+     "Yes. The document says replicating object annotations requires s3:GetObjectVersionAnnotationForReplication on the source",
+     "No. The document says the rule name is required and must be unique within the bucket, so a new rule cannot reuse an exis",
+     "No. The document says replication is asynchronous and that the time to replicate an object depends on its size, so a ver",
+     "Yes. The document says live replication copies objects from a source bucket to one or more destination buckets, the numb",
+     "Yes. The document says that when an object version ID is specified for deletion, S3 deletes that version in the source b",
+     "**Yes.** The document says adding a replication rule requires the iam:PassRole permission, and that replicating encrypte"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -2809,6 +2957,11 @@
      6,
      11
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 20,
+    "n_correct": 20
    }
   },
   "regen_doc": "# Live Replication in Amazon S3\n\nLive replication is the automatic, asynchronous copying of objects across general purpose buckets. It copies newly created objects and object updates from a source bucket to one or more destination buckets. A destination bucket can be in the same account as the source bucket or in a different account. The number of destination buckets is limited to the number of Regions in a partition.\n\n## Replication rules\n\nYou configure live replication by adding replication rules to the source bucket. Each rule defines which source objects to replicate and which destination buckets receive them. A rule can replicate all objects in a bucket, or it can replicate a subset of objects filtered by key name prefix, object tags, or both. If you filter by prefix, the prefix is a folder name and must end with a forward slash.\n\nThe rule name is required and must be unique within the bucket. If the bucket already has replication rules, you must set a priority for the new rule. S3 uses rule priority to decide which rule applies when rules overlap, and a higher priority number means higher priority.\n\nA newly added replication rule is enabled by default, so it starts working as soon as it is saved.\n\nAs an example, the sample CLI rule replicates objects with the prefix Tax, except those under Tax/drafts/.\n\n## Prerequisites and permissions\n\nVersioning is enabled on both the source and destination buckets. If versioning is not enabled on the destination bucket, the console shows a warning with an Enable versioning button.\n\nAdding a replication rule requires the iam:PassRole permission. In the console, creating a new IAM role is highly recommended. If you instead choose an existing IAM role and that role grants S3 insufficient permissions for the rule, replication fails. The role's trust policy grants the S3 service principal permission to assume the role.\n\nIf you use the CLI or the S3 API, specifying the IAM role in the replication configuration requires the profile to have iam:PassRole. The same profile is used for the source and destination buckets when they are in the same account. The CLI requires the replication configuration as JSON, while the S3 API requires it as XML.\n\nIf the destination bucket is in a different account from the source bucket, a bucket policy on the destination bucket must grant the source bucket account owner permission to replicate objects. Replicating encrypted objects requires granting AWS KMS key permissions. If objects are to be replicated with Object Lock, the IAM role needs s3:GetObjectRetention and s3:GetObjectLegalHold on the source bucket; an s3:Get* permission statement satisfies this requirement. Replicating object annotations requires s3:GetObjectVersionAnnotationForReplication on the source bucket.\n\n## KMS-encrypted objects\n\nReplicating KMS-encrypted objects doubles the KMS request rate in the source Region and increases the KMS request rate in the destination Region. S3 supports only symmetric encryption KMS keys and does not support asymmetric KMS keys. Only KMS keys enabled in the same Region as the bucket can be used, and the S3 console lists only 100 KMS keys per Region.\n\n## Replication behavior\n\nThe time to replicate an object depends on its size. Replicas in the destination bucket have replication status REPLICA. The destination storage class is not changed, so replicated objects have the same storage class as the originals.\n\nReplicas are owned by the source bucket account. When the source and destination buckets are owned by different accounts, an optional configuration can change replica ownership to the destination account.\n\nWhen an object version ID is specified for deletion, S3 deletes that version in the source bucket but does not replicate the version deletion to the destination bucket.\n\n## Additional fees\n\nUsing S3 RTC or replication metrics incurs additional fees.",
@@ -4796,9 +4949,55 @@
     ]
    },
    "entailment": {
-    "rate": 0.9,
+    "rate": 0.95,
     "n_probes": 20,
-    "n_correct": 18
+    "n_correct": 19,
+    "n_generated": 20,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "no",
+     "no",
+     "yes",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes. The document says that if the bucket has existing replication rules, you must set a priority for the new rule. It a",
+     "Yes",
+     "Yes",
+     "Yes. The exclusion is written as Tax/drafts/, which ends with a forward slash. (The document describes the main prefix a",
+     "Yes. According to the document, when an object version ID is specified for deletion, S3 deletes that version in the sour",
+     "Yes. The document says that if you choose an existing IAM role and that role grants S3 insufficient permissions for the ",
+     "No. The document says S3 supports only symmetric encryption KMS keys and does not support asymmetric KMS keys, so being ",
+     "No. The document says replicating KMS-encrypted objects doubles the KMS request rate in the source Region, but it says o",
+     "Yes. The document says the destination storage class is not changed, so replicated objects keep the same storage class a",
+     "No. The document says replicas are owned by the source bucket account, and an optional configuration can change ownershi",
+     "Yes",
+     "Yes\n\nThe document says that specifying the IAM role in the replication configuration requires the profile to have iam:Pa",
+     "Yes\n\nThe document says a rule can replicate a subset of objects selected by key name prefix, object tags, or both, and t",
+     "Yes. The document says S3 uses rule priority to decide which rule applies when rules overlap, and a higher priority numb",
+     "Yes. The document says that replicating Object Lock objects requires s3:GetObjectRetention and s3:GetObjectLegalHold on ",
+     "no",
+     "No. The document says live replication is asynchronous and that the time to replicate an object depends on its size, so ",
+     "Yes. The document limits the number of destination buckets to the number of Regions in a partition. It also says each de",
+     "Yes. The document says that when an object version ID is specified for deletion, S3 deletes that version in the source b",
+     "Yes. The document says adding a replication rule requires the iam:PassRole permission, and that replicating KMS-encrypte"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -4824,10 +5023,10 @@
     ]
    },
    "drift": {
-    "drift": 0.3069193666953314,
+    "drift": 0.2965027000286647,
     "atomic_loss": 0.08572359843546284,
     "cbr_loss": 0.5957446808510638,
-    "entailment_loss": 0.09999999999999998,
+    "entailment_loss": 0.050000000000000044,
     "structural_loss": 0.11999999999999997
    },
    "regen_doc": "# Configuring live replication\n\n## Before you begin\n\nComplete the following prerequisites before you add a replication rule.\n\n- **Destination S3 bucket.** Create a destination bucket to receive replicated objects. Versioning must be enabled on it. If versioning is not enabled, the console shows a warning with an Enable versioning button. The steps are on this page.\n- **Replication permissions.** Set up an IAM role and a permissions policy that Amazon S3 can assume to replicate objects. The steps are at https://docs.aws.amazon.com/AmazonS3/latest/userguide/setting-repl-config-perm-overview.html.\n- **iam:PassRole permission.** The user adding the replication rule needs this permission. The steps are at https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_passrole.html.\n- **AWS KMS key permissions and a destination KMS key (only if replicating SSE-KMS encrypted objects).** The steps are at https://docs.aws.amazon.com/AmazonS3/latest/userguide/replication-config-for-kms-objects.html.\n- **Additional IAM role permissions (only if using Object Lock).** The role needs s3:GetObjectRetention and s3:GetObjectLegalHold on the source bucket. The steps are at https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock-managing.html.\n\n## Overview\n\nLive replication is automatic, asynchronous copying of objects across general purpose buckets. It copies newly created objects and object updates from a source bucket to destination buckets. You add replication rules to the source bucket. The rules define which source objects to replicate and the destination buckets. A rule can replicate all objects in a bucket, or a subset of objects selected by key name prefix, object tags, or both. A destination bucket can be in the same account as the source bucket or in a different account.\n\nThe time it takes to replicate an object depends on its size.\n\n## Permissions and the IAM role\n\nAdding a replication rule requires the iam:PassRole permission. In the console, creating a new IAM role is highly recommended. If you choose an existing IAM role instead, and that role grants S3 insufficient permissions for the rule, replication fails. The trust policy on the role grants the S3 service principal permission to assume the role.\n\nIf you are replicating objects with Object Lock, the IAM role needs s3:GetObjectRetention and s3:GetObjectLegalHold on the source bucket. An s3:Get* permission statement satisfies this requirement. If you are replicating object annotations, the role needs s3:GetObjectVersionAnnotationForReplication on the source bucket.\n\nWhen the destination bucket is in a different account from the source bucket, a bucket policy on the destination bucket grants the source bucket account owner permission to replicate objects.\n\n## Rule settings\n\nA newly added replication rule is enabled by default, and an enabled rule starts working as soon as it is saved.\n\nThe rule name is required and must be unique within the bucket. If the bucket has existing replication rules, you must set a priority for the new rule. S3 uses rule priority to decide which rule applies when rules overlap, and a higher priority number means higher priority.\n\nTo limit a rule by prefix, enter a folder name as the prefix. Because the prefix is a folder name, it must end with a forward slash.\n\nThe number of destination buckets is limited to the number of Regions in a partition.\n\n## Encrypted objects\n\nReplicating encrypted objects requires granting AWS KMS key permissions. Replicating KMS-encrypted objects doubles the KMS request rate in the source Region and increases the KMS request rate in the destination Region. S3 supports only symmetric encryption KMS keys, so it does not support asymmetric KMS keys. Only KMS keys enabled in the same Region as the bucket can be used. The S3 console lists only 100 KMS keys per Region.\n\n## Storage class, fees, and deletions\n\nThe destination storage class is not changed, so replicated objects have the same storage class as the originals. Using S3 RTC or replication metrics incurs additional fees.\n\nWhen an object version ID is specified for deletion, S3 deletes that version in the source bucket. S3 does not replicate the version deletion to the destination bucket.\n\n## Using the CLI or API\n\nVersioning must be enabled on both the source and destination buckets before you provide the replication configuration through the CLI. The CLI requires the replication configuration as JSON, while the S3 API requires it as XML. Specifying the IAM role in the replication configuration requires the profile to have iam:PassRole. The same profile is used for the source and destination buckets in the same account. The sample CLI rule replicates objects with the prefix Tax except those under Tax/drafts/.\n\n## Replicas and ownership\n\nReplicas in the destination bucket have the replication status REPLICA. Replicas are owned by the source bucket account. If the source and destination buckets are owned by different accounts, an optional configuration can change replica ownership to the destination account.",
@@ -5002,6 +5201,11 @@
      6,
      11
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 0.9,
+    "n_probes": 20,
+    "n_correct": 18
    }
   },
   "log": [

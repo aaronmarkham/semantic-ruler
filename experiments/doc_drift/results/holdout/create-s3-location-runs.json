@@ -67,9 +67,25 @@
     ]
    },
    "entailment": {
-    "rate": 1.0,
+    "rate": 0.8,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 4,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "no",
+     "no",
+     "no",
+     "yes"
+    ],
+    "replies": [
+     "Yes. The document says that when the destination is S3 Glacier Flexible Retrieval or S3 Glacier Deep Archive, DataSync p",
+     "No. The document says that if you use an agent, the task must be configured for Basic mode, and Enhanced mode is for tra",
+     "No. In the cross-account case, the IAM role must specify the SSE-KMS key by its fully qualified ARN, and the document sa",
+     "No. The document says you can't use \"Verify all data in the destination\" with S3 Glacier Flexible Retrieval or S3 Glacie",
+     "**No.** The document says objects smaller than 128 KB in S3 Standard-IA are stored in the S3 Standard storage class. A 1"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.7808219178082191,
@@ -148,11 +164,16 @@
     ]
    },
    "drift": {
-    "drift": 0.5884986225895317,
+    "drift": 0.6301652892561984,
     "atomic_loss": 0.024793388429752095,
     "cbr_loss": 1.0,
-    "entailment_loss": 0.0,
+    "entailment_loss": 0.19999999999999996,
     "structural_loss": 1.0
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "regen_doc": "# Configuring Amazon S3 Locations for AWS DataSync\n\n## Access and IAM roles\n\nTo transfer data to or from an Amazon S3 bucket, you create an AWS DataSync transfer location. DataSync can use an S3 location as either a source or a destination. To access the bucket, you must create an IAM role that DataSync assumes, with the permissions required to access the bucket, and you specify that role when creating your Amazon S3 location. The permissions the role needs can depend on whether the bucket is a source or a destination location, and Amazon S3 on Outposts requires a different set of permissions.\n\nWhen you create an Amazon S3 location in the console, DataSync can automatically create and assume an IAM role that normally has the right permissions to access your bucket. In some situations, such as buckets with extra layers of security or transferring to or from a bucket in a different AWS account, you might need to create the IAM role manually.\n\n## Encrypted buckets\n\nHow DataSync accesses an encrypted bucket depends on the encryption type:\n\n- **AWS managed key:** DataSync can access the bucket's objects by default, provided all your resources are in the same AWS account.\n- **Customer managed SSE-KMS key:** The key's policy must include the IAM role that DataSync uses to access the bucket. If the bucket is in a different AWS account, the IAM role that DataSync uses must specify the cross-account bucket's SSE-KMS key by its fully qualified ARN. In this cross-account situation, you can't specify a key ID, alias name, or alias ARN, and the SSE-KMS key policy must specify the IAM role used by DataSync.\n- **Customer managed AWS KMS key (DSSE-KMS):** The key's policy must include the IAM role that DataSync uses to access the bucket. DSSE-KMS doesn't support S3 Bucket Keys.\n- **Customer-provided encryption key (SSE-C):** DataSync can't access the bucket.\n\n## Restricted buckets\n\nIf you need to transfer to or from an S3 bucket that typically denies all access, you can edit the bucket policy so that DataSync can access the bucket only for your transfer. When you're done using DataSync with the restricted bucket, you should remove the conditions for both IAM roles from the bucket policy.\n\nAn S3 bucket that limits access to specific VPC endpoints or VPCs will deny DataSync from transferring to or from that bucket. To enable transfers to a VPC-restricted bucket, you can update the bucket policy to include the IAM role that you specify with your DataSync location.\n\n## Storage classes\n\nWhen Amazon S3 is your destination location, DataSync can transfer your data directly into a specific Amazon S3 storage class. New objects transferred to your S3 destination location are stored using the storage class that you specify when creating your location. S3 Standard is the default if you don't specify one. By default, DataSync preserves the storage class of existing objects in your destination location unless you configure your task to transfer all data. When you configure your task to transfer all data, the storage class that you specify when creating the location is used for all objects.\n\nSome storage classes carry extra considerations:\n\n- Objects in S3 Standard-IA, S3 One Zone-IA, S3 Glacier Instant Retrieval, S3 Glacier Flexible Retrieval, and S3 Glacier Deep Archive can incur additional charges for overwriting, deleting, or retrieving. Changes to object data or metadata are equivalent to deleting an object and creating a new one to replace it.\n- Objects less than 128 KB in S3 Standard-IA, S3 One Zone-IA, or S3 Glacier Instant Retrieval are stored in the S3 Standard storage class.\n- S3 Glacier Flexible Retrieval and S3 Glacier Deep Archive require 40 KB of additional metadata for each archived object. When the destination is one of these two classes, DataSync puts objects that are less than 40 KB in the S3 Standard storage class.\n- You must restore objects archived in S3 Glacier Flexible Retrieval or S3 Glacier Deep Archive before DataSync can read them. When using these classes, you should choose the **Verify only the data transferred** task option. You can't use **Verify all data in the destination** with them because it requires retrieving all existing objects from the destination.\n\n## Request costs\n\nWith Amazon S3 locations, you incur costs related to S3 API requests made by DataSync, and DataSync makes S3 requests on your buckets every time you run your task.\n\n- **HEAD requests:** DataSync makes these to retrieve object metadata during a task's preparing and verifying phases. Each time you run a task, HEAD requests result in charges even if you aren't moving any objects.\n- **GET requests:** If you configure your task to verify that source and destination are fully synchronized, there will be GET requests for each object in all storage classes except S3 Glacier Flexible Retrieval and S3 Glacier Deep Archive. For objects in S3 Standard-IA, S3 One Zone-IA, or S3 Glacier Instant Retrieval, you also incur data retrieval costs in addition to the GET requests.\n- **COPY requests:** DataSync makes these to create a copy of an object only if that object's metadata changes.\n- **PUT requests:** DataSync uses the Amazon S3 multipart upload feature, so there can be multiple PUT requests for large objects.\n\nLimiting transfers to certain prefixes or filtering data can reduce the number of S3 requests made each time you run a task. When transferring between S3 buckets, using Enhanced task mode is recommended because you aren't subject to DataSync task quotas.\n\n## Considerations and limitations\n\n- **Versioned buckets:** When transferring to a versioned S3 bucket, DataSync creates a new version of an object if that object is modified at the source, resulting in additional charges. Only the most recent version of each object is transferred from the source bucket.\n- **Transfers to a file system:** After initially transferring data from an S3 bucket to a file system, subsequent runs of the same task won't include objects that have been modified but are the same size as during the first transfer.\n- **Prefixes:** DataSync Basic mode tasks can't transfer objects with a prefix that begins with a slash or includes `//`, `/./`, or `/../` patterns. Enhanced mode tasks can transfer objects with such prefixes.\n\n## Amazon S3 on Outposts\n\nCreating a location for an S3 on Outposts bucket requires a DataSync agent. When transferring from an S3 on Outposts bucket prefix containing a very large dataset, your DataSync task might time out. Using a DataSync manifest to specify the exact objects to transfer can avoid these timeouts. DataSync by default uses the S3 Outposts storage class for Amazon S3 on Outposts.\n\n## Transferring between commercial and AWS GovCloud (US) Regions\n\nBy default, DataSync doesn't transfer between S3 buckets in commercial and AWS GovCloud (US) Regions. You can set up such a transfer by creating an object storage location for one of the S3 buckets. The task mode depends on whether you use an agent: if you use an agent, your task must be configured for Basic mode, and to transfer without an agent, you must use Enhanced mode.\n\nWhen creating the object storage location, you must provide DataSync the credentials of an IAM user with permission to access the bucket. IAM users have long-term credentials, which presents a security risk.\n\nFor a Basic mode transfer, you deploy the DataSync agent as an Amazon EC2 instance in one of the Regions. The agent should use a VPC service endpoint to avoid data transfer charges out to the public internet. The object storage location is needed for the S3 bucket in the Region where you aren't running your DataSync task, and the Region in the S3 endpoint for the object storage location must be the same Region where you plan to run your task.",
@@ -1926,9 +1947,25 @@
     ]
    },
    "entailment": {
-    "rate": 0.6,
+    "rate": 0.8,
     "n_probes": 5,
-    "n_correct": 3
+    "n_correct": 4,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "no",
+     "no",
+     "no",
+     "yes"
+    ],
+    "replies": [
+     "Yes. The document says that because S3 Glacier Flexible Retrieval and S3 Glacier Deep Archive need 40 KB of additional m",
+     "No. The document says that if you use an agent for a commercial to GovCloud transfer, the task must be configured for Ba",
+     "No. In the cross-account SSE-KMS situation, the document says you can't specify a key ID, alias name, or alias ARN. The ",
+     "No. The document says you can't use the \"Verify all data in the destination\" option with S3 Glacier Flexible Retrieval o",
+     "No. Objects less than 128 KB in S3 Standard-IA are stored in the S3 Standard storage class, but the 100 KB object is und"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.9315068493150684,
@@ -1999,10 +2036,10 @@
     ]
    },
    "drift": {
-    "drift": 0.351240523002665,
+    "drift": 0.3095738563359984,
     "atomic_loss": 0.024793388429752095,
     "cbr_loss": 0.5753424657534247,
-    "entailment_loss": 0.4,
+    "entailment_loss": 0.19999999999999996,
     "structural_loss": 0.13809523809523808
    },
    "regen_doc": "# Configuring an Amazon S3 location for AWS DataSync\n\n## Before you begin\n\nComplete or have available the following before you create the location:\n\n- **An existing S3 bucket** to use as the DataSync source or destination. This is the bucket that the IAM role grants access to.\n- **An IAM identity-based permissions policy** (source or destination S3 permissions) to attach inline to the DataSync role. The steps are on this page.\n- **A trust policy update on the role** to prevent the cross-service confused deputy problem (recommended). Steps: https://docs.aws.amazon.com/datasync/latest/userguide/cross-service-confused-deputy-prevention.html\n- **A KMS key policy that includes the DataSync IAM role**, needed for buckets encrypted with a customer managed SSE-KMS or DSSE-KMS key. Steps: https://docs.aws.amazon.com/kms/latest/developerguide/key-policy-modifying.html\n- **A bucket policy allowing the DataSync role access**, needed for a restricted bucket that denies all access. Steps: https://docs.aws.amazon.com/AmazonS3/latest/userguide/add-bucket-policy.html\n- **Tool access:** the AWS CLI, to retrieve the IAM role IDs for the restricted bucket policy.\n\n## Creating the location and IAM role\n\nTo transfer data to or from an Amazon S3 bucket, you create an AWS DataSync transfer location. DataSync can use an S3 location as a source or destination for transferring data.\n\nTo access the S3 bucket, you must create an IAM role that DataSync assumes with the permissions required to access the bucket. Create the role first, and then specify it when creating your Amazon S3 location for DataSync. The permissions the role needs can depend on whether the bucket is a DataSync source or destination location. Amazon S3 on Outposts requires a different set of permissions.\n\nWhen you create an Amazon S3 location in the console, DataSync can automatically create and assume an IAM role that normally has the right permissions to access your S3 bucket. In some situations, such as buckets with extra layers of security or transferring to or from a bucket in a different AWS account, you might need to create the IAM role manually.\n\n## Encrypted buckets\n\nIf an S3 bucket is encrypted with an AWS managed key, DataSync can access the bucket's objects by default if all your resources are in the same AWS account.\n\nIf an S3 bucket is encrypted with a customer managed SSE-KMS key, the key's policy must include the IAM role that DataSync uses to access the bucket. This holds only when the cross-account requirements are also met: the IAM role that DataSync uses must specify the cross-account bucket's SSE-KMS key by its fully qualified ARN, and the SSE-KMS key policy must specify the IAM role used by DataSync. In the cross-account SSE-KMS situation, you can't specify a key ID, alias name, or alias ARN.\n\nIf an S3 bucket is encrypted with a customer managed AWS KMS key (DSSE-KMS), the key's policy must include the IAM role that DataSync uses to access the bucket. DSSE-KMS doesn't support S3 Bucket Keys.\n\nIf an S3 bucket is encrypted with a customer-provided encryption key (SSE-C), DataSync can't access the bucket.\n\n## Restricted buckets\n\nIf you need to transfer to or from an S3 bucket that typically denies all access, you can edit the bucket policy so that DataSync can access the bucket only for your transfer. When you're done using DataSync with the restricted bucket, you should remove the conditions for both IAM roles from the bucket policy.\n\nAn S3 bucket that limits access to specific VPC endpoints or VPCs will deny DataSync from transferring to or from that bucket. To enable transfers to a VPC-restricted bucket, you can update the bucket policy to include the IAM role that you specify with your DataSync location.\n\n## Storage classes\n\nWhen Amazon S3 is your destination location, DataSync can transfer your data directly into a specific Amazon S3 storage class. New objects transferred to your S3 destination location are stored using the storage class that you specify when creating your location. S3 Standard is the default storage class if you don't specify one.\n\nBy default, DataSync preserves the storage class of existing objects in your destination location unless you configure your task to transfer all data. When you configure your task to transfer all data, the storage class that you specify when creating the location is used for all objects.\n\nObjects in S3 Standard-IA, S3 One Zone-IA, S3 Glacier Instant Retrieval, S3 Glacier Flexible Retrieval, and S3 Glacier Deep Archive can incur additional charges for overwriting, deleting, or retrieving. This is because changes to object data or metadata are equivalent to deleting an object and creating a new one to replace it.\n\nObjects less than 128 KB in S3 Standard-IA, S3 One Zone-IA, or S3 Glacier Instant Retrieval are stored in the S3 Standard storage class.\n\nS3 Glacier Flexible Retrieval and S3 Glacier Deep Archive require 40 KB of additional metadata for each archived object. Because of this, DataSync puts objects that are less than 40 KB in the S3 Standard storage class when the destination is S3 Glacier Flexible Retrieval or S3 Glacier Deep Archive.\n\nYou must restore objects archived in S3 Glacier Flexible Retrieval or S3 Glacier Deep Archive before DataSync can read them. When using these classes, you should choose the **Verify only the data transferred** task option. You can't use the **Verify all data in the destination** option with them because it requires retrieving all existing objects from the destination, so use the former.\n\n## Request costs\n\nWith Amazon S3 locations, you incur costs related to S3 API requests made by DataSync.\n\n- DataSync makes HEAD requests to retrieve object metadata during a task's preparing and verifying phases. Because DataSync makes S3 requests on S3 buckets every time you run your task, HEAD requests result in charges each time you run a task, even if you aren't moving any objects.\n- If you configure your task to verify that source and destination are fully synchronized, there will be GET requests for each object in all storage classes except S3 Glacier Flexible Retrieval and S3 Glacier Deep Archive. You incur data retrieval costs for objects in S3 Standard-IA, S3 One Zone-IA, or S3 Glacier Instant Retrieval in addition to GET requests.\n- DataSync makes COPY requests to create a copy of an object only if that object's metadata changes.\n- DataSync uses the Amazon S3 multipart upload feature, so there can be multiple PUT requests for large objects.\n\nLimiting transfers to certain prefixes or filtering data can reduce the number of S3 requests made each time you run a task.\n\n## Considerations for transfers\n\nWhen transferring between S3 buckets, using Enhanced task mode is recommended because you aren't subject to DataSync task quotas.\n\nWhen transferring to a versioned S3 bucket, DataSync creates a new version of an object if that object is modified at the source, resulting in additional charges. Only the most recent version of each object is transferred from the source bucket.\n\nAfter initially transferring data from an S3 bucket to a file system, subsequent runs of the same task won't include objects that have been modified but are the same size as during the first transfer.\n\nThe task mode determines how object prefixes are handled. DataSync Basic mode tasks can't transfer objects with a prefix that begins with a slash or includes //, /./, or /../ patterns. Enhanced mode tasks can transfer objects with prefixes that begin with a slash or include those patterns.\n\n## Amazon S3 on Outposts\n\nCreating a location for an S3 on Outposts bucket requires a DataSync agent. When transferring from an S3 on Outposts bucket prefix containing a very large dataset, your DataSync task might time out. Using a DataSync manifest to specify the exact objects to transfer can avoid these timeouts. DataSync by default uses the S3 Outposts storage class for Amazon S3 on Outposts.\n\n## Transferring between commercial and AWS GovCloud (US) Regions\n\nBy default, DataSync doesn't transfer between S3 buckets in commercial and AWS GovCloud (US) Regions. You can set up a commercial to GovCloud transfer by creating an object storage location for one of the S3 buckets. The object storage location is needed for the S3 bucket in the Region where you aren't running your DataSync task. The Region in the S3 endpoint for the object storage location must be the same Region where you plan to run your task.\n\nWhen creating the object storage location, you must provide DataSync the credentials of an IAM user with permission to access the bucket. IAM users have long-term credentials, which presents a security risk.\n\nIf you use an agent for a commercial to GovCloud transfer, your task must be configured for Basic mode. To transfer between commercial and GovCloud Regions without an agent, you must use Enhanced mode.\n\nFor a Basic mode commercial to GovCloud transfer, you deploy the DataSync agent as an Amazon EC2 instance in one of the Regions. This applies only when the task is configured for Basic mode. The agent should use a VPC service endpoint to avoid data transfer charges out to the public internet.",
@@ -2157,6 +2194,11 @@
       "automatic": false
      }
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 0.6,
+    "n_probes": 5,
+    "n_correct": 3
    }
   },
   "log": [
@@ -2322,7 +2364,23 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "no"
+    ],
+    "replies": [
+     "Yes. For a customer managed SSE-KMS key in a different AWS account, the IAM role must specify the key by its fully quali",
+     "Yes. The document says that when the destination is S3 Glacier Flexible Retrieval or S3 Glacier Deep Archive, DataSync p",
+     "No. The document says you can't use **Verify all data in the destination** with S3 Glacier Flexible Retrieval (or S3 Gla",
+     "Yes. Without an agent, the document says you must use Enhanced mode for a commercial-to-GovCloud transfer. It also says ",
+     "no"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.7808219178082191,
@@ -2405,6 +2463,11 @@
     "cbr_loss": 0.4794520547945206,
     "entailment_loss": 0.0,
     "structural_loss": 1.0
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "regen_doc": "# Configuring Amazon S3 Locations for AWS DataSync\n\n## Overview and IAM access\n\nTo transfer data to or from an Amazon S3 bucket, you create an AWS DataSync transfer location. DataSync can use an S3 location as either a source or a destination. To access the bucket, you must create an IAM role that DataSync assumes, with the permissions required to access the bucket, and you specify that role when creating your Amazon S3 location. The permissions the role needs can depend on whether the bucket is a DataSync source or destination location. Amazon S3 on Outposts requires a different set of permissions.\n\nWhen you create an Amazon S3 location in the console, DataSync can automatically create and assume an IAM role that normally has the right permissions to access your S3 bucket. In some situations, such as buckets with extra layers of security or transferring to or from a bucket in a different AWS account, you might need to create the IAM role manually.\n\n## Encrypted buckets\n\nHow DataSync accesses an encrypted bucket depends on the type of encryption:\n\n- **AWS managed key:** DataSync can access the bucket's objects by default if all your resources are in the same AWS account.\n- **Customer managed SSE-KMS key:** The key's policy must include the IAM role that DataSync uses to access the bucket. If the key is in a different AWS account, the IAM role that DataSync uses must specify the cross-account bucket's SSE-KMS key by its fully qualified ARN. In that cross-account situation, you can't specify a key ID, alias name, or alias ARN, and the SSE-KMS key policy must specify the IAM role used by DataSync.\n- **Customer managed AWS KMS key (DSSE-KMS):** The key's policy must include the IAM role that DataSync uses to access the bucket. DSSE-KMS doesn't support S3 Bucket Keys.\n- **Customer-provided encryption key (SSE-C):** DataSync can't access the bucket.\n\n## Restricted buckets\n\nIf you need to transfer to or from an S3 bucket that typically denies all access, you can edit the bucket policy so that DataSync can access the bucket only for your transfer. When you're done using DataSync with the restricted bucket, you should remove the conditions for both IAM roles from the bucket policy.\n\nAn S3 bucket that limits access to specific VPC endpoints or VPCs will deny DataSync from transferring to or from that bucket. To enable transfers to a VPC-restricted bucket, you can update the bucket policy to include the IAM role that you specify with your DataSync location.\n\n## Storage classes\n\nWhen Amazon S3 is your destination location, DataSync can transfer your data directly into a specific Amazon S3 storage class. New objects transferred to your S3 destination location are stored using the storage class that you specify when creating your location. S3 Standard is the default if you don't specify one. By default, DataSync preserves the storage class of existing objects in your destination location unless you configure your task to transfer all data. When you configure your task to transfer all data, the storage class that you specify when creating the location is used for all objects.\n\nSome storage classes carry additional considerations:\n\n- Objects in S3 Standard-IA, S3 One Zone-IA, S3 Glacier Instant Retrieval, S3 Glacier Flexible Retrieval, and S3 Glacier Deep Archive can incur additional charges for overwriting, deleting, or retrieving. Changes to object data or metadata are equivalent to deleting an object and creating a new one to replace it.\n- Objects less than 128 KB in S3 Standard-IA, S3 One Zone-IA, or S3 Glacier Instant Retrieval are stored in the S3 Standard storage class.\n- S3 Glacier Flexible Retrieval and S3 Glacier Deep Archive require 40 KB of additional metadata for each archived object. When the destination is one of these classes, DataSync puts objects that are less than 40 KB in the S3 Standard storage class.\n- You must restore objects archived in S3 Glacier Flexible Retrieval or S3 Glacier Deep Archive before DataSync can read them.\n- When using S3 Glacier Flexible Retrieval or S3 Glacier Deep Archive, you should choose the **Verify only the data transferred** task option. You can't use **Verify all data in the destination** with these classes because it requires retrieving all existing objects from the destination.\n\n## Request costs\n\nWith Amazon S3 locations, you incur costs related to S3 API requests made by DataSync. DataSync makes S3 requests on S3 buckets every time you run your task.\n\n- **HEAD requests:** DataSync makes these to retrieve object metadata during a task's preparing and verifying phases. Each time you run a task, HEAD requests result in charges even if you aren't moving any objects.\n- **GET requests:** If you configure your task to verify that source and destination are fully synchronized, there will be GET requests for each object in all storage classes except S3 Glacier Flexible Retrieval and S3 Glacier Deep Archive. You incur data retrieval costs for objects in S3 Standard-IA, S3 One Zone-IA, or S3 Glacier Instant Retrieval in addition to GET requests.\n- **COPY requests:** DataSync makes these to create a copy of an object only if that object's metadata changes.\n- **PUT requests:** DataSync uses the Amazon S3 multipart upload feature, so there can be multiple PUT requests for large objects.\n\nLimiting transfers to certain prefixes or filtering data can reduce the number of S3 requests made each time you run a task.\n\n## Considerations and limitations\n\n- When transferring between S3 buckets, using Enhanced task mode is recommended because you aren't subject to DataSync task quotas.\n- When transferring to a versioned S3 bucket, DataSync creates a new version of an object if that object is modified at the source, resulting in additional charges. Only the most recent version of each object is transferred from the source bucket.\n- After initially transferring data from an S3 bucket to a file system, subsequent runs of the same task won't include objects that have been modified but are the same size as during the first transfer.\n- DataSync Basic mode tasks can't transfer objects with a prefix that begins with a slash or includes `//`, `/./`, or `/../` patterns. Enhanced mode tasks can transfer objects with such prefixes.\n\n## Amazon S3 on Outposts\n\nCreating a location for an S3 on Outposts bucket requires a DataSync agent. When transferring from an S3 on Outposts bucket prefix containing a very large dataset, your DataSync task might time out. Using a DataSync manifest to specify the exact objects to transfer can avoid these timeouts. DataSync by default uses the S3 Outposts storage class for Amazon S3 on Outposts.\n\n## Transferring between commercial and AWS GovCloud (US) Regions\n\nBy default, DataSync doesn't transfer between S3 buckets in commercial and AWS GovCloud (US) Regions. You can set up such a transfer by creating an object storage location for one of the S3 buckets. The object storage location is needed for the S3 bucket in the Region where you aren't running your DataSync task, and the Region in the S3 endpoint for that location must be the same Region where you plan to run your task.\n\nThe task mode depends on whether you use an agent. If you use an agent, your task must be configured for Basic mode. To transfer between commercial and GovCloud Regions without an agent, you must use Enhanced mode.\n\nWhen creating the object storage location, you must provide DataSync the credentials of an IAM user with permission to access the bucket. IAM users have long-term credentials, which presents a security risk.\n\nFor a Basic mode commercial to GovCloud transfer, you deploy the DataSync agent as an Amazon EC2 instance in one of the Regions. The agent should use a VPC service endpoint to avoid data transfer charges out to the public internet.",
@@ -4241,7 +4304,23 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "no"
+    ],
+    "replies": [
+     "Yes. For a customer managed SSE-KMS key in a different AWS account, the document says access works only when both condit",
+     "**Yes.** The document says DataSync puts objects smaller than 40 KB in the S3 Standard storage class when the destinatio",
+     "No. The document says you can't use the \"Verify all data in the destination\" option with S3 Glacier Flexible Retrieval (",
+     "Yes\n\nThe document says that to transfer between commercial and GovCloud Regions without an agent, you must use Enhanced ",
+     "**No.** By default, DataSync preserves the storage class of existing objects in the destination unless you configure the"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.863013698630137,
@@ -4425,6 +4504,11 @@
       "automatic": false
      }
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "log": [

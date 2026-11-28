@@ -71,9 +71,27 @@
     ]
    },
    "entailment": {
-    "rate": 1.0,
+    "rate": 0.8333333333333334,
     "n_probes": 6,
-    "n_correct": 6
+    "n_correct": 5,
+    "n_generated": 6,
+    "expected": [
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "no",
+     "yes"
+    ],
+    "replies": [
+     "unknown\n\nThe document says that s3files:ClientWrite is needed when the function has read-write access, but it doesn't sa",
+     "Yes. The document says s3files:ClientMount is required to mount, and s3files:ClientWrite is needed only when the functio",
+     "No. AUTO enables direct reads only for functions with 512 MB or more of memory, and this function has 256 MB. Direct rea",
+     "yes",
+     "No",
+     "Yes. The document says the function's subnets can be the same subnets as the mount points, or subnets in the same Availa"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.717557251908397,
@@ -152,11 +170,16 @@
     ]
    },
    "drift": {
-    "drift": 0.3032902272244056,
+    "drift": 0.3380124494466277,
     "atomic_loss": 0.05121293800539073,
     "cbr_loss": 0.7022900763358779,
-    "entailment_loss": 0.0,
+    "entailment_loss": 0.16666666666666663,
     "structural_loss": 0.0
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 6,
+    "n_correct": 6
    }
   },
   "regen_doc": "# Mounting an Amazon S3 file system in a Lambda function\n\nAmazon S3 Files delivers a shared file system that connects any AWS compute resource directly with data in Amazon S3. It provides access to S3 objects as files, using standard file system operations on the local mount path.\n\n## Prerequisites\n\nBefore you configure a function, make sure that an Amazon S3 file system and mount targets exist and are in the available state. The file system and mount targets must be in the same account and the same AWS Region as the Lambda function. The function must be in the same VPC as the mount target, and a mount target must exist in each subnet where the function is deployed. Security groups must allow NFS traffic (port 2049) between the Lambda function and the mount targets.\n\n## Execution role permissions\n\nFor the function to mount the S3 file system, its execution role must have the s3files:ClientMount permission. If the function has read-write access to the file system, the role also needs s3files:ClientWrite. This permission is not needed for read-only connections. The AmazonS3FilesClientReadWriteAccess managed policy includes both s3files:ClientMount and s3files:ClientWrite. In addition, the execution role must have the permissions required to connect to the file system's VPC.\n\n## Direct reads\n\nAmazon S3 Files streams eligible read requests directly from the S3 bucket to optimize throughput. Direct reads are enabled by default for functions configured with 512 MB or more of memory. For the function to read directly from Amazon S3, its execution role must have both s3:GetObject and s3:GetObjectVersion permissions.\n\n## User permissions in the console\n\nWhen you configure a file system in the console, Lambda uses your permissions to verify mount targets and access points. You need s3files:ListFileSystems, s3files:ListAccessPoints, s3files:GetFileSystem and s3files:GetAccessPoint permissions. If you configure a function to connect to a file system and the file system has no access points, you also need s3files:CreateAccessPoint permission when you attach the file system from the console, because Lambda creates one for you (see below).\n\n## Network connectivity\n\nA function connects to a file system over the local network in a VPC. The function's subnets can be the same subnets that contain the file system's mount points, or they can be subnets in the same Availability Zone that can route NFS traffic (port 2049) to the file system.\n\n## Configuring the file system in the console\n\nThe access point setting in the console is optional. If the file system has no access points, Lambda automatically creates an access point on save with UID/GID 1000:1000, root directory /lambda, and permissions 755. If access points already exist for the file system, you must select one.\n\nThe local mount path must start with /mnt/.\n\nThe Direct S3 Reads advanced setting controls whether Lambda can stream eligible reads directly from the S3 bucket. The file system is attached the next time the function is invoked after saving.\n\n## How direct reads behave\n\nLambda uses direct reads for large reads, and when the file system's high-performance storage does not hold the file data. The DirectS3Read setting is part of FileSystemConfigs and applies only to Amazon S3 file systems. It has three values:\n\n- **AUTO** is the default and enables direct reads for functions with 512 MB or more of memory.\n- **ENABLED** enables direct reads, including for functions with less than 512 MB of memory.\n- **DISABLED** routes all reads through the file system's high-performance storage.\n\nIf a direct read fails, Lambda automatically falls back to reading through the file system. This applies when the function's execution role has the required permissions for direct reads and the function uses direct reads.",
@@ -1816,7 +1839,25 @@
    "entailment": {
     "rate": 0.8333333333333334,
     "n_probes": 6,
-    "n_correct": 5
+    "n_correct": 5,
+    "n_generated": 6,
+    "expected": [
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "no",
+     "yes"
+    ],
+    "replies": [
+     "unknown",
+     "Yes. The document says read-only connections do not need s3files:ClientWrite, so s3files:ClientMount alone is enough for",
+     "No. With AUTO, direct reads are enabled only for functions with 512 MB or more of memory, and this function has 256 MB. ",
+     "Yes. ENABLED turns on direct reads even for functions with less than 512 MB of memory, and the execution role has both s",
+     "No. If the file system has no access points, Lambda automatically creates one on save, so the user doesn't need to selec",
+     "Yes"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.8931297709923663,
@@ -2022,6 +2063,11 @@
       "automatic": false
      }
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 0.8333333333333334,
+    "n_probes": 6,
+    "n_correct": 5
    }
   },
   "log": [
