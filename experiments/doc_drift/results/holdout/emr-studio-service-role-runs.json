@@ -1870,7 +1870,23 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "no"
+    ],
+    "replies": [
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes",
+     "No."
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.2105263157894737,
@@ -1942,6 +1958,11 @@
     "cbr_loss": 0.7894736842105263,
     "entailment_loss": 0.0,
     "structural_loss": 0.3866666666666667
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "regen_doc": "# EMR Studio Service Role\n\nEach EMR Studio uses an IAM role with permissions that let the Studio interact with other AWS services. This service role must include permissions that allow EMR Studio to establish a secure network channel between Workspaces and clusters, to store notebook files in Amazon S3, and to access AWS Secrets Manager while linking a Workspace to a Git repository. The Studio service role, rather than session policies, should be used to define all Amazon S3 access permissions for storing notebook files and to define AWS Secrets Manager access permissions.\n\n## Creating the role for EMR Studio on Amazon EC2 or Amazon EKS\n\nThe service role for EMR Studio on Amazon EC2 or Amazon EKS is created by following the instructions in Creating a role to delegate permissions to an AWS service, using the provided trust policy. The trust policy allows the service principal elasticmapreduce.amazonaws.com to perform sts:AssumeRole. It also includes the aws:SourceArn and aws:SourceAccount global condition keys, which limit the permissions given to EMR Studio to particular resources in your account. Using these condition keys can protect against the confused deputy problem.\n\nWhen creating the role, the default role permissions must be removed and the permissions from the sample IAM permissions policy included. Alternatively, you can create a custom policy based on the EMR Studio service role permissions.\n\n## Policy requirements and considerations\n\n- For Amazon EC2 tag-based access control to work with EMR Studio, access for the ModifyNetworkInterfaceAttribute API must be set as shown in the policy.\n- For EMR Studio to work with the service role, the statements AllowAddingEMRTagsDuringDefaultSecurityGroupCreation and AllowAddingTagsDuringEC2ENICreation must not be changed.\n- To use the example policy, you must tag the VPC for EMR Studio, each subnet used with the Studio, any custom EMR Studio security groups, and any Secrets Manager secrets used to link Git repositories with the key for-use-with-amazon-emr-managed-policies and the value true. Security groups created during the EMR Studio preview period must also be tagged if you want to continue to use them. Tags can be applied to resources using the Tags tab on the relevant resource screen in the AWS Management Console.\n- Where applicable, change the * in \"Resource\":\"*\" in the policy to specify the ARNs of the resources the statement covers.\n\n## Amazon S3 and AWS KMS permissions\n\nThe service role must be given read and write access to the Amazon S3 location for EMR Studio, with a minimum of s3:PutObject, s3:GetObject, s3:GetEncryptionConfiguration, s3:ListBucket, and s3:DeleteObject. If the Amazon S3 bucket is encrypted, the service role must also include the AWS KMS permissions kms:Decrypt, kms:GenerateDataKey, kms:ReEncryptFrom, kms:ReEncryptTo, and kms:DescribeKey.\n\n## Controlling Git secret access at the user level\n\nTo control access to Git secrets at the user level, add tag-based permissions to secretsmanager:GetSecretValue in the EMR Studio user role policy, and remove the secretsmanager:GetSecretValue permissions from the service role policy.\n\n## EMR Serverless\n\nTo run interactive workloads with EMR Serverless through EMR Studio notebooks, the same trust policy as for EC2/EKS is used. EMR Studio uses the configured S3 bucket to back up the Workspaces and notebook files in the Studio. The minimum EMR Serverless policy allows s3:PutObject, s3:GetObject, and s3:DeleteObject on the bucket objects, and s3:ListBucket and s3:GetEncryptionConfiguration on the bucket. If an encrypted Amazon S3 bucket is used with EMR Serverless, the KMS permissions kms:Decrypt, kms:GenerateDataKey, kms:ReEncryptFrom, kms:ReEncryptTo, and kms:DescribeKey must be added to the policy.\n\n## Permissions and their purposes\n\n- **Secure network channel and cleanup:** Establishing a secure network channel between a Workspace and an EMR cluster, and performing cleanup, requires EC2 network interface, security group, and describe actions, as well as elasticmapreduce:ListInstances, DescribeCluster, and ListSteps.\n- **Git credentials:** Using Git credentials stored in AWS Secrets Manager to link Git repositories to a Workspace requires secretsmanager:GetSecretValue.\n- **Tagging:** Applying AWS tags to the network interface and default security groups that EMR Studio creates requires ec2:CreateTags.\n- **Workspace collaboration:** Enabling and configuring Workspace collaboration requires iam:GetUser, iam:GetRole, iam:ListUsers, iam:ListRoles, sso:GetManagedApplicationInstance, sso-directory:SearchUsers, sso:DescribeApplication, and sso:DescribeInstance.\n- **Customer managed keys:** Encrypting EMR Studio workspace notebooks and files using customer managed keys with AWS KMS requires kms:Decrypt, kms:GenerateDataKey, kms:ReEncryptFrom, kms:ReEncryptTo, and kms:DescribeKey.",
@@ -3319,9 +3340,25 @@
     ]
    },
    "entailment": {
-    "rate": 0.8,
+    "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 4
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "no"
+    ],
+    "replies": [
+     "**Yes.** For EMR Serverless interactive workloads, the minimum policy allows `s3:PutObject`, `s3:GetObject`, and `s3:Del",
+     "Yes",
+     "Yes\n\nThe document says the role works only when the default role permissions have been replaced and the VPC, subnets, cu",
+     "Yes",
+     "No. Workspace collaboration needs `iam:GetUser`, `iam:GetRole`, `iam:ListUsers`, `iam:ListRoles`, and several `sso` perm"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.6052631578947368,
@@ -3382,10 +3419,10 @@
     ]
    },
    "drift": {
-    "drift": 0.34947980416156676,
+    "drift": 0.3078131374949,
     "atomic_loss": 0.10697674418604652,
     "cbr_loss": 0.6052631578947368,
-    "entailment_loss": 0.19999999999999996,
+    "entailment_loss": 0.0,
     "structural_loss": 0.2
    },
    "regen_doc": "# EMR Studio service role\n\n## Before you begin\n\nHave the following in place before you create the service role:\n\n- **An Amazon S3 bucket or location for EMR Studio.** EMR Studio uses it to back up the Workspaces and notebook files in the Studio. The service role is given read and write access to it. Create it before you write the S3 permissions in the role policy.\n- **A tagged VPC for EMR Studio.** Tag it with key `for-use-with-amazon-emr-managed-policies` and value `true`. To tag it, open the VPC's resource screen in the AWS Management Console and use the Tags tab.\n- **Tagged subnets.** Tag each subnet used with the Studio with `for-use-with-amazon-emr-managed-policies=true`, using the Tags tab on the subnet's resource screen in the console.\n- **Tagged custom security groups, if any.** Tag any custom EMR Studio security groups with `for-use-with-amazon-emr-managed-policies=true`, using the Tags tab on the resource screen in the console. Security groups created during the EMR Studio preview period must also be tagged if you want to continue to use them.\n- **Tagged AWS Secrets Manager secrets.** Tag each secret used to link Git repositories with `for-use-with-amazon-emr-managed-policies=true`, using the Tags tab on the resource screen in the console.\n- **A KMS key, only if the S3 bucket is encrypted.** You need it so the KMS permissions described below can be granted.\n\n## Overview\n\nEach EMR Studio uses an IAM role with permissions that let the Studio interact with other AWS services. This service role must include permissions that allow EMR Studio to establish a secure network channel between Workspaces and clusters, to store notebook files in Amazon S3, and to access AWS Secrets Manager while linking a Workspace to a Git repository. Use the Studio service role, rather than session policies, to define all Amazon S3 access permissions for storing notebook files and to define AWS Secrets Manager access permissions.\n\n## Create the service role for EMR Studio on Amazon EC2 or Amazon EKS\n\nCreate the service role for EMR Studio on Amazon EC2 or Amazon EKS by following the instructions in Creating a role to delegate permissions to an AWS service, using the provided trust policy. The trust policy allows the service principal `elasticmapreduce.amazonaws.com` to perform `sts:AssumeRole`. It includes the `aws:SourceArn` and `aws:SourceAccount` global condition keys to limit the permissions given to EMR Studio to particular resources in your account. Using these condition keys can protect against the confused deputy problem.\n\nThe role works only when two conditions both hold: the default role permissions have been replaced (see the next section), and the VPC, subnets, custom security groups, and Secrets Manager secrets have been tagged as described in \"Before you begin.\" The example policy depends on those tags.\n\n## Set the role permissions\n\nRemove the default role permissions and include the permissions from the sample IAM permissions policy. Alternatively, create a custom policy based on the EMR Studio service role permissions. This setup holds only when two further requirements are met:\n\n- For Amazon EC2 tag-based access control to work with EMR Studio, set access for the `ModifyNetworkInterfaceAttribute` API as shown in the policy.\n- For EMR Studio to work with the service role, do not change the statements `AllowAddingEMRTagsDuringDefaultSecurityGroupCreation` and `AllowAddingTagsDuringEC2ENICreation`.\n\nWhere applicable, change the `*` in `\"Resource\":\"*\"` in the policy to specify the ARNs of the resources the statement covers.\n\n## Amazon S3 permissions\n\nGive the service role read and write access to the Amazon S3 location for EMR Studio, with a minimum of `s3:PutObject`, `s3:GetObject`, `s3:GetEncryptionConfiguration`, `s3:ListBucket`, and `s3:DeleteObject`. Defining these permissions in the Studio service role, as recommended above, is enough to meet this requirement.\n\nIf the Amazon S3 bucket is encrypted, the service role must also include the AWS KMS permissions `kms:Decrypt`, `kms:GenerateDataKey`, `kms:ReEncryptFrom`, `kms:ReEncryptTo`, and `kms:DescribeKey`.\n\n## Permissions by purpose\n\nThe service role's permissions serve these purposes:\n\n- Establishing a secure network channel between a Workspace and an EMR cluster, and performing cleanup, requires EC2 network interface, security group, and describe actions, plus `elasticmapreduce:ListInstances`, `DescribeCluster`, and `ListSteps`.\n- Using Git credentials stored in AWS Secrets Manager to link Git repositories to a Workspace requires `secretsmanager:GetSecretValue`.\n- Applying AWS tags to the network interface and default security groups that EMR Studio creates requires `ec2:CreateTags`.\n- Enabling and configuring Workspace collaboration requires `iam:GetUser`, `iam:GetRole`, `iam:ListUsers`, `iam:ListRoles`, `sso:GetManagedApplicationInstance`, `sso-directory:SearchUsers`, `sso:DescribeApplication`, and `sso:DescribeInstance`.\n- Encrypting EMR Studio workspace notebooks and files using customer managed keys with AWS KMS requires `kms:Decrypt`, `kms:GenerateDataKey`, `kms:ReEncryptFrom`, `kms:ReEncryptTo`, and `kms:DescribeKey`.\n\n## Control access to Git secrets at the user level\n\nTo control access to Git secrets at the user level, add tag-based permissions to `secretsmanager:GetSecretValue` in the EMR Studio user role policy, and remove the `secretsmanager:GetSecretValue` permissions from the service role policy. Doing this is enough to cover the `secretsmanager:GetSecretValue` requirement for linking Git repositories.\n\n## Service role for EMR Serverless interactive workloads\n\nCreate the EC2/EKS service role first, as described above. To run interactive workloads with EMR Serverless through EMR Studio notebooks, you then use the same trust policy as for EC2/EKS.\n\nThe minimum EMR Serverless policy allows `s3:PutObject`, `s3:GetObject`, and `s3:DeleteObject` on the bucket objects, and `s3:ListBucket` and `s3:GetEncryptionConfiguration` on the bucket. If you use an encrypted Amazon S3 bucket with EMR Serverless, add the KMS permissions `kms:Decrypt`, `kms:GenerateDataKey`, `kms:ReEncryptFrom`, `kms:ReEncryptTo`, and `kms:DescribeKey` to the policy. Including those KMS permissions in the service role, as described for encrypted buckets above, is enough to meet this requirement.",
@@ -3482,6 +3519,11 @@
       "automatic": false
      }
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 0.8,
+    "n_probes": 5,
+    "n_correct": 4
    }
   },
   "log": [

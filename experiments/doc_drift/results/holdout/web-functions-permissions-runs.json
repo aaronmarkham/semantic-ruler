@@ -2450,9 +2450,25 @@
     ]
    },
    "entailment": {
-    "rate": 0.6,
+    "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 3
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "no",
+     "yes",
+     "no",
+     "yes",
+     "no"
+    ],
+    "replies": [
+     "No. For cross-account invocation, both the caller's identity-based policy and the Web Function's resource-based policy m",
+     "**Yes.** A policy is non-public if it lists fully specified principals in the Principal block with no wildcards or polic",
+     "**No.** The document says that naming a federated identity provider in the Principal block does not make a policy non-pu",
+     "Yes. The document says that for an IAM principal in the same account, either the identity-based policy or the resource-b",
+     "No. The document says that whenever a create call sets egressNetworkConnectorArn, the caller must also have lambda:PassN"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.45714285714285713,
@@ -2525,11 +2541,16 @@
     ]
    },
    "drift": {
-    "drift": 0.5659430438842205,
+    "drift": 0.4826097105508871,
     "atomic_loss": 0.01176470588235301,
     "cbr_loss": 0.7523809523809524,
-    "entailment_loss": 0.4,
+    "entailment_loss": 0.0,
     "structural_loss": 1.0
+   },
+   "entailment_before_regrade": {
+    "rate": 0.6,
+    "n_probes": 5,
+    "n_correct": 3
    }
   },
   "regen_doc": "# Security and access control for Lambda Web Functions\n\n## Overview and execution role\n\nLambda Web Functions use IAM for two purposes: to control what the application code can do (the execution role) and to control who can access the Web Function (resource-based policies).\n\nThe execution role is an IAM role that Lambda assumes when it runs the Web Function code. At minimum, a Web Function needs permission to write logs to Amazon CloudWatch Logs. If the application reads from DynamoDB, writes to Amazon S3, or calls other AWS services, you add those permissions to the execution role. To create an execution role, create an IAM role with a trust policy that allows the Lambda service principal to assume it. Then attach a permissions policy that grants the access the application needs.\n\nThe AWSLambdaBasicExecutionRole managed policy grants permissions to create log groups and log streams and to write log events to CloudWatch Logs. The minimum logging permissions are logs:CreateLogGroup, logs:CreateLogStream, and logs:PutLogEvents.\n\nLambda writes in-Region logs to the .local log group. It then centralizes them into the log group without the suffix in the home Region. The .local log group ARN uses a Region wildcard because Lambda writes to that group in every Region where an endpoint serves traffic. If the role cannot write to the .local log group in a Region, Lambda does not deliver logs from that Region.\n\n## Permissions for the creating identity\n\nThe IAM identity that creates a Web Function or revision uses its own permissions, not the execution role. That identity needs lambda:CreateWebFunction or lambda:CreateWebFunctionRevision, iam:PassRole on the execution role, and read access to the deployment package in Amazon S3. If a customer managed key encrypts the Web Function code and environment variables, the creating identity also needs AWS KMS permissions.\n\nWhenever a create-web-function or create-web-function-revision call sets egressNetworkConnectorArn, the caller must also have lambda:PassNetworkConnector on the referenced connector.\n\n## Resource-based policies\n\nA resource-based policy can grant any Web Function action except lambda:CreateWebFunction to IAM principals or AWS services. The Web Function ARN is used with PutResourcePolicy, GetResourcePolicy, and DeleteResourcePolicy. The endpoint ARN is used in the Resource element of a statement that grants lambda:InvokeWebFunctionEndpoint. Web Functions don't support AddPermission, RemovePermission, or GetPolicy.\n\nFor an IAM principal in the same account, either the identity-based policy or the resource-based policy can grant permission. For an IAM principal in another account, both the identity-based and resource-based policies must grant permission, for both invoke and management actions.\n\n## Public policies are not allowed\n\nYou cannot attach a public resource-based policy to a Web Function. A request with a public policy fails with a ValidationException. A policy is public unless it restricts who can call the resource to a well-specified set of principals.\n\nThe following do not make a policy non-public:\n- An unrestricted wildcard principal makes a policy public, and Lambda rejects it.\n- IP address conditions, such as narrowing aws:SourceIp to a CIDR range, do not make a policy non-public.\n- Naming a federated identity provider in the Principal block does not make a policy non-public.\n- Condition keys that describe the resource, such as endpoint authentication type, cannot restrict the principal and do not make a policy non-public.\n\nA policy is non-public in either of these cases:\n- It lists fully specified principals in the Principal block, with no wildcards or policy variables.\n- It constrains a trusted condition key to a fixed value.\n\nTrusted condition keys have these requirements:\n- String values must not contain wildcards or policy variables.\n- ARN values must not contain wildcards or policy variables in the first five fields. Wildcards in the resource portion are allowed.\n- aws:PrincipalIsAWSService must be set to true to be a valid trusted condition.\n\nWithout the aws:SourceArn condition, any CloudFront distribution in any account could invoke the Web Function.\n\n## Invoking endpoints\n\nAn endpoint caller needs lambda:InvokeWebFunctionEndpoint for an IamAuth endpoint. For cross-account invocation, three requirements apply:\n- The caller's identity-based policy must grant lambda:InvokeWebFunctionEndpoint on the endpoint ARN.\n- The Web Function's resource-based policy must grant the caller permission.\n- The endpoint must use IamAuth authentication so that Lambda evaluates the caller's credentials.\n\n## Policy propagation across Regions\n\nFor MultiRegion or PerRegion endpoints, Lambda replicates resource-based policy changes to all replica Regions, and replication is eventually consistent. During replication, Lambda might evaluate requests in replica Regions against the previous policy version. Setting the endpoint's throttleConfig.rateLimit to 0 blocks all traffic during policy propagation. For HomeRegion endpoints, the policy applies only in the home Region and does not require cross-Region replication.",
@@ -4137,9 +4158,25 @@
     ]
    },
    "entailment": {
-    "rate": 0.6,
+    "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 3
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "no",
+     "yes",
+     "no",
+     "yes",
+     "no"
+    ],
+    "replies": [
+     "No. For an IAM principal in another account, both the identity-based and resource-based policies must grant permission. ",
+     "**Yes.** A policy is non-public if it lists fully specified principals in the Principal block with no wildcards or polic",
+     "No. The document says that naming a federated identity provider in the Principal block does not make a policy non-public",
+     "yes",
+     "No. The document says that whenever a create call sets egressNetworkConnectorArn, the caller must have lambda:PassNetwor"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.5619047619047619,
@@ -4206,10 +4243,10 @@
     ]
    },
    "drift": {
-    "drift": 0.354057859703021,
+    "drift": 0.27072452636968763,
     "atomic_loss": 0.05376344086021512,
     "cbr_loss": 0.48571428571428565,
-    "entailment_loss": 0.4,
+    "entailment_loss": 0.0,
     "structural_loss": 0.3428571428571428
    },
    "regen_doc": "# Controlling access to Lambda Web Functions with IAM\n\n## Before you begin\n\nComplete the following prerequisites before the steps that need them.\n\n- **IAM permissions for the deployer identity.** The identity that creates the Web Function needs lambda:CreateWebFunction or lambda:CreateWebFunctionRevision, iam:PassRole on the execution role, read access to the deployment package in S3, and KMS permissions if a customer managed key is used. Steps: https://docs.aws.amazon.com/lambda/latest/dg/web-functions-code-s3.html\n- **Optional customer managed AWS KMS key.** Use it to encrypt Web Function code and environment variables. The deployer needs KMS permissions for it. Steps: https://docs.aws.amazon.com/lambda/latest/dg/web-functions-encryption.html\n- **Versioned S3 bucket.** It holds the Web Function deployment package, and the code uploader needs s3:PutObject. Steps: https://docs.aws.amazon.com/lambda/latest/dg/web-functions-code-s3.html\n- **Identity-based permission for cross-account callers.** The caller needs lambda:InvokeWebFunctionEndpoint on the endpoint ARN.\n- **Web Function endpoint using IamAuth authentication.** This lets Lambda evaluate caller credentials. Steps: https://docs.aws.amazon.com/lambda/latest/dg/web-functions-endpoints.html\n- **CloudFront distribution as the origin caller.** Its source ARN is used in the condition when you grant access to the CloudFront service.\n- **Network connector.** It is used to configure networking, and it requires the lambda:PassNetworkConnector permission.\n\n## Overview\n\nLambda Web Functions use IAM to control two things: what the application code can do, through the execution role, and who can access the Web Function, through resource-based policies.\n\n## The execution role\n\nThe execution role is an IAM role that Lambda assumes when it runs the Web Function code. At minimum, a Web Function needs permission to write logs to Amazon CloudWatch Logs. If the application reads from DynamoDB, writes to Amazon S3, or calls other AWS services, add those permissions to the execution role as well.\n\nTo create an execution role, create an IAM role with a trust policy that allows the Lambda service principal to assume it, and attach a permissions policy that grants the access the application needs. The AWSLambdaBasicExecutionRole managed policy grants permissions to create log groups, log streams, and write log events to CloudWatch Logs. The minimum logging permissions are logs:CreateLogGroup, logs:CreateLogStream, and logs:PutLogEvents.\n\n### Log groups and Regions\n\nLambda writes in-Region logs to the .local log group and then centralizes them into the log group without the suffix in the home Region. Because of this order, if the role cannot write to the .local log group in a Region, Lambda does not deliver logs from that Region. The .local log group ARN uses a Region wildcard because Lambda writes to that group in every Region where an endpoint serves traffic.\n\n## Permissions for the creating identity\n\nThe IAM identity that creates a Web Function or revision uses its own permissions, not the execution role. Holding the permissions in the following list is enough to satisfy this: lambda:CreateWebFunction or lambda:CreateWebFunctionRevision, iam:PassRole on the execution role, and read access to the deployment package in Amazon S3. If a customer managed key encrypts the Web Function code and environment variables, the creating identity also needs AWS KMS permissions.\n\nWhenever a create-web-function or create-web-function-revision call sets egressNetworkConnectorArn, the caller must have lambda:PassNetworkConnector on the referenced connector.\n\n## Resource-based policies\n\nA resource-based policy can grant any Web Function action except lambda:CreateWebFunction to IAM principals or AWS services. Use the Web Function ARN with PutResourcePolicy, GetResourcePolicy, and DeleteResourcePolicy. Use the endpoint ARN in the Resource element of a statement that grants lambda:InvokeWebFunctionEndpoint. An endpoint caller needs lambda:InvokeWebFunctionEndpoint for an IamAuth endpoint. Web Functions don't support AddPermission, RemovePermission, or GetPolicy.\n\nFor an IAM principal in the same account, either the identity-based policy or the resource-based policy can grant permission. For an IAM principal in another account, both the identity-based and resource-based policies must grant permission, for both invoke and management actions. That cross-account requirement holds only when all three of the following are true:\n\n1. The caller's identity-based policy grants lambda:InvokeWebFunctionEndpoint on the endpoint ARN.\n2. The Web Function's resource-based policy grants the caller permission.\n3. The endpoint uses IamAuth authentication so Lambda evaluates the caller's credentials.\n\nFor CloudFront, use the distribution's source ARN in an aws:SourceArn condition. Without the aws:SourceArn condition, any CloudFront distribution in any account could invoke the Web Function.\n\n### Public policies are rejected\n\nYou cannot attach a public resource-based policy to a Web Function; a public policy request fails with a ValidationException. A policy is public unless it restricts who can call the resource to a well-specified set of principals, so that condition alone is enough for the request to be rejected.\n\nThe following do not make a policy non-public:\n\n- An unrestricted wildcard principal makes a policy public, and it is rejected.\n- IP address conditions, such as narrowing aws:SourceIp to a CIDR range.\n- Naming a federated identity provider in the Principal block.\n- Condition keys that describe the resource, such as endpoint authentication type, because they cannot restrict the principal.\n\nA policy is non-public if it lists fully specified principals in the Principal block with no wildcards or policy variables. This cannot hold together with an unrestricted wildcard principal, so the two are mutually exclusive. A policy is also non-public if it constrains a trusted condition key to a fixed value. For trusted condition keys:\n\n- String values must not contain wildcards or policy variables.\n- ARN values must not contain wildcards or policy variables in the first five fields; wildcards in the resource portion are allowed. This holds only when the key is constrained to a fixed value and its string values contain no wildcards or policy variables.\n- aws:PrincipalIsAWSService must be set to true to be a valid trusted condition.\n\n### Policy propagation\n\nFor MultiRegion or PerRegion endpoints, Lambda replicates resource-based policy changes to all replica Regions, and replication is eventually consistent. As a result, during replication Lambda might evaluate requests in replica Regions against the previous policy version. Setting the endpoint's throttleConfig.rateLimit to 0 blocks all traffic during policy propagation. For HomeRegion endpoints, the policy applies only in the home Region and does not require cross-Region replication.",
@@ -4267,6 +4304,11 @@
      }
     ],
     "detours": []
+   },
+   "entailment_before_regrade": {
+    "rate": 0.6,
+    "n_probes": 5,
+    "n_correct": 3
    }
   },
   "log": [
