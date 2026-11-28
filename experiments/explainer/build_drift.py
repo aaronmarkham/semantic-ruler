@@ -253,7 +253,7 @@ def instrument_agreement(folder):
     """Across every scored run under a folder: rank correlations between graph bridge recall, text bridge
     recall and the probe rate, first drafts and repairs pooled. Says which instruments agree."""
     xs = []
-    for path in list(folder.glob("*-runs.json")) + list((folder / "cohort").glob("*-runs.json")) + list((folder / "holdout").glob("*-runs.json")):
+    for path in sorted(list(folder.glob("*-runs.json")) + list((folder / "cohort").glob("*-runs.json")) + list((folder / "holdout").glob("*-runs.json"))):
         for r in json.loads(path.read_text(encoding="utf-8")):
             for s in (r["scores"], r.get("repair")):
                 if s and s.get("text_bridge") and s["text_bridge"].get("rate") is not None:

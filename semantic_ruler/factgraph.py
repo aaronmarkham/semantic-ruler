@@ -142,24 +142,29 @@ async def extract_facts(llm: LLMProvider, text: str, model: str | None = None, a
         reply = await llm.query(prompt, **kwargs)
         try:
             data = _parse_json(reply)
-            facts = [
-                FactAtom(text=f["text"], fact_id=f["id"])
-                for f in data.get("facts", [])
-                if isinstance(f, dict) and f.get("id") and f.get("text")
-            ]
+            facts, seen = [], set()
+            for f in data.get("facts", []):
+                if isinstance(f, dict) and f.get("id") and f.get("text") and f["id"] not in seen:
+                    facts.append(FactAtom(text=f["text"], fact_id=f["id"]))
+                    seen.add(f["id"])
             edges = []
             for e in data.get("edges", []):
                 try:
+                    ants = e["antecedents"]
+                    ants = [ants] if isinstance(ants, str) else [str(a) for a in ants]
                     edge = FactEdge(
                         kind=EdgeKind(e["kind"]),
-                        antecedents=list(e["antecedents"]),
-                        consequent=e["consequent"],
+                        antecedents=ants,
+                        consequent=str(e["consequent"]),
                         confidence=float(e.get("confidence", 1.0)),
                     )
-                except (KeyError, ValueError):
+                except (KeyError, ValueError, TypeError):
                     continue
-                # The prompt asks the model to omit edges under 0.5; it does not always. An edge it
-                # did not believe must not be scored, and must not be fed back by the repair pass.
+                # An edge must point at facts in the list, and the prompt asks the model to omit
+                # edges under 0.5; it does not always. An edge it did not believe must not be
+                # scored, and must not be fed back by the repair pass.
+                if not ants or any(a not in seen for a in ants) or edge.consequent not in seen:
+                    continue
                 if edge.confidence >= MIN_EDGE_CONFIDENCE:
                     edges.append(edge)
             if facts:

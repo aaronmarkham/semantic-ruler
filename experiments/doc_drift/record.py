@@ -88,8 +88,7 @@ for i in range(N):
     out.append({"run": i, "source": SOURCE, "scores": {k: v for k, v in res.items() if k not in ("regen_doc", "repair")}, "regen_doc": res["regen_doc"],
                 "orig": dump(orig_graph), "regen": dump(regen_graph) if regen_graph else None, "probes": probes,
                 "structural_reports": [dump_struct(orig_rep), dump_struct(regen_reads[0]) if regen_reads else None],
-                "orig_reads": [dump_struct(s) for s in orig_reads], "n_queries": len(llm.log), "repair": repair,
-                "log": [{"prompt": q["prompt"][:300], "reply": q["reply"][:300]} for q in llm.log]})
+                "orig_reads": [dump_struct(s) for s in orig_reads], "n_queries": len(llm.log), "repair": repair})
     OUT.write_text(json.dumps(out, indent=1, ensure_ascii=False), encoding="utf-8")
     a, c, e, d, st = res["atomic_f1"], res["cond_bridge_recall"], res["entailment"], res["drift"], res["structural"]
     print(f"run {i}: orig {res['orig']['n_facts']}f/{res['orig']['n_edges']}e regen {res['regen']['n_facts']}f/{res['regen']['n_edges']}e  "

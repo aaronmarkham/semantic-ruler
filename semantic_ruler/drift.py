@@ -12,7 +12,9 @@ the structural failure mode that atomic F1 and entailment probes can both
 undercount when a regen doc paraphrases facts correctly but drops their
 logical connectives.
 
-Atoms are matched across the two graphs by embedding similarity, one-to-one
+Atoms are matched across the two graphs by embedding similarity (the threshold
+below is calibrated to OpenAI's text-embedding-3-large; another embedder, such
+as the Bedrock ones, has another cosine scale and needs its own), one-to-one
 for recall (each original atom claims at most one regenerated atom, highest
 similarity first) and many-to-one for precision (a regenerated atom is
 supported if any original atom is close enough). The threshold is 0.70 with
@@ -87,20 +89,23 @@ verdict is "yes", "no" or "unknown".
 
 def edge_statement(edge, facts_by_id: dict) -> str:
     """One edge as a sentence a reader could check, using the atoms' own words."""
-    t = lambda fid: facts_by_id[fid].text.rstrip(".") if fid in facts_by_id else fid
-    ants = [t(a) for a in edge.antecedents]
-    con = t(edge.consequent)
+    def quoted(fid: str) -> str:
+        text = facts_by_id[fid].text.rstrip(".") if fid in facts_by_id else fid
+        return '"' + text + '"'
+
+    ants = " and ".join(quoted(a) for a in edge.antecedents)
+    con = quoted(edge.consequent)
     if edge.kind == EdgeKind.REQUIRES:
-        return f'"{con}" holds only when all of the following hold: ' + "; ".join(f'"{a}"' for a in ants) + "."
+        return con + " holds only when all of the following hold: " + "; ".join(quoted(a) for a in edge.antecedents) + "."
     if edge.kind == EdgeKind.IMPLIES:
-        return f'If {" and ".join(f"\"{a}\"" for a in ants)}, then "{con}".'
+        return "If " + ants + ", then " + con + "."
     if edge.kind == EdgeKind.CONTRADICTS:
-        return f'{" and ".join(f"\"{a}\"" for a in ants)} and "{con}" cannot both be true.'
+        return ants + " and " + con + " cannot both be true."
     if edge.kind == EdgeKind.SEQUENCE:
-        return f'{" and ".join(f"\"{a}\"" for a in ants)} must happen before "{con}".'
+        return ants + " must happen before " + con + "."
     if edge.kind == EdgeKind.NEGATES:
-        return f'{" and ".join(f"\"{a}\"" for a in ants)} is the negation of "{con}".'
-    return f'{edge.kind.value}: {ants} -> "{con}"'
+        return ants + " is the negation of " + con + "."
+    return edge.kind.value + ": " + ants + " -> " + con
 
 
 async def bridge_entailment(orig: FactGraph, regen_doc: str, llm, model: str | None = None) -> dict:
@@ -249,12 +254,18 @@ def cond_bridge_recall(
         mapped_con = orig_to_regen.get(edge.consequent)
         oi = orig_index.get(edge.consequent)
         preserved = False
+        symmetric = edge.kind in (EdgeKind.CONTRADICTS, EdgeKind.NEGATES) and len(edge.antecedents) == 1
         if all(a is not None for a in mapped_ants):
             for e in regen.edges:
-                if e.kind != edge.kind or frozenset(e.antecedents) != frozenset(mapped_ants):  # type: ignore[arg-type]
+                if e.kind != edge.kind:
                     continue
                 rj = regen_index.get(e.consequent)
-                if e.consequent == mapped_con or (oi is not None and rj is not None and sim[oi, rj] >= threshold):
+                forward = (frozenset(e.antecedents) == frozenset(mapped_ants)  # type: ignore[arg-type]
+                           and (e.consequent == mapped_con or (oi is not None and rj is not None and sim[oi, rj] >= threshold)))
+                # a contradiction or negation reads the same way round either way
+                backward = (symmetric and len(e.antecedents) == 1 and e.antecedents[0] == mapped_con
+                            and frozenset([e.consequent]) == frozenset(mapped_ants))  # type: ignore[arg-type]
+                if forward or backward:
                     preserved = True
                     break
         by_kind.setdefault(edge.kind.value, []).append(edge.confidence if preserved else 0.0)
@@ -315,17 +326,33 @@ async def entailment_rate(
     if not probes:
         return {"rate": float("nan"), "n_probes": 0}
 
-    correct = 0
+    correct, n_valid, replies = 0, 0, []
     for probe in probes:
         q = probe.get("q", "")
         expected = probe.get("answer", "").strip().lower()
         if not q or expected not in ("yes", "no"):
+            replies.append(None)
             continue
-        reply = (await llm.query(PROBE_PROMPT.format(doc=regen_doc, question=q), **kwargs)).strip().lower()
-        if reply.startswith(expected) or f" {expected}" in reply[:20]:
+        n_valid += 1
+        reply = await llm.query(PROBE_PROMPT.format(doc=regen_doc, question=q), **kwargs)
+        replies.append(reply.strip()[:120])
+        if grade_probe_reply(reply) == expected:
             correct += 1
 
-    return {"rate": correct / len(probes), "n_probes": len(probes), "n_correct": correct}
+    if not n_valid:
+        return {"rate": float("nan"), "n_probes": 0, "n_generated": len(probes), "replies": replies}
+    return {"rate": correct / n_valid, "n_probes": n_valid, "n_correct": correct, "n_generated": len(probes),
+            "expected": [p.get("answer", "").strip().lower() for p in probes], "replies": replies}
+
+
+def grade_probe_reply(reply: str) -> str:
+    """The verdict a probe reply gives: its first word among yes, no and unknown; anything else is unknown.
+
+    "Not enough information" starts with "no" and is not a no, which is why the first word is
+    matched as a whole word.
+    """
+    m = re.match(r"\W*(yes|no|unknown)\b", reply.strip().lower())
+    return m.group(1) if m else "unknown"
 
 
 def drift_score(
@@ -559,7 +586,7 @@ def structural_drift(orig, regen, embedder: Embedder | None = None, threshold: f
     ]
     intro_mae = float(np.mean(pos_errors)) if pos_errors else float("nan")
 
-    pr_loss = 1.0 - prereq_recall if not math.isnan(prereq_recall) else 1.0
+    pr_loss = 1.0 - prereq_recall if not math.isnan(prereq_recall) else 0.0   # no prerequisites, nothing to lose
     dr_loss = min(1.0, max(0.0, detour_delta)) if not math.isnan(detour_delta) else 0.0
     structural_loss = 0.6 * pr_loss + 0.4 * dr_loss
 

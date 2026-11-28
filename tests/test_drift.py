@@ -233,3 +233,63 @@ def test_bridge_entailment_scores_the_readers_verdicts():
     r = asyncio.run(bridge_entailment(g, "A only when B and C.", reader))
     assert r["rate"] == 0.8 and r["n_yes"] == 1 and r["lost"] == [1] and r["verdicts"] == ["yes", "no"]
     assert "A only when B and C." in reader.prompts[0] and '1. "A" holds only when' in reader.prompts[0]
+
+
+def test_probe_grading_reads_the_first_word():
+    from semantic_ruler.drift import grade_probe_reply
+    assert grade_probe_reply("No.") == "no"
+    assert grade_probe_reply("Not enough information to say.") == "unknown"
+    assert grade_probe_reply("yes, because the role has both permissions") == "yes"
+    assert grade_probe_reply("I do not know.") == "unknown"
+    assert grade_probe_reply("Unknown") == "unknown"
+
+
+def test_entailment_rate_counts_valid_probes_only_and_keeps_replies():
+    import asyncio
+    from semantic_ruler.drift import entailment_rate
+
+    class Model:
+        async def query(self, prompt, **kw):
+            if "yes/no questions" in prompt:
+                return '{"questions": [{"q": "A?", "answer": "yes"}, {"q": "B?", "answer": "no"}, {"q": "C?", "answer": "maybe"}]}'
+            return "Not enough information." if "B?" in prompt else "Yes."
+
+    g = _graph(["A.", "B.", "C."], [(EdgeKind.REQUIRES, ["f02", "f03"], "f01", 0.9)])
+    r = asyncio.run(entailment_rate(g, "doc", Model()))
+    assert r["n_probes"] == 2 and r["n_generated"] == 3 and r["n_correct"] == 1 and r["rate"] == 0.5
+    assert r["replies"] == ["Yes.", "Not enough information.", None]
+
+
+def test_extraction_tolerates_sloppy_edges_and_duplicate_ids():
+    import asyncio
+    from semantic_ruler.factgraph import extract_facts
+
+    class Reply:
+        async def query(self, prompt, **kw):
+            return ('{"facts": [{"id": "f01", "text": "A."}, {"id": "f02", "text": "B."}, {"id": "f01", "text": "A again."}], '
+                    '"edges": [{"kind": "implies", "antecedents": "f01", "consequent": "f02", "confidence": 0.9}, '
+                    '{"kind": "implies", "antecedents": ["f09"], "consequent": "f02", "confidence": 0.9}]}')
+
+    g = asyncio.run(extract_facts(Reply(), "A. B."))
+    assert [f.fact_id for f in g.facts] == ["f01", "f02"]
+    assert len(g.edges) == 1 and g.edges[0].antecedents == ["f01"]
+
+
+def test_contradiction_matches_either_way_round():
+    emb = TableEmbedder(TABLE)
+    orig = _graph(ORIG, [(EdgeKind.CONTRADICTS, ["f02"], "f03", 0.8)])
+    regen = _graph(PARA, [(EdgeKind.CONTRADICTS, ["f03"], "f02", 1.0)])
+    assert cond_bridge_recall(orig, regen, emb)["cbr"] == 1.0
+
+
+def test_procedure_without_prerequisites_loses_nothing():
+    orig = _report([])
+    r = structural_drift(orig, _report([]))
+    assert r["structural_loss"] == 0.0
+
+
+def test_edge_statement_has_no_backslash_in_fstring_expressions():
+    import ast, inspect
+    from semantic_ruler import drift
+    src = inspect.getsource(drift.edge_statement)
+    ast.parse(src, feature_version=(3, 10))   # a backslash inside an f-string expression fails here

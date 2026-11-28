@@ -10,6 +10,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import re
 
 import numpy as np
 from spiritwriter.fabric.shard import AtomKind, DecayClass, MemoryShard, ShardAtom, ShardRef
@@ -307,7 +308,11 @@ def load_fact_graph(store: ShardStore, source_hash: str) -> "FactGraph | None":
     if shard is None:
         return None
     facts, edges = [], []
-    for atom in sorted(shard.atoms, key=lambda a: a.entity):
+    def natural(a):   # f2 before f10, and facts before edges
+        m = re.search(r"(\d+)", a.entity or "")
+        return (a.key != "text", int(m.group(1)) if m else 0, a.entity)
+
+    for atom in sorted(shard.atoms, key=natural):
         if atom.key == "text":
             facts.append(FactAtom(text=atom.text, fact_id=atom.entity.split(":", 1)[1]))
         elif atom.key == "edge":
