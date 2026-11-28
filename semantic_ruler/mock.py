@@ -38,7 +38,29 @@ def _text(rng: random.Random, block: str, lam: float) -> str:
     return " ".join(words) + "."
 
 
+def _drift_reply(prompt: str) -> str | None:
+    """Offline answers for the drift pipeline: a sentence per fact, no edges, and cautious probes."""
+    if "Extract a structured fact graph" in prompt:
+        text = prompt.split("Documentation:", 1)[1].rsplit("Respond with JSON only", 1)[0]
+        sents = [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if len(s.strip()) > 20][:40]
+        return json.dumps({"facts": [{"id": f"f{i + 1:02d}", "text": s} for i, s in enumerate(sents)], "edges": []})
+    if "Reconstruct documentation prose" in prompt:
+        facts = re.findall(r"^\[f\d+\] (.*)$", prompt, flags=re.MULTILINE)
+        return " ".join(facts)
+    if "Generate" in prompt and "yes/no questions" in prompt:
+        return json.dumps({"questions": [{"q": "Is the document consistent with itself?", "answer": "yes"}]})
+    if "Answer yes, no, or unknown" in prompt:
+        return "unknown"
+    if "Relationships:" in prompt and "STATES or clearly ENTAILS" in prompt:
+        n = len(re.findall(r"^\d+\. ", prompt.split("Relationships:", 1)[1], flags=re.MULTILINE))
+        return json.dumps({"answers": [{"i": k + 1, "verdict": "unknown", "quote": ""} for k in range(n)]})
+    return None
+
+
 def _reply(prompt: str) -> str:
+    drift = _drift_reply(prompt)
+    if drift is not None:
+        return drift
     if "Rate each numbered" in prompt:  # judge: share of "sustainable" vocabulary
         scores = [
             {"id": int(i), "score": sum(w in text for w in POS_WORDS) / SLOTS}

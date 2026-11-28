@@ -11,6 +11,19 @@ CBR carries double weight because it directly captures compositional loss —
 the structural failure mode that atomic F1 and entailment probes can both
 undercount when a regen doc paraphrases facts correctly but drops their
 logical connectives.
+
+Atoms are matched across the two graphs by embedding similarity (the threshold
+below is calibrated to OpenAI's text-embedding-3-large; another embedder, such
+as the Bedrock ones, has another cosine scale and needs its own), one-to-one
+for recall (each original atom claims at most one regenerated atom, highest
+similarity first) and many-to-one for precision (a regenerated atom is
+supported if any original atom is close enough). The threshold is 0.70 with
+text-embedding-3-large: in recorded runs, paraphrased atoms score 0.73 to
+0.97 against their original and unrelated atoms from the same passage 0.15
+to 0.60, while the earlier 0.85 cut rejected most paraphrases and read a
+faithful regeneration as 27% recall. Edges match by kind, the mapped
+antecedent set, and a consequent that either maps directly or clears the
+same threshold.
 """
 
 from __future__ import annotations
@@ -24,6 +37,8 @@ import numpy as np
 
 from .embed import Embedder
 from .factgraph import EdgeKind, FactGraph
+
+MATCH_THRESHOLD = 0.70
 
 
 PROBE_GEN_PROMPT = """\
@@ -52,6 +67,90 @@ Question: {question}
 Answer yes, no, or unknown:"""
 
 
+BRIDGE_PROMPT = """\
+Below is a document, then a numbered list of relationships between facts. For each
+relationship, decide whether the document STATES or clearly ENTAILS it. Judge the
+whole relationship: a "holds only when all of" relationship is stated only if the
+document makes every listed condition necessary, and makes clear the consequent
+does not hold without them. A document that lists the conditions as separate,
+unconnected facts does not state the relationship.
+
+Document:
+{doc}
+
+Relationships:
+{edges}
+
+Respond with JSON only, one entry per relationship, in order:
+{{"answers": [{{"i": 1, "verdict": "yes", "quote": "the shortest span of the document that states it, or empty"}}]}}
+verdict is "yes", "no" or "unknown".
+"""
+
+
+def edge_statement(edge, facts_by_id: dict) -> str:
+    """One edge as a sentence a reader could check, using the atoms' own words."""
+    def quoted(fid: str) -> str:
+        text = facts_by_id[fid].text.rstrip(".") if fid in facts_by_id else fid
+        return '"' + text + '"'
+
+    ants = " and ".join(quoted(a) for a in edge.antecedents)
+    con = quoted(edge.consequent)
+    if edge.kind == EdgeKind.REQUIRES:
+        return con + " holds only when all of the following hold: " + "; ".join(quoted(a) for a in edge.antecedents) + "."
+    if edge.kind == EdgeKind.IMPLIES:
+        return "If " + ants + ", then " + con + "."
+    if edge.kind == EdgeKind.CONTRADICTS:
+        return ants + " and " + con + " cannot both be true."
+    if edge.kind == EdgeKind.SEQUENCE:
+        return ants + " must happen before " + con + "."
+    if edge.kind == EdgeKind.NEGATES:
+        return ants + " is the negation of " + con + "."
+    return edge.kind.value + ": " + ants + " -> " + con
+
+
+async def bridge_entailment(orig: FactGraph, regen_doc: str, llm, model: str | None = None) -> dict:
+    """Text-reading bridge recall: the share of original edges, weighted by confidence, that the
+    regenerated text states or entails, as judged by a model reading the text.
+
+    cond_bridge_recall scores a second extraction of the regenerated text against the first graph,
+    and so inherits the re-extraction's noise: the same text can yield nine edges in one run and
+    sixteen in the next. This asks about the text itself, one question per edge, in one call.
+    Returns the per-edge verdicts and the indices the reader could not find, for the repair pass.
+    """
+    if not orig.edges:
+        return {"rate": float("nan"), "n_edges": 0, "verdicts": [], "lost": []}
+    by_id = orig.fact_by_id()
+    edges_text = "\n".join(f"{k + 1}. {edge_statement(e, by_id)}" for k, e in enumerate(orig.edges))
+    kwargs = {"model": model} if model else {}
+    reply = await llm.query(BRIDGE_PROMPT.format(doc=regen_doc, edges=edges_text), **kwargs)
+    verdicts = ["unknown"] * len(orig.edges)
+    quotes = [""] * len(orig.edges)
+    try:
+        start = reply.find("{")
+        for a in json.JSONDecoder().raw_decode(reply, start)[0].get("answers", []):
+            k = int(a.get("i", 0)) - 1
+            if 0 <= k < len(verdicts):
+                verdicts[k] = str(a.get("verdict", "unknown")).strip().lower()
+                quotes[k] = str(a.get("quote", ""))[:200]
+    except (ValueError, TypeError, KeyError):
+        return {"rate": float("nan"), "n_edges": len(orig.edges), "verdicts": [], "lost": [], "error": "unparseable reply"}
+    total = sum(e.confidence for e in orig.edges)
+    kept = sum(e.confidence for e, v in zip(orig.edges, verdicts) if v == "yes")
+    by_kind: dict[str, list[float]] = {}
+    for e, v in zip(orig.edges, verdicts):
+        by_kind.setdefault(e.kind.value, []).append(1.0 if v == "yes" else 0.0)
+    return {
+        "rate": kept / total if total else float("nan"),
+        "n_edges": len(orig.edges),
+        "n_yes": sum(v == "yes" for v in verdicts),
+        "n_unknown": sum(v == "unknown" for v in verdicts),
+        "by_kind": {k: float(np.mean(v)) for k, v in by_kind.items()},
+        "verdicts": verdicts,
+        "quotes": quotes,
+        "lost": [k for k, v in enumerate(verdicts) if v != "yes"],
+    }
+
+
 def _cosine_sim(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     """Pairwise cosine similarity: (m, d) × (n, d) → (m, n)."""
     a_n = a / np.linalg.norm(a, axis=1, keepdims=True).clip(1e-9)
@@ -59,16 +158,36 @@ def _cosine_sim(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     return a_n @ b_n.T
 
 
+def _assign(sim: np.ndarray, threshold: float) -> dict[int, int]:
+    """One-to-one matching of rows to columns: highest similarity first, at or above the threshold."""
+    pairs = sorted(((float(sim[i, j]), i, j) for i in range(sim.shape[0]) for j in range(sim.shape[1])), reverse=True)
+    rows, cols, out = set(), set(), {}
+    for s, i, j in pairs:
+        if s < threshold:
+            break
+        if i in rows or j in cols:
+            continue
+        out[i] = j
+        rows.add(i)
+        cols.add(j)
+    return out
+
+
 def atomic_f1(
     orig: FactGraph,
     regen: FactGraph,
     embedder: Embedder,
-    threshold: float = 0.85,
+    threshold: float = MATCH_THRESHOLD,
 ) -> dict[str, float]:
     """Embedding-based atomic fact recall/precision/F1.
 
-    A regen fact "matches" an orig fact when cosine similarity >= threshold.
-    Recall measures coverage; precision measures hallucination rate.
+    Recall: the share of original atoms that claim a regenerated atom in a
+    one-to-one assignment at or above the threshold, so two regenerated
+    paraphrases of one original atom do not cover two originals.
+    Precision: the share of regenerated atoms within the threshold of any
+    original atom, so a fact the regeneration split into several atoms is
+    not counted as several hallucinations. The ids of the unsupported
+    regenerated atoms are returned for the report.
     """
     result: dict[str, float] = {
         "n_orig": float(len(orig.facts)),
@@ -83,8 +202,11 @@ def atomic_f1(
         embedder.embed([f.text for f in orig.facts]),
         embedder.embed([f.text for f in regen.facts]),
     )
-    result["recall"] = float(np.mean(sim.max(axis=1) >= threshold))
-    result["precision"] = float(np.mean(sim.max(axis=0) >= threshold))
+    matched = _assign(sim, threshold)
+    supported = sim.max(axis=0) >= threshold
+    result["recall"] = len(matched) / len(orig.facts)
+    result["precision"] = float(np.mean(supported))
+    result["unsupported"] = [f.fact_id for f, ok in zip(regen.facts, supported) if not ok]  # type: ignore[assignment]
     p, r = result["precision"], result["recall"]
     result["f1"] = 2 * p * r / (p + r) if (p + r) > 0 else 0.0
     return result
@@ -94,14 +216,18 @@ def cond_bridge_recall(
     orig: FactGraph,
     regen: FactGraph,
     embedder: Embedder,
-    threshold: float = 0.85,
+    threshold: float = MATCH_THRESHOLD,
 ) -> dict[str, float]:
     """Fraction of orig conditional edges whose structure survives in regen.
 
-    Facts are matched across graphs by embedding similarity. An edge is
-    "preserved" when regen has an edge of the same kind where every antecedent
-    and the consequent map to matched regen facts. Scores are weighted by the
-    edge's extraction confidence so low-confidence edges don't dominate CBR.
+    Facts are matched across graphs by the same one-to-one assignment atomic_f1
+    uses. An edge is "preserved" when regen has an edge of the same kind whose
+    antecedents are exactly the mapped antecedents and whose consequent either
+    is the mapped consequent or is within the threshold of the original one.
+    The second clause is what a re-extraction needs when it restates the
+    consequent as a shorter atom: the edge is there, under a different id.
+    Scores are weighted by the edge's extraction confidence so low-confidence
+    edges don't dominate CBR.
     """
     if not orig.edges:
         return {"cbr": float("nan"), "n_edges": 0, "by_kind": {}}
@@ -115,27 +241,36 @@ def cond_bridge_recall(
         embedder.embed([f.text for f in regen.facts]),
     )
 
-    # Map each orig fact_id to its best-matching regen fact_id (None if below threshold)
-    orig_to_regen: dict[str, str | None] = {}
-    for i, oid in enumerate(orig_ids):
-        j = int(np.argmax(sim[i]))
-        orig_to_regen[oid] = regen_ids[j] if sim[i, j] >= threshold else None
-
-    # Index of edges present in the regen graph, expressed in regen fact IDs
-    regen_keys: set[tuple] = {
-        (e.kind, frozenset(e.antecedents), e.consequent) for e in regen.edges
-    }
+    # Map each orig fact_id to the regen fact_id the assignment gives it (None if unmatched)
+    assigned = _assign(sim, threshold)
+    orig_to_regen: dict[str, str | None] = {oid: regen_ids[assigned[i]] if i in assigned else None for i, oid in enumerate(orig_ids)}
+    orig_index = {oid: i for i, oid in enumerate(orig_ids)}
+    regen_index = {rid: j for j, rid in enumerate(regen_ids)}
 
     by_kind: dict[str, list[float]] = {}
-    for edge in orig.edges:
+    lost: list[int] = []
+    for k, edge in enumerate(orig.edges):
         mapped_ants = [orig_to_regen.get(a) for a in edge.antecedents]
         mapped_con = orig_to_regen.get(edge.consequent)
-        preserved = (
-            all(a is not None for a in mapped_ants)
-            and mapped_con is not None
-            and (edge.kind, frozenset(mapped_ants), mapped_con) in regen_keys  # type: ignore[arg-type]
-        )
+        oi = orig_index.get(edge.consequent)
+        preserved = False
+        symmetric = edge.kind in (EdgeKind.CONTRADICTS, EdgeKind.NEGATES) and len(edge.antecedents) == 1
+        if all(a is not None for a in mapped_ants):
+            for e in regen.edges:
+                if e.kind != edge.kind:
+                    continue
+                rj = regen_index.get(e.consequent)
+                forward = (frozenset(e.antecedents) == frozenset(mapped_ants)  # type: ignore[arg-type]
+                           and (e.consequent == mapped_con or (oi is not None and rj is not None and sim[oi, rj] >= threshold)))
+                # a contradiction or negation reads the same way round either way
+                backward = (symmetric and len(e.antecedents) == 1 and e.antecedents[0] == mapped_con
+                            and frozenset([e.consequent]) == frozenset(mapped_ants))  # type: ignore[arg-type]
+                if forward or backward:
+                    preserved = True
+                    break
         by_kind.setdefault(edge.kind.value, []).append(edge.confidence if preserved else 0.0)
+        if not preserved:
+            lost.append(k)
 
     total_conf = sum(e.confidence for e in orig.edges)
     all_weighted = [s for scores in by_kind.values() for s in scores]
@@ -144,6 +279,7 @@ def cond_bridge_recall(
         "cbr": cbr,
         "n_edges": float(len(orig.edges)),
         "by_kind": {k: float(np.mean(v)) for k, v in by_kind.items()},
+        "lost": lost,  # indices into orig.edges, for the repair pass
     }
 
 
@@ -190,17 +326,33 @@ async def entailment_rate(
     if not probes:
         return {"rate": float("nan"), "n_probes": 0}
 
-    correct = 0
+    correct, n_valid, replies = 0, 0, []
     for probe in probes:
         q = probe.get("q", "")
         expected = probe.get("answer", "").strip().lower()
         if not q or expected not in ("yes", "no"):
+            replies.append(None)
             continue
-        reply = (await llm.query(PROBE_PROMPT.format(doc=regen_doc, question=q), **kwargs)).strip().lower()
-        if reply.startswith(expected) or f" {expected}" in reply[:20]:
+        n_valid += 1
+        reply = await llm.query(PROBE_PROMPT.format(doc=regen_doc, question=q), **kwargs)
+        replies.append(reply.strip()[:120])
+        if grade_probe_reply(reply) == expected:
             correct += 1
 
-    return {"rate": correct / len(probes), "n_probes": len(probes), "n_correct": correct}
+    if not n_valid:
+        return {"rate": float("nan"), "n_probes": 0, "n_generated": len(probes), "replies": replies}
+    return {"rate": correct / n_valid, "n_probes": n_valid, "n_correct": correct, "n_generated": len(probes),
+            "expected": [p.get("answer", "").strip().lower() for p in probes], "replies": replies}
+
+
+def grade_probe_reply(reply: str) -> str:
+    """The verdict a probe reply gives: its first word among yes, no and unknown; anything else is unknown.
+
+    "Not enough information" starts with "no" and is not a no, which is why the first word is
+    matched as a whole word.
+    """
+    m = re.match(r"\W*(yes|no|unknown)\b", reply.strip().lower())
+    return m.group(1) if m else "unknown"
 
 
 def drift_score(
@@ -247,6 +399,106 @@ def drift_score(
     return {"drift": drift, **{k: v for k, (v, _) in losses.items()}}
 
 
+CONDITION_WORDS = re.compile(
+    r"\b(only (?:when|if)|if|unless|when|whenever|before|after|until|requires?|required|must|provided that|"
+    r"except|otherwise|as long as|depends? on|in order to|however|but)\b", re.I)
+
+
+def _sentences(text: str) -> list[str]:
+    return [s for s in re.split(r"(?<=[.!?])\s+|\n{2,}", text) if s.strip()]
+
+
+def granularity(graph: FactGraph, text: str) -> dict[str, float]:
+    """How much of the connective tissue the extractor left inside the atoms.
+
+    atoms_per_sentence near 1 means the extractor split sentences rather than
+    claims. folded is the share of atoms that carry a conditional word, so the
+    condition was stored inside the fact instead of as an edge. An extractor
+    that folds half the conditions pre-empts half the question this library
+    asks, so the figure belongs beside every drift score.
+    """
+    n = len(graph.facts)
+    sents = _sentences(text)
+    folded = sum(bool(CONDITION_WORDS.search(f.text)) for f in graph.facts)
+    return {
+        "n_atoms": float(n),
+        "n_sentences": float(len(sents)),
+        "atoms_per_sentence": n / len(sents) if sents else float("nan"),
+        "folded": folded / n if n else float("nan"),
+        "edges_per_atom": len(graph.edges) / n if n else float("nan"),
+    }
+
+
+def conditional_load(graph: FactGraph, text: str) -> dict[str, float]:
+    """How many ifs, ands and buts a reader has to hold at once.
+
+    Measured on the text (condition words per sentence) and on the graph
+    (edges per atom, the widest REQUIRES junction, the longest chain of
+    dependences). The composite is the mean of the three graph terms after
+    each is scaled to [0, 1] by a fixed ceiling, so it compares across
+    documents: 0 is a list of independent facts, 1 is dense nested logic.
+    """
+    sents = _sentences(text)
+    markers = sum(len(CONDITION_WORDS.findall(s)) for s in sents)
+    n = len(graph.facts)
+    widest = max((len(e.antecedents) for e in graph.edges if e.kind == EdgeKind.REQUIRES), default=0)
+    # longest chain: follow edges from antecedent to consequent, no cycles
+    nxt: dict[str, list[str]] = {}
+    for e in graph.edges:
+        for a in e.antecedents:
+            nxt.setdefault(a, []).append(e.consequent)
+    best: dict[str, int] = {}
+
+    def depth(node: str, seen: frozenset) -> int:
+        if node in best:
+            return best[node]
+        d = 1 + max((depth(c, seen | {node}) for c in nxt.get(node, []) if c not in seen), default=0)
+        best[node] = d
+        return d
+
+    longest = max((depth(f.fact_id, frozenset()) for f in graph.facts), default=0)
+    edges_per_atom = len(graph.edges) / n if n else 0.0
+    per_sentence = markers / len(sents) if sents else 0.0
+    scaled = [min(1.0, edges_per_atom / 1.0), min(1.0, widest / 4.0), min(1.0, (longest - 1) / 4.0) if longest else 0.0]
+    return {
+        "markers_per_sentence": per_sentence,
+        "edges_per_atom": edges_per_atom,
+        "widest_requires": float(widest),
+        "longest_chain": float(longest),
+        "load": sum(scaled) / len(scaled),
+    }
+
+
+def summarize_repeats(results: list[dict]) -> dict:
+    """Median and range of each score over repeated regenerations of one source.
+
+    Re-extraction is the noisy step: the same regenerated text can yield one
+    conditional edge in one run and a dozen in the next, which swings bridge
+    recall by half. A single run's score is one draw; report the spread.
+    """
+    def pick(r: dict, path: tuple[str, ...]):
+        v: object = r
+        for k in path:
+            v = v.get(k) if isinstance(v, dict) else None
+        return float(v) if isinstance(v, (int, float)) and not math.isnan(float(v)) else None
+
+    keys = {
+        "f1": ("atomic_f1", "f1"), "precision": ("atomic_f1", "precision"), "recall": ("atomic_f1", "recall"),
+        "cbr": ("cond_bridge_recall", "cbr"), "probes": ("entailment", "rate"),
+        "structural_loss": ("structural", "structural_loss"), "drift": ("drift", "drift"),
+    }
+    out: dict = {"n": len(results)}
+    for name, path in keys.items():
+        vals = [v for v in (pick(r, path) for r in results) if v is not None]
+        if vals:
+            vals.sort()
+            out[name] = {"median": float(np.median(vals)), "min": vals[0], "max": vals[-1], "n": len(vals)}
+    drifts = [pick(r, ("drift", "drift")) for r in results]
+    med = out.get("drift", {}).get("median")
+    out["shown"] = min(range(len(results)), key=lambda i: abs((drifts[i] if drifts[i] is not None else 1.0) - med)) if med is not None else 0
+    return out
+
+
 # --- structural layer (prerequisite ordering, detour fidelity) ---------------
 
 
@@ -269,13 +521,18 @@ async def analyse_structural(llm, body: str, url: str = "regen://local", is_html
         return None
 
 
-def structural_drift(orig, regen) -> dict:
+def structural_drift(orig, regen, embedder: Embedder | None = None, threshold: float = MATCH_THRESHOLD) -> dict:
     """Compare prerequisite structure between original and regenerated PageReports.
 
     Only meaningful when orig.is_procedure is True. The key signal is
     detour_rate_delta: how much more detour-prone the regen doc became (positive = worse).
-    Prerequisites are matched across docs by word-overlap (Jaccard >= 0.4) since the
-    regen LLM may paraphrase prerequisite names.
+    Prerequisites are matched across docs one-to-one by embedding similarity at the
+    shared threshold when an embedder is given (a regeneration names the same
+    prerequisite in other words: in recorded runs the right pairs score 0.79 to 0.93
+    and the wrong ones about 0.5), and by word overlap (Jaccard >= 0.4) otherwise.
+
+    If the regeneration no longer reads as a procedure, the loss is 1.0 outright and
+    the recall and delta fields are not meaningful; procedure_lost says so.
 
     Returns structural_loss in [0, 1] for use as an optional term in drift_score().
     """
@@ -285,34 +542,40 @@ def structural_drift(orig, regen) -> dict:
     orig_det = _detour_rate(orig)
     regen_det = _detour_rate(regen)
 
+    matched: list[tuple[dict, dict]] = []
+    if orig.prerequisites and regen.prerequisites:
+        if embedder is not None:
+            sim = _cosine_sim(embedder.embed([q["what"] for q in orig.prerequisites]),
+                              embedder.embed([q["what"] for q in regen.prerequisites]))
+            cut = threshold
+        else:
+            sim = np.array([[_jaccard(oq["what"], rq["what"]) for rq in regen.prerequisites] for oq in orig.prerequisites])
+            cut = 0.4
+        matched = [(orig.prerequisites[i], regen.prerequisites[j]) for i, j in sorted(_assign(sim, cut).items())]
+
+    prereq_recall = len(matched) / len(orig.prerequisites) if orig.prerequisites else float("nan")
+    matched_orig = {id(oq) for oq, _ in matched}
+    found = {
+        "unmatched": [oq["what"] for oq in orig.prerequisites if id(oq) not in matched_orig],
+        "sprung": [rq["what"] for rq in regen.prerequisites if rq.get("detour")],
+    }
+
     if not regen.is_procedure:
+        # Total loss by rule: the frame that ordered the prerequisites is gone. The recall says how many
+        # of them the regeneration still names; the detour figures have no meaning without a procedure.
         return {
             "applicable": True,
             "procedure_lost": True,
             "n_orig_prereqs": len(orig.prerequisites),
             "n_regen_prereqs": len(regen.prerequisites),
-            "prereq_recall": 0.0,
+            "prereq_recall": prereq_recall,
             "orig_detour_rate": orig_det,
             "regen_detour_rate": float("nan"),
             "detour_rate_delta": float("nan"),
             "intro_position_mae": float("nan"),
             "structural_loss": 1.0,
+            **found,
         }
-
-    # Greedy best-match orig → regen by Jaccard on word tokens
-    regen_avail = list(range(len(regen.prerequisites)))
-    matched: list[tuple[dict, dict]] = []
-    for oq in orig.prerequisites:
-        if not regen_avail:
-            break
-        best_score, best_i = max(
-            (_jaccard(oq["what"], regen.prerequisites[i]["what"]), i) for i in regen_avail
-        )
-        if best_score >= 0.4:
-            matched.append((oq, regen.prerequisites[best_i]))
-            regen_avail.remove(best_i)
-
-    prereq_recall = len(matched) / len(orig.prerequisites) if orig.prerequisites else float("nan")
     detour_delta = (regen_det - orig_det) if not (math.isnan(regen_det) or math.isnan(orig_det)) else float("nan")
 
     n_blocks = max(orig.n_blocks, 1)
@@ -323,7 +586,7 @@ def structural_drift(orig, regen) -> dict:
     ]
     intro_mae = float(np.mean(pos_errors)) if pos_errors else float("nan")
 
-    pr_loss = 1.0 - prereq_recall if not math.isnan(prereq_recall) else 1.0
+    pr_loss = 1.0 - prereq_recall if not math.isnan(prereq_recall) else 0.0   # no prerequisites, nothing to lose
     dr_loss = min(1.0, max(0.0, detour_delta)) if not math.isnan(detour_delta) else 0.0
     structural_loss = 0.6 * pr_loss + 0.4 * dr_loss
 
@@ -338,6 +601,7 @@ def structural_drift(orig, regen) -> dict:
         "detour_rate_delta": detour_delta,
         "intro_position_mae": intro_mae,
         "structural_loss": structural_loss,
+        **found,
     }
 
 

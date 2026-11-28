@@ -3,7 +3,9 @@
 Joins three result files: detours.json (prerequisites and where each is
 mentioned), dead_ends.json (what the linked page turned out to hold, and the
 second hop) and stability_all.json (how many of three readings called each
-prerequisite a surprise). Standard library only.
+prerequisite a surprise). The deep trails come from chains.json, with the WAF
+job taken from chain_waf.json, the trace the companion page tells the story
+of. Standard library only.
 
     python -I experiments/explainer/build_trail.py .
 """
@@ -56,8 +58,33 @@ for r in detours["rows"]:
     pages.append({"u": r["url"], "s": r["service"], "m": r["mech"], "g": snippet(r["goal"], 170), "items": items})
 
 # Deep trails: trees traced by chains.py, where each linked page's own prerequisites are followed too.
+# The WAF job is the older chain.py trace in chain_waf.json, the one the companion page walks through;
+# chains.py reached it from a different start page and stopped after two pages.
+def surprise(q):
+    need, intro = q.get("needed_at_block"), q.get("introduced_at_block")
+    return intro is None or (need is not None and intro >= need)
+
+
+def waf_tree(tree):
+    """Put a chain.py tree in the shape chains.py writes: a parent per node, a detour kind per prerequisite."""
+    out, last_at = [], {}
+    for n in tree:
+        parent = last_at.get(n["depth"] - 1)
+        out.append({**n, "parent": parent["url"] if parent else None, "goal": n.get("goal"), "redirected_from": None,
+                    "prerequisites": [{**q, "doubts": q.get("doubts", []),
+                                       "detour": "" if not surprise(q) or q["instructions"] == "on_page" else
+                                                 "sent" if q["instructions"] == "other_page" else "alone"}
+                                      for q in n["prerequisites"]]})
+        last_at[n["depth"]] = n
+    return out
+
+
+trees = {k: v for k, v in (load("chains.json") if (ordering / "chains.json").exists() else {}).items() if "/waf/" not in k}
+if (ordering / "chain_waf.json").exists():
+    waf = load("chain_waf.json")
+    trees[waf["start"]] = waf_tree(waf["tree"])
 chains = []
-for start, tree in (load("chains.json") if (ordering / "chains.json").exists() else {}).items():
+for start, tree in trees.items():
     index = {n["url"]: k for k, n in enumerate(tree)}
     aliases = {n["redirected_from"]: k for k, n in enumerate(tree) if n.get("redirected_from")}
     child = {(n["parent"], n["via"]): k for k, n in enumerate(tree) if n["parent"]}
@@ -75,14 +102,22 @@ for start, tree in (load("chains.json") if (ordering / "chains.json").exists() e
                           "d": {"": 0, "sent": 1, "alone": 2}[q["detour"]], "c": c, "x": why})
         nodes.append({"u": n["url"], "t": snippet(n["title"], 90), "p": bool(n["is_procedure"]), "r": bool(n.get("redirected_from")),
                       "depth": n["depth"], "items": items})
+    # A hub page lists options instead of prerequisites; the tracer followed the S3 option. Give the hub one
+    # item for it, so the walk can open the page it led to.
+    for k, n in enumerate(tree):
+        if n["parent"] and not any(q["what"] == n["via"] for q in tree[index[n["parent"]]]["prerequisites"]):
+            nodes[index[n["parent"]]]["items"].append({"w": "the S3 option this hub page lists", "t": TYPES.index("other_aws_resource"),
+                                                       "k": INST.index("other_page"), "n": -1, "d": 0, "c": k, "x": 0, "hub": 1})
     svc = next((r["service"] for r in detours["rows"] if r["url"] == start), "WAF")
     chains.append({"s": svc, "g": snippet(tree[0]["goal"] or tree[0]["title"], 170), "nodes": nodes})
-    print(f"chain {svc}: {len(nodes)} pages, depth {deepest}, {sum(len(n['items']) for n in nodes)} prerequisites "
+    print(f"chain {svc}: {len(nodes)} pages, depth {deepest}, {sum(not i.get('hub') for n in nodes for i in n['items'])} prerequisites "
           f"({len(nodes[0]['items'])} on the start page)")
 
+# How often two readings of the same linked page reached the same outcome.
+agreement = sum(r["outcomes"].get("1") == r["outcomes"].get("2") for r in dead["rows"]) / len(dead["rows"])
 out = {"types": TYPES, "outcomes": OUTCOMES, "pages": pages, "chains": chains,
        "runs": [round(stab["per_run"][k]["detour"], 4) for k in stab["runs"]],
-       "agreement": 0.98}
+       "agreement": round(agreement, 3)}
 dest = here / "trail.json"
 dest.write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
 

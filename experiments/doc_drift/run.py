@@ -14,6 +14,8 @@ Usage:
     python -I experiments/doc_drift/run.py <url-or-file> --mock
     python -I experiments/doc_drift/run.py <url-or-file> --json
     python -I experiments/doc_drift/run.py <url-or-file> --no-structural
+    python -I experiments/doc_drift/run.py <url-or-file> --repeats 3
+    python -I experiments/doc_drift/run.py <url-or-file> --repair
 """
 
 from __future__ import annotations
@@ -39,10 +41,14 @@ from semantic_ruler import CachedEmbedder, HashEmbedder, OpenAIEmbedder
 from semantic_ruler.drift import (
     analyse_structural,
     atomic_f1,
+    bridge_entailment,
     cond_bridge_recall,
+    conditional_load,
     drift_score,
     entailment_rate,
+    granularity,
     structural_drift,
+    summarize_repeats,
 )
 from semantic_ruler.embed import KEYCHAIN_SERVICE
 from semantic_ruler.factgraph import FactGraph, extract_facts, regenerate_doc
@@ -90,67 +96,143 @@ async def run_drift(
     n_probes: int,
     regenerate: bool,
     run_structural: bool = True,
+    repeats: int = 1,
+    structural_reads: int = 3,
+    repair: bool = False,
+    repair_scope: str = "lost",
+    atomizer: str = "sentence",
     log=print,
 ) -> dict:
+    """One round trip, or `repeats` of them from the same original graph.
+
+    With repeats > 1 the result holds every run under "repeats" and the median
+    and range of each score under "summary"; the top-level scores are those of
+    the run closest to the median drift.
+    """
     source_text = _html_to_text(source_body) if is_html else source_body
     source_hash = hashlib.sha256(source_text.encode()).hexdigest()[:24]
 
     # 1. Extract orig graph (cached unless --regenerate) ----------------------
-    orig_graph = None if regenerate else shards.load_fact_graph(shard_store, f"orig:{source_hash}")
+    orig_key = f"orig:{source_hash}" if atomizer == "sentence" else f"orig-{atomizer}:{source_hash}"
+    orig_graph = None if regenerate else shards.load_fact_graph(shard_store, orig_key)
     if orig_graph is None:
-        log("Extracting facts from source...")
-        orig_graph = await extract_facts(llm, source_text, model)
-        shards.save_fact_graph(shard_store, f"orig:{source_hash}", orig_graph, label="orig")
+        log(f"Extracting facts from source ({atomizer} atomizer)...")
+        orig_graph = await extract_facts(llm, source_text, model, atomizer=atomizer)
+        shards.save_fact_graph(shard_store, orig_key, orig_graph, label="orig")
         log(f"  {len(orig_graph.facts)} facts, {len(orig_graph.edges)} edges")
     else:
         log(f"Loaded orig graph from store: {len(orig_graph.facts)} facts, {len(orig_graph.edges)} edges")
 
-    # 2. Regenerate prose from atoms only (edges deliberately not passed) -----
-    atoms_only = FactGraph(facts=orig_graph.facts, edges=[])
-    log("Regenerating doc from fact atoms...")
-    regen_doc = await regenerate_doc(llm, atoms_only, model)
-
-    # 3. Re-extract from regen ------------------------------------------------
-    log("Re-extracting facts from regenerated doc...")
-    regen_graph = await extract_facts(llm, regen_doc, model)
-    shards.save_fact_graph(shard_store, f"regen:{source_hash}", regen_graph, label="regen")
-    log(f"  {len(regen_graph.facts)} facts, {len(regen_graph.edges)} edges")
-
-    # 4. Micro drift metrics --------------------------------------------------
-    log("Scoring drift...")
-    a = atomic_f1(orig_graph, regen_graph, embedder)
-    c = cond_bridge_recall(orig_graph, regen_graph, embedder)
-    e = await entailment_rate(orig_graph, regen_doc, llm, n_probes=n_probes, model=model)
-
-    # 5. Structural drift (procedure pages only) ------------------------------
-    s: dict = {"applicable": False}
+    # Whether the original is a procedure decides if the structural layer applies, and one read of a
+    # borderline page can go either way, so the original is read several times and the majority decides.
+    # The regeneration's read is per repeat.
+    orig_struct, votes = None, []
     if run_structural:
-        log("Running structural analysis...")
-        orig_struct = await analyse_structural(llm, source_body, url=source_url, is_html=is_html)
-        if orig_struct and orig_struct.is_procedure:
-            log(f"  procedure page: {len(orig_struct.prerequisites)} prerequisites, "
+        log(f"Reading the original's prerequisites ({structural_reads} reads)...")
+        reads = [await analyse_structural(llm, source_body, url=source_url, is_html=is_html) for _ in range(max(1, structural_reads))]
+        votes = [bool(r and r.is_procedure) for r in reads]
+        if sum(votes) * 2 > len(votes):
+            orig_struct = next(r for r, v in zip(reads, votes) if v)
+            log(f"  procedure page ({sum(votes)} of {len(votes)} reads): {len(orig_struct.prerequisites)} prerequisites, "
                 f"{len(orig_struct.detours)} detours in orig")
+        else:
+            log(f"  not a procedure page ({sum(votes)} of {len(votes)} reads said it was) — structural layer skipped")
+
+    results = []
+    for rep in range(max(1, repeats)):
+        if repeats > 1:
+            log(f"--- repeat {rep + 1} of {repeats}")
+        # 2. Regenerate prose from atoms only (edges deliberately not passed) -----
+        atoms_only = FactGraph(facts=orig_graph.facts, edges=[])
+        log("Regenerating doc from fact atoms...")
+        regen_doc = await regenerate_doc(llm, atoms_only, model)
+
+        # 3. Re-extract from regen ------------------------------------------------
+        log("Re-extracting facts from regenerated doc...")
+        regen_graph = await extract_facts(llm, regen_doc, model, atomizer=atomizer)
+        shards.save_fact_graph(shard_store, f"regen:{source_hash}", regen_graph, label="regen")
+        log(f"  {len(regen_graph.facts)} facts, {len(regen_graph.edges)} edges")
+
+        # 4. Micro drift metrics --------------------------------------------------
+        log("Scoring drift...")
+        a = atomic_f1(orig_graph, regen_graph, embedder)
+        c = cond_bridge_recall(orig_graph, regen_graph, embedder)
+        e = await entailment_rate(orig_graph, regen_doc, llm, n_probes=n_probes, model=model)
+        tb = await bridge_entailment(orig_graph, regen_doc, llm, model=model)
+
+        # 5. Structural drift (procedure pages only) ------------------------------
+        s: dict = {"applicable": False, "procedure_votes": votes}
+        if orig_struct and orig_struct.is_procedure:
             regen_struct = await analyse_structural(llm, regen_doc, title="Regenerated Documentation")
             if regen_struct:
-                s = structural_drift(orig_struct, regen_struct)
+                s = {**structural_drift(orig_struct, regen_struct, embedder), "procedure_votes": votes}
                 log(f"  regen: {len(regen_struct.prerequisites)} prerequisites, "
-                    f"{len(regen_struct.detours)} detours")
-        else:
-            log("  not a procedure page — structural layer skipped")
+                    f"{len(regen_struct.detours)} detours" + (", no longer a procedure" if s.get("procedure_lost") else ""))
 
-    d = drift_score(a, c, e, s if s.get("applicable") else None)
+        d = drift_score(a, c, e, s if s.get("applicable") else None)
+        result = {
+            "source_hash": source_hash,
+            "atomizer": atomizer,
+            "granularity": granularity(orig_graph, source_text),
+            "load": conditional_load(orig_graph, source_text),
+            "regen_granularity": granularity(regen_graph, regen_doc),
+            "orig": {"n_facts": len(orig_graph.facts), "n_edges": len(orig_graph.edges)},
+            "regen": {"n_facts": len(regen_graph.facts), "n_edges": len(regen_graph.edges)},
+            "atomic_f1": a,
+            "cond_bridge_recall": c,
+            "entailment": e,
+            "text_bridge": tb,
+            "structural": s,
+            "drift": d,
+            "regen_doc": regen_doc,
+        }
 
-    return {
-        "source_hash": source_hash,
-        "orig": {"n_facts": len(orig_graph.facts), "n_edges": len(orig_graph.edges)},
-        "regen": {"n_facts": len(regen_graph.facts), "n_edges": len(regen_graph.edges)},
-        "atomic_f1": a,
-        "cond_bridge_recall": c,
-        "entailment": e,
-        "structural": s,
-        "drift": d,
-        "regen_doc": regen_doc,
-    }
+        # 6. Repair: hand the draft back what the evaluation found missing ----------
+        if repair:
+            # "lost": feed back only what the evaluation flagged. "all": feed back every original edge, since a
+            # draft told only about the lost ones has been seen to drop the ones it was not reminded of.
+            lost_idx = tb.get("lost", c.get("lost", [])) if repair_scope == "text" else c.get("lost", [])
+            lost_edges = list(orig_graph.edges) if repair_scope == "all" else [orig_graph.edges[k] for k in lost_idx]
+            wanted = []
+            if orig_struct and orig_struct.is_procedure:
+                flagged = set(s.get("unmatched", [])) | set(s.get("sprung", []))
+                for q in orig_struct.prerequisites:
+                    # Say where the steps are only when the original has them; a draft told "no steps given" copies the phrase.
+                    where = {"on_page": " (steps on this page)", "other_page": f" (steps at {q.get('link') or 'the linked page'})"}.get(q.get("instructions"), "")
+                    if s.get("procedure_lost") or not s.get("applicable") or q["what"] in flagged or len(flagged) >= len(orig_struct.prerequisites) / 2:
+                        wanted.append(f"{q['what']}{where}")
+            log(f"Repairing: {len(lost_edges)} lost relationship(s), {len(wanted)} prerequisite(s) to state up front...")
+            fixed_doc = await regenerate_doc(llm, atoms_only, model, repair_edges=lost_edges, prerequisites=wanted)
+            fixed_graph = await extract_facts(llm, fixed_doc, model, atomizer=atomizer)
+            shards.save_fact_graph(shard_store, f"repair:{source_hash}", fixed_graph, label="repair")
+            fa = atomic_f1(orig_graph, fixed_graph, embedder)
+            fc = cond_bridge_recall(orig_graph, fixed_graph, embedder)
+            fe = await entailment_rate(orig_graph, fixed_doc, llm, n_probes=n_probes, model=model)
+            ftb = await bridge_entailment(orig_graph, fixed_doc, llm, model=model)
+            fs: dict = {"applicable": False, "procedure_votes": votes}
+            if orig_struct and orig_struct.is_procedure:
+                fixed_struct = await analyse_structural(llm, fixed_doc, title="Repaired Documentation")
+                if fixed_struct:
+                    fs = {**structural_drift(orig_struct, fixed_struct, embedder), "procedure_votes": votes}
+            fd = drift_score(fa, fc, fe, fs if fs.get("applicable") else None)
+            log(f"  repaired: F1 {fa['f1']:.2f}, CBR {fc.get('cbr', float('nan')):.2f}, probes {fe.get('rate')}, drift {fd['drift']:.2f}")
+            result["repair"] = {
+                "scope": repair_scope,
+                "fed_back": {"edges": [_edge_dict(x) for x in lost_edges], "prerequisites": wanted},
+                "regen": {"n_facts": len(fixed_graph.facts), "n_edges": len(fixed_graph.edges)},
+                "atomic_f1": fa, "cond_bridge_recall": fc, "entailment": fe, "text_bridge": ftb, "structural": fs, "drift": fd,
+                "regen_doc": fixed_doc,
+            }
+        results.append(result)
+
+    if len(results) == 1:
+        return results[0]
+    summary = summarize_repeats(results)
+    return {**results[summary["shown"]], "repeats": results, "summary": summary}
+
+
+def _edge_dict(e) -> dict:
+    return {"kind": e.kind.value, "antecedents": list(e.antecedents), "consequent": e.consequent, "confidence": e.confidence}
 
 
 def _fmt(result: dict) -> str:
@@ -176,13 +258,18 @@ def _fmt(result: dict) -> str:
 
     lines = [
         "",
-        f"Source:  {result['source_hash']}",
-        f"  orig   {int(result['orig']['n_facts'])} facts, {int(result['orig']['n_edges'])} edges",
+        f"Source:  {result['source_hash']}" + (f"  (run {result['summary']['shown'] + 1} of {result['summary']['n']}, closest to the median drift)" if "summary" in result else ""),
+        f"  orig   {int(result['orig']['n_facts'])} facts, {int(result['orig']['n_edges'])} edges"
+        + (f"   ({result['atomizer']} atomizer: {pct(result['granularity']['folded'])} of atoms carry a condition, "
+           f"{result['granularity']['atoms_per_sentence']:.1f} atoms per sentence)" if "granularity" in result else ""),
         f"  regen  {int(result['regen']['n_facts'])} facts, {int(result['regen']['n_edges'])} edges",
+    ] + ([f"  load   {result['load']['load']:.2f}  ({result['load']['markers_per_sentence']:.1f} condition words per sentence, "
+          f"{result['load']['edges_per_atom']:.2f} edges per atom, widest requires {int(result['load']['widest_requires'])}, "
+          f"longest chain {int(result['load']['longest_chain'])})"] if "load" in result else []) + [
         "",
         f"Atomic F1 .............. {pct(a.get('f1'))}",
         f"  recall                 {pct(a.get('recall'))}",
-        f"  precision              {pct(a.get('precision'))}",
+        f"  precision              {pct(a.get('precision'))}" + (f"  ({len(a['unsupported'])} regen atoms unsupported)" if a.get("unsupported") else ""),
         "",
         f"Cond. bridge recall .... {pct(c.get('cbr'))}  ({int(c.get('n_edges', 0))} edges)",
     ]
@@ -192,6 +279,8 @@ def _fmt(result: dict) -> str:
     lines += [
         "",
         f"Entailment probes ...... {pct(e.get('rate'))}  ({int(e.get('n_probes', 0))} probes)",
+    ] + ([f"Text bridge recall ..... {pct(result['text_bridge'].get('rate'))}  ({int(result['text_bridge'].get('n_yes', 0))} of {int(result['text_bridge'].get('n_edges', 0))} edges stated in the text"
+          + (f", {int(result['text_bridge'].get('n_unknown', 0))} unknown" if result['text_bridge'].get('n_unknown') else "") + ")"] if result.get("text_bridge") else []) + [
     ]
 
     if s.get("applicable"):
@@ -217,6 +306,26 @@ def _fmt(result: dict) -> str:
     for k in ("atomic_loss", "cbr_loss", "entailment_loss", "structural_loss"):
         if k in d:
             lines.append(f"  {k:<20} {pct(d[k])}")
+    if "repair" in result:
+        rp = result["repair"]; fb = rp["fed_back"]
+        lines += ["", f"After repair (fed back {len(fb['edges'])} relationship(s), {len(fb['prerequisites'])} prerequisite(s))"]
+        lines.append(f"  Atomic F1              {pct(rp['atomic_f1'].get('f1'))}")
+        lines.append(f"  Cond. bridge recall    {pct(rp['cond_bridge_recall'].get('cbr'))}")
+        lines.append(f"  Entailment probes      {pct(rp['entailment'].get('rate'))}")
+        if rp.get("text_bridge"):
+            lines.append(f"  Text bridge recall     {pct(rp['text_bridge'].get('rate'))}")
+        if rp["structural"].get("applicable"):
+            if rp["structural"].get("procedure_lost"):
+                lines.append("  Structural             no longer a procedure")
+            else:
+                lines.append(f"  Structural             recall {pct(rp['structural'].get('prereq_recall'))}  detour rate {pct(rp['structural'].get('regen_detour_rate'))}  loss {pct(rp['structural'].get('structural_loss'))}")
+        lines.append(f"  Drift score            {pct(rp['drift'].get('drift'))}")
+    if "summary" in result:
+        sm = result["summary"]
+        lines += ["", f"Over {sm['n']} repeats (median, min to max)"]
+        for k, label in (("f1", "Atomic F1"), ("cbr", "Cond. bridge recall"), ("probes", "Entailment probes"), ("structural_loss", "Structural loss"), ("drift", "Drift score")):
+            if k in sm:
+                lines.append(f"  {label:<22} {pct(sm[k]['median'])}  {pct(sm[k]['min'])} to {pct(sm[k]['max'])}")
     return "\n".join(lines)
 
 
@@ -232,6 +341,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--store", type=Path, default=Path("data/drift-store"))
     ap.add_argument("--cache", type=Path, default=Path(".cache/pages"))
     ap.add_argument("--regenerate", action="store_true", help="ignore cached graphs")
+    ap.add_argument("--repeats", type=int, default=1, help="regenerate and re-score this many times; report the spread")
+    ap.add_argument("--structural-reads", type=int, default=3, help="reads of the original that vote on whether it is a procedure")
+    ap.add_argument("--repair", action="store_true", help="regenerate once more with the lost relationships and sprung prerequisites fed back, and score that too")
+    ap.add_argument("--repair-scope", choices=("lost", "text", "all"), default="lost", help="feed back the relationships the graph matcher lost, the ones the text reader lost, or every original one")
+    ap.add_argument("--atomizer", choices=("sentence", "strict"), default="sentence", help="sentence: one claim per sentence, conditions kept inside; strict: no conditions inside atoms, every dependence is an edge")
     ap.add_argument("--no-structural", action="store_true", help="skip the structural layer")
     ap.add_argument("--mock", action="store_true", help="offline: no LLM or embedder calls")
     ap.add_argument("--json", action="store_true", dest="as_json")
@@ -267,10 +381,18 @@ def main(argv: list[str] | None = None) -> int:
         n_probes=args.probes,
         regenerate=args.regenerate,
         run_structural=not args.no_structural,
+        repeats=args.repeats,
+        structural_reads=args.structural_reads,
+        repair=args.repair,
+        repair_scope=args.repair_scope,
+        atomizer=args.atomizer,
     ))
 
     if args.as_json:
-        out = {k: v for k, v in result.items() if k != "regen_doc"}
+        strip = lambda r: {k: ({kk: vv for kk, vv in v.items() if kk != "regen_doc"} if k == "repair" else v) for k, v in r.items() if k != "regen_doc"}
+        out = strip(result)
+        if "repeats" in out:
+            out["repeats"] = [strip(r) for r in out["repeats"]]
         print(json.dumps(out, indent=2))
     else:
         print(_fmt(result))

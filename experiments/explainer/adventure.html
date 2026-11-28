@@ -140,8 +140,8 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
   </div>
   <div class="tally">
     <div><b id="t-pages">0</b><span>extra pages opened</span></div>
-    <div><b id="t-stops">0</b><span>surprise stops</span></div>
-    <div><b id="t-dead">0</b><span>dead ends hit</span></div>
+    <div><b id="t-stops">0</b><span>detours</span></div>
+    <div><b id="t-dead">0</b><span>links that fell short</span></div>
   </div>
   <div style="display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin-top:16px">
     <button class="act ghost" id="deal">Deal another page</button>
@@ -154,7 +154,7 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
 <section id="deep">
 <p class="eyebrow">02 · Go deeper</p>
 <h2>The page you were sent to <em>has needs of its own</em></h2>
-<p>Above, we stopped at whether a link had the steps. Here we kept reading: we searched every page a link led to for its own prerequisites and followed those links too, three levels down. Each open page is a tab you have to keep in your head.</p>
+<p>Above, we stopped at whether a link had the steps. Here, for ten of the jobs, we kept reading: we searched every page a link led to for its own prerequisites and followed those links too, up to three levels or twelve pages. Each open page is a tab you have to keep in your head.</p>
 <div class="panel">
   <div class="ctl"><span class="lab">Pick a job</span><div class="seg" id="d-pick" role="group" aria-label="Job to trace"></div></div>
   <div class="quest"><span class="lab">Your goal</span><div class="g" id="d-goal"></div><div class="meta" id="d-meta"></div></div>
@@ -172,7 +172,7 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
   <div class="tally">
     <div><b id="d-open">0</b><span>tabs open now</span></div>
     <div><b id="d-pages">1</b><span>pages opened so far</span></div>
-    <div><b id="d-stops">0</b><span>surprise stops</span></div>
+    <div><b id="d-stops">0</b><span>detours</span></div>
   </div>
   <label class="chk" style="margin-top:14px"><input type="checkbox" id="d-all"> show the whole tree</label>
   <p class="note" id="d-note"></p>
@@ -197,6 +197,7 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
   <p class="note" style="margin-top:12px">Dot: the figure for the pages selected. Band: where it lands 95% of the time when we redraw the sample, resampling whole services. Thin line: all 219 pages. When the band covers the line, the difference is within the noise.</p>
 </div>
 
+<p id="terr-note" style="margin-top:22px"></p>
 <h2 style="margin-top:36px">Swap the <em>obstacle</em></h2>
 <p>The same measure, split by the kind of thing the page needs you to have.</p>
 <div class="panel">
@@ -230,7 +231,7 @@ footer p{font:12px/1.7 var(--mono);color:var(--muted);max-width:none}
 </section>
 
 <footer>
-<p>Pages are AWS documentation as fetched in November 2026. "Detour" means the page first mentions a prerequisite at the step that needs it, or later, or never, and gives no steps for it. "Dead end" means the linked page passes you on again, lacks steps for that thing, or is gone. The longer account, including the embedding ruler this project started from and what fell through, is in the companion page <a href="https://claude.ai/artifact/5GeHhmY5vnF5dBqbkmqaws"><em>Rulers and Detours</em></a>.</p>
+<p>Pages are AWS documentation as fetched in November 2026. "Detour" means the page first mentions a prerequisite at the step that needs it, or later, or never, and gives no steps for it. A link "falls short" when the linked page passes you on again, lacks steps for that thing, or is gone. The longer account, including the embedding ruler this project started from and what fell through, is in the companion page <a href="https://claude.ai/artifact/5GeHhmY5vnF5dBqbkmqaws"><em>Rulers and Detours</em></a>.</p>
 </footer>
 </div>
 
@@ -289,13 +290,24 @@ function ivRow(label, b, base, extra, n){
 {
   const links = [].concat(...P.map(p => p.items.filter(x => x.o >= 0)));
   const still = links.filter(x => x.o >= 3 || (x.o === 2 && !(x.h === 0 || x.h === 1))).length;
-  const bp = [].concat(...P.map(p => p.items.filter(x => x.t === 1)));
   const a = boot(P, share(p => p.det > 0)), b = boot(P, itemShare(x => x.o >= 0, x => x.o >= 2));
   $("found").innerHTML =
     `<div class="tile"><b>${pct(a.est)}</b><span>of pages spring at least one detour</span><small>${Math.round(a.lo*100)}–${Math.round(a.hi*100)}</small></div>` +
     `<div class="tile"><b>${pct(b.est)}</b><span>of links to "the steps" come up short</span><small>${Math.round(b.lo*100)}–${Math.round(b.hi*100)}</small></div>` +
-    `<div class="tile"><b>${pct(still / links.length)}</b><span>still searching after a second link</span><small>${still} of ${links.length}</small></div>` +
-    `<div class="tile"><b>${bp.filter(x => x.d > 0).length} of ${bp.length}</b><span>bucket policies came as a surprise</span><small>the one thing always spelled out</small></div>`;
+    `<div class="tile"><b>${pct(still / links.length)}</b><span>still searching after a second link</span><small>${still} of ${links.length}</small></div>`;
+}
+
+/* ---------- what the grid shows ---------- */
+{
+  const clear = P.filter(p => p.stops === 0).length, maze = P.filter(p => p.tier === 2).length;
+  const dets = [].concat(...P.map(p => p.items.filter(x => x.d > 0))), alone = dets.filter(x => x.d === 2).length;
+  const S = P.filter(p => p.grp === "S"), I = P.filter(p => p.grp === "I");
+  const bs = boot(S, share(p => p.det > 0)), bi = boot(I, share(p => p.det > 0));
+  const band = b => `${Math.round(b.lo * 100)} to ${Math.round(b.hi * 100)}`;
+  $("terr-note").textContent = `Three things the grid shows. Only ${pct(clear / P.length)} of pages are clear, and ${maze} of the ${P.length} are mazes with three stops or more. ` +
+    `Of the ${dets.length} detours, ${alone} give you no link at all; a page that sends you elsewhere is the minority. ` +
+    `And the swap above has a result: pages where the service is let in spring a detour on ${pct(bs.est)} of pages (${band(bs)} when we redraw the sample), pages where you grant yourself on ${pct(bi.est)} (${band(bi)}). ` +
+    `${bs.hi < bi.lo ? "The bands clear each other, barely" : "The bands overlap"}, and the first group is only ${S.length} pages, so treat it as a lead worth checking.`;
 }
 
 /* ---------- the trail ---------- */
@@ -326,9 +338,9 @@ const act = {
   deal(){ const pool = P.filter(p => p !== cur && (tierPick < 0 || p.tier === tierPick)); setPage(pool[(Math.random() * pool.length) | 0]); },
   skip(){ br[scene.i] = -1; advance(); },
   alone(){ br[scene.i] = 1; tally.stops++; scene = {kind:"alone", i:scene.i}; render(); },
-  follow(){ const it = cur.items[scene.i]; br[scene.i] = 1; if (it.d > 0) tally.stops++; if (it.o >= 0 && it.o !== 4) tally.pages++; if (it.o >= 3 || it.o < 0) tally.dead++; scene = {kind:"hop1", i:scene.i}; render(); },
-  hop2(){ const it = cur.items[scene.i]; br[scene.i] = 2; tally.pages++; if (!(it.h === 0 || it.h === 1)) tally.dead++; scene = {kind:"hop2", i:scene.i}; render(); },
-  back(){ tally.dead++; advance(); },
+  follow(){ const it = cur.items[scene.i]; br[scene.i] = 1; if (it.d > 0) tally.stops++; if (it.o >= 0 && it.o !== 4) tally.pages++; if (it.o >= 2 || it.o < 0) tally.dead++; scene = {kind:"hop1", i:scene.i}; render(); },
+  hop2(){ const it = cur.items[scene.i]; br[scene.i] = 2; tally.pages++; scene = {kind:"hop2", i:scene.i}; render(); },
+  back(){ advance(); },
 };
 function btn(a, label, ghost){ return `<button class="act${ghost ? " ghost" : ""}" data-a="${a}">${label}</button>`; }
 function sceneHTML(){
@@ -367,7 +379,7 @@ function sceneHTML(){
   }
   const split = cur.items.filter(x => x.v && x.v[0] > 0 && x.v[0] < x.v[1]).length;
   const skipped = br.filter(x => x === -1).length;
-  return `<span class="where">Trail's end</span><p>You got there, with ${tally.pages} extra page${tally.pages === 1 ? "" : "s"} opened, ${tally.stops} surprise stop${tally.stops === 1 ? "" : "s"} and ${tally.dead} dead end${tally.dead === 1 ? "" : "s"}.${skipped ? ` You skipped ${skipped}; a newcomer would have to do them.` : ""}</p>
+  return `<span class="where">Trail's end</span><p>You got there, with ${tally.pages} extra page${tally.pages === 1 ? "" : "s"} opened, ${tally.stops} detour${tally.stops === 1 ? "" : "s"} and ${tally.dead} link${tally.dead === 1 ? "" : "s"} that fell short.${skipped ? ` You skipped ${skipped}; a newcomer would have to do them.` : ""}</p>
   <p class="aside">Measured on this page: ${cur.det} detour${cur.det === 1 ? "" : "s"} and ${cur.end} link${cur.end === 1 ? "" : "s"} that fell short, among ${cur.items.length} prerequisites.${split ? ` Three readings disagreed on whether ${split} of them ${split === 1 ? "was a surprise" : "were surprises"}.` : ""}</p>
   <div class="choices">${btn("deal","Deal another page")}${btn("again","Walk it again",1)}</div>`;
 }
@@ -446,7 +458,7 @@ if (!(D.chains || []).length) $("deep").remove(); else (function(){
   function load(i){
     pick = i; ch = CH[i]; rows = flatten(ch); stack = [{ni:0, k:-1}]; seen = new Set(); skipped = new Set(); opened = 1; stops = 0;
     sc = {kind:"enter", ni:0};
-    const deepest = Math.max(...ch.nodes.map(n => n.depth)), total = rows.length;
+    const deepest = Math.max(...ch.nodes.map(n => n.depth)), total = rows.filter(r => !r.it.hub).length;
     $("d-goal").textContent = ch.g;
     $("d-meta").textContent = `${ch.s} · ${ch.nodes.length} pages · ${deepest} level${deepest === 1 ? "" : "s"} down`;
     $("d-note").textContent = `The first page lists ${ch.nodes[0].items.length} prerequisite${ch.nodes[0].items.length === 1 ? "" : "s"}. Following its links to the end turns up ${total} across ${ch.nodes.length} pages. We read each page once and stopped at three levels or twelve pages, so the true tree is at least this big.`;
@@ -473,7 +485,7 @@ if (!(D.chains || []).length) $("deep").remove(); else (function(){
     const b = (a, l, g) => `<button class="act${g ? " ghost" : ""}" data-a="${a}">${l}</button>`;
     if (sc.kind === "enter") {
       const n = ch.nodes[sc.ni], k = n.items.length, first = sc.ni === 0;
-      return `<span class="where">${first ? "Trailhead" : "Tab " + stack.length + " · a new page"}</span><p>${first ? "You open" : "The link opens"} <b>${esc(n.t)}</b>${n.r ? ", by way of a retired link" : ""}. ${n.p ? "It is a how-to page." : "It is a reference page: background, with the doing left to other pages."} ${k ? `Before you can use it, it wants ${k} thing${k === 1 ? "" : "s"}.` : "It's ready to use as it is."}</p><div class="choices">${b("go", k ? "Read on" : "Use it")}</div>`;
+      return `<span class="where">${first ? "Trailhead" : "Tab " + stack.length + " · a new page"}</span><p>${first ? "You open" : "The link opens"} <b>${esc(n.t)}</b>${n.r ? ", by way of a retired link" : ""}. ${n.p ? "It is a how-to page." : "It is a reference page: background, with the doing left to other pages."} ${n.items.length && n.items.every(x => x.hub) ? "It lists the options, and one of them leads on." : k ? `Before you can use it, it wants ${k} thing${k === 1 ? "" : "s"}.` : "It's ready to use as it is."}</p><div class="choices">${b("go", k ? "Read on" : "Use it")}</div>`;
     }
     if (sc.kind === "clear") return `<span class="where">Clear stretch</span><p>${sc.xs.length === 1 ? "One thing" : sc.xs.length + " things"} this page needs, each explained right here or announced before you needed it:</p><p class="aside">${sc.xs.map(x => esc(TYPE[x.it.t])).join(" · ")}</p><div class="choices">${b("go","Keep going")}</div>`;
     if (sc.kind === "fork") {
@@ -487,7 +499,7 @@ if (!(D.chains || []).length) $("deep").remove(); else (function(){
     }
     if (sc.kind === "stuck") return `<span class="where">Back on the page</span><p>You deal with ${`<b>${esc(sc.r.it.w)}</b>`} as best you can and pick up where you left off.</p><div class="choices">${b("go","Keep going")}</div>`;
     if (sc.kind === "leave") { const parent = ch.nodes[stack[stack.length - 2].ni]; return `<span class="where">Tab ${stack.length} · done</span><p>That page is finished. You close it and go back to <b>${esc(parent.t)}</b>, and find your place again.</p><div class="choices">${b("up","Back up a level")}</div>`; }
-    return `<span class="where">Trail's end</span><p>Done. One job, ${opened} page${opened === 1 ? "" : "s"} opened and ${stops} surprise stop${stops === 1 ? "" : "s"}.${skipped.size ? " You skipped some branches; a newcomer would have to walk them." : ""}</p><p class="aside">The full tree for this job: ${ch.nodes.length} pages and ${rows.length} prerequisites. The first page admits to ${ch.nodes[0].items.length}.</p><div class="choices">${b("again","Walk it again")}</div>`;
+    return `<span class="where">Trail's end</span><p>Done. One job, ${opened} page${opened === 1 ? "" : "s"} opened and ${stops} detour${stops === 1 ? "" : "s"}.${skipped.size ? " You skipped some branches; a newcomer would have to walk them." : ""}</p><p class="aside">The full tree for this job: ${ch.nodes.length} pages and ${rows.filter(r => !r.it.hub).length} prerequisites. The first page admits to ${ch.nodes[0].items.length}.</p><div class="choices">${b("again","Walk it again")}</div>`;
   }
   function draw(){
     const st = $("d-story"); st.innerHTML = html(); st.classList.remove("flip"); void st.offsetWidth; st.classList.add("flip");
@@ -533,7 +545,7 @@ if (!(D.chains || []).length) $("deep").remove(); else (function(){
 
 /* ---------- the territory ---------- */
 let mech = "all", tmode = "det", hop = false;
-const MECH = [["all","All pages"],["S","The service is let in"],["I","You grant yourself"],["A","Another account is let in"],["M","More than one"]];
+const MECH = [["all","All pages"],["S","The service is let in"],["I","You grant yourself"],["A","Another account is let in"],["M","More than one"],["O","Something else"]];
 const sel = () => mech === "all" ? P : P.filter(p => p.grp === mech);
 const order = P.slice().sort((a, b) => a.stops - b.stops || a.s.localeCompare(b.s));
 $("grid").innerHTML = order.map(p => `<button class="t${p.tier}" data-i="${p.idx}" title="${esc(p.s + ": " + p.g)} (${p.stops} stop${p.stops === 1 ? "" : "s"})" aria-label="${esc(p.s + ", " + p.stops + " stops")}"></button>`).join("");
@@ -554,7 +566,7 @@ function territory(){
   const rows = TYPE.map((name, t) => ({name, n:countItems(S, x => x.t === t && keep(x)), b:boot(S, itemShare(x => x.t === t && keep(x), hit)), base:itemShare(x => x.t === t && keep(x), hit)(P)}))
     .sort((a, b) => (b.b.est ?? -1) - (a.b.est ?? -1));
   $("types").innerHTML = rows.map(r => ivRow(r.name, r.b, mech === "all" ? null : r.base, "n=" + r.n, r.n)).join("");
-  $("types-note").textContent = (tmode === "det" ? "Share of prerequisites of each kind that arrive as a surprise, with the steps elsewhere or nowhere." : "Of the prerequisites of each kind whose steps are on another page, the share where that page comes up short.") + " n is how many we saw" + (mech === "all" ? "." : " in the selected pages; the swap above applies here too.") + " Bands start at n = 8.";
+  $("types-note").textContent = (tmode === "det" ? "Share of prerequisites of each kind that are detours: sprung on you, with the steps elsewhere or nowhere." : "Of the prerequisites of each kind whose steps are on another page, the share where that page comes up short.") + " n is how many we saw" + (mech === "all" ? "." : " in the selected pages; the swap above applies here too.") + " Bands start at n = 8.";
   odds();
 }
 function odds(){
@@ -568,7 +580,7 @@ function odds(){
   $("odds-note").textContent = n ? `${n} links from ${S.length} pages. ${pct(fail / n)} leave you still looking for steps${hop ? " even after a second link" : ""}; counting half-answers as failures too, ${pct((fail + c[1]) / n)}.${hop ? " We read the second hop once." : ""}` : "No links in this selection.";
 }
 segs($("mech"), MECH.map(m => [m[0], `${m[1]} · ${m[0] === "all" ? P.length : P.filter(p => p.grp === m[0]).length}`]), () => mech, v => { mech = v; territory(); });
-segs($("tmode"), [["det","Arrives as a surprise"],["end","Link comes up short"]], () => tmode, v => { tmode = v; territory(); });
+segs($("tmode"), [["det","Is a detour"],["end","Link comes up short"]], () => tmode, v => { tmode = v; territory(); });
 $("hop2").onchange = e => { hop = e.target.checked; odds(); };
 $("sure-runs").innerHTML = `<b>Whether the model reads a page the same way twice.</b> It read every page three times. The share of prerequisites that are detours came out ${D.runs.map(pct).join(", ")}. On what a linked page holds, two readings agreed ${pct(D.agreement)} of the time. On the map, a dashed ring marks a detour the three readings split on.`;
 

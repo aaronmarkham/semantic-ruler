@@ -7,11 +7,13 @@ built on [spiritwriter](https://pypi.org/project/spiritwriter/) primitives. The
 paper is open access under CC BY 4.0 and is in this folder as
 `semantic-rulers.pdf`.
 
-Two interactive pages walk through the results:
+Three interactive pages walk through the results:
 [Rulers and Detours](https://aaronmarkham.github.io/semantic-ruler/) (the whole
-project) and
+project),
 [The Detour Map](https://aaronmarkham.github.io/semantic-ruler/detour-map.html)
-(the documentation findings, as a map you walk).
+(the documentation findings, as a map you walk) and
+[Drift](https://aaronmarkham.github.io/semantic-ruler/drift.html) (what a
+document loses on its way through a fact store and back).
 
 A semantic ruler is a calibrated direction in an embedding space. Projecting any
 text onto it gives a score `p` in [0, 1] for how strongly the text expresses one
@@ -198,8 +200,22 @@ is built from `experiments/explainer/` (`build_data.py` collects the numbers,
 `explainer.html` is the page). A shorter, walkable version of the detour
 findings is `adventure.html` in the same folder, built by `build_trail.py`; its
 multi-level trees come from `experiments/doc_ordering/chains.py`.
-`python -I experiments/explainer/build_site.py .` wraps both pages into the
+`python -I experiments/explainer/build_site.py .` wraps the pages into the
 static site in `docs/`, which GitHub Pages serves.
+
+## Drift through a fact store
+
+The third page asks what a document loses when it is distilled into atomic
+facts and written back from them. `experiments/doc_drift/run.py` runs that
+round trip on a page or a passage, scores it at four layers (atoms, conditional
+bridges by graph and by a reader of the text, multi-fact probes, prerequisite
+structure), and with `--repair` feeds what was lost back to the regenerator and
+scores the result. The metrics are pure functions in `semantic_ruler/drift.py`;
+the fact graph and its extractors are in `semantic_ruler/factgraph.py`. The
+recorded runs behind the page, under two extractors, are in
+`experiments/doc_drift/results/`, and `experiments/explainer/build_drift.py`
+turns them into the page's data. The folder's
+[README](experiments/doc_drift/README.md) has the details and the findings.
 
 The prerequisites come from an LLM reading the page, so the output is a
 reading, not ground truth; each detour carries a `doubts` list of scripted
@@ -232,6 +248,8 @@ instrument exactly. Embedding is the one piece spiritwriter lacks; the small
 | `semantic_ruler/store.py` | Shard persistence |
 | `semantic_ruler/demo.py` | The Case Study I pipeline and CLI |
 | `semantic_ruler/ordering.py` | Doc page parsing, prerequisite extraction, detours, chains, checklists, and the `semantic-ruler-docs` CLI |
+| `semantic_ruler/factgraph.py` | Fact atoms and conditional edges, the sentence and strict extractors, regeneration and the repair prompt |
+| `semantic_ruler/drift.py` | The drift metrics: atomic F1, bridge recall by graph and by text, probes, structural drift, granularity, conditional load, the composite |
 | `semantic_ruler/llm_plain.py` | An LLM provider with no tools, for prompts that contain fetched text |
 
 ## Differences from the paper
