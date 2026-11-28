@@ -128,9 +128,11 @@ def summarise(runs, source, path=Path('')):
     if text_file and not (first.get("granularity") or {}).get("n_sentences") and (results / text_file).exists():
         sents = [x for x in re.split(r"(?<=[.!?])\s+|\n{2,}", (results / text_file).read_text(encoding="utf-8")) if x.strip()]
         gm["n_sentences"] = len(sents); gm["atoms_per_sentence"] = gm["n_atoms"] / len(sents) if sents else None
+    answers = [str(q.get("answer", "")).strip().lower() for r in runs for q in (r.get("probes") or [])]
     out = {
         "source": source,
         "atomizer": first.get("atomizer", "sentence"),
+        "probe_answers": {"yes": answers.count("yes"), "no": answers.count("no"), "other": len(answers) - answers.count("yes") - answers.count("no")},
         "granularity": {**gm, **{k: v for k, v in (first.get("granularity") or {}).items()}},
         "load": {**{k: gm[k] for k in ("edges_per_atom", "widest_requires", "longest_chain", "load")}, **{k: v for k, v in (first.get("load") or {}).items()}},
         "n_runs": len(rows),
@@ -295,6 +297,13 @@ def build(folder):
         everything[path.stem.replace("-runs", "")] = summarise(runs, runs[0].get("source", path.stem), path)
     o["load_correlation"] = correlate(everything)
     o["instruments"] = instrument_agreement(folder)
+    # The probes' expected answers lean yes; a reader that always says yes scores this share.
+    ya = {"yes": 0, "no": 0, "other": 0}
+    for s in everything.values():
+        for k in ya:
+            ya[k] += s["probe_answers"][k]
+    o["probe_answers"] = {**ya, "yes_share": r3(ya["yes"] / (ya["yes"] + ya["no"])) if ya["yes"] + ya["no"] else None}
+    print(f"{folder.name}/probes: expected answers yes {ya['yes']}, no {ya['no']}, other {ya['other']}; yes share {o['probe_answers']['yes_share']}")
     if o["instruments"]:
         print(f"{folder.name}/instruments: n={o['instruments']['n']} graph~text {o['instruments']['graph_vs_text']}, text~probes {o['instruments']['text_vs_probes']}, graph~probes {o['instruments']['graph_vs_probes']}")
     lc = o["load_correlation"]
