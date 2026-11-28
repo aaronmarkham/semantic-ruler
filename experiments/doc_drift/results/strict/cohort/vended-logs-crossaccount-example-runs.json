@@ -65,9 +65,27 @@
     ]
    },
    "entailment": {
-    "rate": 0.6666666666666666,
+    "rate": 0.8333333333333334,
     "n_probes": 6,
-    "n_correct": 4
+    "n_correct": 5,
+    "n_generated": 6,
+    "expected": [
+     "yes",
+     "no",
+     "yes",
+     "no",
+     "no",
+     "yes"
+    ],
+    "replies": [
+     "Yes. According to the document, once Account A has created a delivery source, Account B has created a delivery destinati",
+     "unknown",
+     "**Yes.** According to the document, for the S3 flow Account B needs the logs:PutDeliveryDestination and logs:PutDelivery",
+     "no",
+     "No. The document says that when the S3 bucket is encrypted with SSE-KMS, the KMS key policy must grant appropriate permi",
+     "Yes."
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -96,10 +114,10 @@
     ]
    },
    "drift": {
-    "drift": 0.4316751818098131,
+    "drift": 0.3969529595875909,
     "atomic_loss": 0.02941176470588236,
     "cbr_loss": 0.7746478873239436,
-    "entailment_loss": 0.33333333333333337,
+    "entailment_loss": 0.16666666666666663,
     "structural_loss": 0.2
    },
    "text_bridge": {
@@ -146,6 +164,11 @@
      8,
      9
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 0.6666666666666666,
+    "n_probes": 6,
+    "n_correct": 4
    }
   },
   "regen_doc": "# Cross-Account Log Delivery for an Amazon Bedrock Knowledge Base\n\nThis scenario involves two AWS accounts. Account A (ID 123456789012) contains the log-generating resource, and Account B (ID 111122223333) contains the log-consuming resource. Account A wants to deliver logs from an Amazon Bedrock knowledge base in its account.\n\n## Account A: permissions and delivery source\n\nAccount A needs the bedrock:AllowVendedLogDeliveryForResource permission on the knowledge base resource. It also needs the logs:PutDeliverySource and logs:CreateDelivery permissions. Account A then creates a delivery source with its Bedrock knowledge base using put-delivery-source.\n\n## Account B: delivery destination\n\nAccount B creates the delivery destination, and it can deliver logs to either an S3 bucket or a Firehose stream. Account B can also create the delivery destination policy.\n\n### S3 flow\n\nFor the S3 flow, Account B needs the logs:PutDeliveryDestination and logs:PutDeliveryDestinationPolicy permissions. The S3 bucket policy allows the delivery.logs.amazonaws.com service principal to perform s3:PutObject. This is subject to conditions: s3:x-amz-acl must be bucket-owner-full-control, aws:SourceAccount must be restricted to Account A, and aws:SourceArn must be restricted to Account A's delivery source.\n\nIf the S3 bucket is encrypted with SSE-KMS, the AWS KMS key policy must grant appropriate permissions. In particular, it allows delivery.logs.amazonaws.com to call kms:GenerateDataKey.\n\nAccount B then creates a delivery destination with the S3 bucket as the destination resource.\n\n### Firehose flow\n\nFor the Firehose flow, the Firehose stream is configured with the DirectPut delivery stream type. Account B needs iam:CreateServiceLinkedRole, firehose:TagDeliveryStream, and logs delivery destination permissions. The Firehose stream has the tag LogDeliveryEnabled set to true. Account B then creates a delivery destination with the Firehose stream as the destination resource.\n\n## Delivery destination policy\n\nAccount B creates a delivery destination policy on the delivery destination. This policy gives Account A permission to call logs:CreateDelivery. Account B attaches the policy using put-delivery-destination-policy.\n\n## Creating the delivery\n\nOnce Account A has created a delivery source, Account B has created a delivery destination, and Account B has created a delivery destination policy granting Account A access, Account A creates the delivery using create-delivery. The delivery links Account A's delivery source to Account B's delivery destination.",
@@ -1797,9 +1820,27 @@
     ]
    },
    "entailment": {
-    "rate": 0.8333333333333334,
+    "rate": 1.0,
     "n_probes": 6,
-    "n_correct": 5
+    "n_correct": 6,
+    "n_generated": 6,
+    "expected": [
+     "yes",
+     "no",
+     "yes",
+     "no",
+     "no",
+     "yes"
+    ],
+    "replies": [
+     "Yes. The document says that once Account B has attached the delivery destination policy, which gives Account A permissio",
+     "no",
+     "Yes",
+     "No. According to the document, Account A creates the delivery only after Account B has attached the policy with put-deli",
+     "No. The document says the KMS key policy must specifically allow delivery.logs.amazonaws.com to call kms:GenerateDataKey",
+     "Yes. The document says Account B creates a delivery destination with the Firehose stream as the destination resource, an"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -1823,10 +1864,10 @@
     ]
    },
    "drift": {
-    "drift": 0.330587640485364,
+    "drift": 0.2958654182631417,
     "atomic_loss": 0.08513053348467647,
     "cbr_loss": 0.6408450704225352,
-    "entailment_loss": 0.16666666666666663,
+    "entailment_loss": 0.0,
     "structural_loss": 0.0666666666666667
    },
    "regen_doc": "# Delivering Amazon Bedrock knowledge base logs across accounts\n\nThis page describes how Account A (ID 123456789012), which contains the log-generating resource, delivers logs from an Amazon Bedrock knowledge base to Account B (ID 111122223333), which contains the log-consuming resource. Account B can receive the logs in an S3 bucket or a Firehose stream.\n\n## Before you begin\n\nMake sure the following prerequisites are in place. Steps for those marked \"steps on this page\" appear below.\n\n- Account A identity-based IAM permissions for bedrock and logs actions to create the delivery source and delivery (steps on this page).\n- An Amazon Bedrock knowledge base in Account A, which is the log-generating resource.\n- An Account B S3 bucket to receive logs (S3 flow).\n- Account B identity-based IAM permissions for logs actions to create the delivery destination and policy (S3 flow) (steps on this page).\n- A bucket policy on the Account B S3 bucket allowing the log delivery service to write (steps on this page).\n- A KMS key policy permitting log delivery, needed only when the S3 bucket is SSE-KMS encrypted (conditional) (steps on this page).\n- An Account B Firehose delivery stream of the DirectPut type to receive logs (Firehose flow).\n- Account B identity-based IAM permissions for firehose, iam and logs actions (Firehose flow) (steps on this page).\n- The tag LogDeliveryEnabled=true on the Firehose stream.\n\n## Account A permissions and delivery source\n\nAccount A wants to deliver logs from an Amazon Bedrock knowledge base in its account. To do so, it needs the bedrock:AllowVendedLogDeliveryForResource permission on the knowledge base resource, and the logs:PutDeliverySource and logs:CreateDelivery permissions.\n\nAccount A first creates a delivery source with its Bedrock knowledge base using put-delivery-source. This must happen before Account B creates the delivery destination. Once done, Account A has a delivery source.\n\n## Account B: delivery destination\n\nAccount B creates the delivery destination, and can deliver logs either to an S3 bucket or to a Firehose stream.\n\n### S3 flow\n\nFor the S3 flow, Account B needs logs:PutDeliveryDestination and logs:PutDeliveryDestinationPolicy permissions. The S3 bucket policy must allow the delivery.logs.amazonaws.com service principal to perform s3:PutObject. The bucket policy conditions are:\n\n- s3:x-amz-acl must be bucket-owner-full-control.\n- aws:SourceAccount is restricted to Account A.\n- aws:SourceArn is restricted to Account A's delivery source.\n\nIf the S3 bucket is encrypted with SSE-KMS, the AWS KMS key policy must also grant appropriate permissions. Specifically, it allows delivery.logs.amazonaws.com to call kms:GenerateDataKey.\n\nAccount B then creates a delivery destination with the S3 bucket as the destination resource. This holds only when the logs:PutDeliveryDestination and logs:PutDeliveryDestinationPolicy permissions are in place and the bucket policy allows delivery.logs.amazonaws.com to perform s3:PutObject.\n\n### Firehose flow\n\nFor the Firehose flow, the Firehose stream must be configured with the DirectPut delivery stream type. Account B needs iam:CreateServiceLinkedRole, firehose:TagDeliveryStream, and logs delivery destination permissions. The Firehose stream must have the tag LogDeliveryEnabled set to true.\n\nAccount B then creates a delivery destination with the Firehose stream as the destination resource. This holds only when the stream is configured as DirectPut and has the tag LogDeliveryEnabled set to true. Once done, Account B has a delivery destination.\n\n## Account B: delivery destination policy\n\nAccount B can create the delivery destination policy. This must happen after the delivery destination is created, whether the destination is the S3 bucket (S3 flow) or the Firehose stream (Firehose flow). The policy gives Account A permission to call logs:CreateDelivery. Account B attaches the policy to the delivery destination using put-delivery-destination-policy, which must happen after the policy is created. Account B now has a delivery destination policy granting Account A access.\n\n## Account A: create the delivery\n\nAfter Account B has attached the policy with put-delivery-destination-policy, Account A creates the delivery using create-delivery. The delivery links Account A's delivery source to Account B's delivery destination. The permission granted by the delivery destination policy to call logs:CreateDelivery is enough for Account A to create the delivery.",
@@ -1988,6 +2029,11 @@
     "lost": [
      4
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 0.8333333333333334,
+    "n_probes": 6,
+    "n_correct": 5
    }
   },
   "log": [
@@ -2158,7 +2204,25 @@
    "entailment": {
     "rate": 0.6666666666666666,
     "n_probes": 6,
-    "n_correct": 4
+    "n_correct": 4,
+    "n_generated": 6,
+    "expected": [
+     "yes",
+     "no",
+     "yes",
+     "no",
+     "yes",
+     "no"
+    ],
+    "replies": [
+     "Yes. According to the document, once Account A has created a delivery source, Account B has created a delivery destinati",
+     "No. The document says Account A creates the delivery only once it has created a delivery source, Account B has created a",
+     "**Yes.** The document says that for the Firehose flow, the stream is configured as DirectPut and tagged `LogDeliveryEnab",
+     "unknown",
+     "**Yes.** The document says that for the S3 flow, Account B needs `logs:PutDeliveryDestination` and `logs:PutDeliveryDest",
+     "unknown"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -2234,6 +2298,11 @@
      8,
      9
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 0.6666666666666666,
+    "n_probes": 6,
+    "n_correct": 4
    }
   },
   "regen_doc": "# Cross-Account Log Delivery for an Amazon Bedrock Knowledge Base\n\nThis scenario involves two accounts. Account A (ID 123456789012) contains the log-generating resource, and Account B (ID 111122223333) contains the log-consuming resource. Account A wants to deliver logs from an Amazon Bedrock knowledge base in its account to Account B.\n\n## Permissions required in Account A\n\nAccount A needs the `bedrock:AllowVendedLogDeliveryForResource` permission on the knowledge base resource. It also needs the `logs:PutDeliverySource` and `logs:CreateDelivery` permissions. Account A then creates a delivery source with its Bedrock knowledge base using `put-delivery-source`.\n\n## Delivery destination in Account B\n\nAccount B creates the delivery destination, and it can deliver logs to either an S3 bucket or a Firehose stream. Account B can create the delivery destination policy.\n\n### S3 flow\n\nFor the S3 flow, Account B needs the `logs:PutDeliveryDestination` and `logs:PutDeliveryDestinationPolicy` permissions. The S3 bucket policy allows the `delivery.logs.amazonaws.com` service principal to perform `s3:PutObject`. This is subject to conditions: `s3:x-amz-acl` must be `bucket-owner-full-control`, `aws:SourceAccount` must be restricted to Account A, and `aws:SourceArn` must be restricted to Account A's delivery source.\n\nIf the S3 bucket is encrypted with SSE-KMS, the AWS KMS key policy must grant appropriate permissions. Specifically, it allows `delivery.logs.amazonaws.com` to call `kms:GenerateDataKey`.\n\nAccount B then creates a delivery destination with the S3 bucket as the destination resource.\n\n### Firehose flow\n\nFor the Firehose flow, the stream is configured with the DirectPut delivery stream type. Account B needs `iam:CreateServiceLinkedRole`, `firehose:TagDeliveryStream`, and logs delivery destination permissions. The Firehose stream has the tag `LogDeliveryEnabled` set to `true`. Account B creates a delivery destination with the Firehose stream as the destination resource.\n\n## Delivery destination policy\n\nIn either flow, Account B creates a delivery destination policy on the delivery destination. This policy gives Account A permission to call `logs:CreateDelivery`. Account B attaches the policy using `put-delivery-destination-policy`.\n\n## Creating the delivery\n\nOnce Account A has created a delivery source, Account B has created a delivery destination, and Account B has created a delivery destination policy granting Account A access, Account A creates the delivery using `create-delivery`. The delivery links Account A's delivery source to Account B's delivery destination.",
@@ -3940,9 +4009,27 @@
     ]
    },
    "entailment": {
-    "rate": 0.6666666666666666,
+    "rate": 1.0,
     "n_probes": 6,
-    "n_correct": 4
+    "n_correct": 6,
+    "n_generated": 6,
+    "expected": [
+     "yes",
+     "no",
+     "yes",
+     "no",
+     "yes",
+     "no"
+    ],
+    "replies": [
+     "Yes. According to the document, the delivery destination policy gives Account A permission to call logs:CreateDelivery, ",
+     "No. The document says the delivery links Account A's delivery source to Account B's delivery destination. Without a deli",
+     "Yes.",
+     "No. The document says the Firehose destination can be created only when the stream is of the DirectPut type and has the ",
+     "Yes. The document says Account B can create a delivery destination with the S3 bucket as the destination resource when i",
+     "No. The document says Account B can create the delivery destination with the S3 bucket only when it has both permissions"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -3967,10 +4054,10 @@
     ]
    },
    "drift": {
-    "drift": 0.30424963574550756,
+    "drift": 0.23480519130106306,
     "atomic_loss": 0.03448275862068961,
     "cbr_loss": 0.49295774647887325,
-    "entailment_loss": 0.33333333333333337,
+    "entailment_loss": 0.0,
     "structural_loss": 0.13333333333333333
    },
    "regen_doc": "# Delivering Amazon Bedrock knowledge base logs across accounts\n\nThis page describes how Account A (ID 123456789012), which contains the log-generating resource, delivers logs from an Amazon Bedrock knowledge base in its account to a log-consuming resource in Account B (ID 111122223333). Account B can deliver the logs to an S3 bucket or to a Firehose stream.\n\n## Before you begin\n\nMake sure the following are in place before you start the steps that need them.\n\n- **Account A identity-based IAM permissions (bedrock and logs actions)** to create the delivery source and the delivery. Account A needs the bedrock:AllowVendedLogDeliveryForResource permission on the knowledge base resource, plus logs:PutDeliverySource and logs:CreateDelivery. The steps are on this page.\n- **An existing Amazon Bedrock knowledge base in Account A.** This is the log-generating resource.\n- **An S3 bucket in Account B** as the log destination (for the S3 flow).\n- **Account B identity-based IAM permissions (logs actions)** to create the delivery destination and the destination policy for S3: logs:PutDeliveryDestination and logs:PutDeliveryDestinationPolicy. The steps are on this page.\n- **An S3 bucket policy** allowing the log delivery service to write to the bucket. The steps are on this page.\n- **A KMS key policy** permitting log delivery, if the S3 bucket uses SSE-KMS. The steps are on this page.\n- **A Firehose delivery stream in Account B** (DirectPut type) as the log destination (for the Firehose flow).\n- **Account B identity-based IAM permissions (firehose, iam, and logs actions)** to create the delivery destination for Firehose: iam:CreateServiceLinkedRole, firehose:TagDeliveryStream, and the logs delivery destination permissions. The steps are on this page.\n- **The tag LogDeliveryEnabled=true** on the Firehose stream.\n\n## Step 1: Create the delivery source in Account A\n\nAccount A creates a delivery source with its Bedrock knowledge base by using put-delivery-source. This step must happen before Account B creates the delivery destination. Once it is done, Account A has a delivery source.\n\n## Step 2: Create the delivery destination in Account B\n\nAccount B creates the delivery destination. It can deliver logs to an S3 bucket or to a Firehose stream. Choose one of the following flows.\n\n### Option 1: S3 bucket\n\nFor the S3 flow, Account B needs the logs:PutDeliveryDestination and logs:PutDeliveryDestinationPolicy permissions.\n\nFirst, configure the S3 bucket policy. It allows the delivery.logs.amazonaws.com service principal to perform s3:PutObject. The policy has these conditions:\n\n- s3:x-amz-acl must be bucket-owner-full-control.\n- aws:SourceAccount is restricted to Account A.\n- aws:SourceArn is restricted to Account A's delivery source.\n\nIf the S3 bucket is encrypted with SSE-KMS, the AWS KMS key policy must grant appropriate permissions. This applies only when the bucket uses SSE-KMS. The key policy allows delivery.logs.amazonaws.com to call kms:GenerateDataKey.\n\nAccount B then creates a delivery destination with the S3 bucket as the destination resource. This holds only when Account B has the permissions from the S3 flow (logs:PutDeliveryDestination and logs:PutDeliveryDestinationPolicy) and the bucket policy allowing delivery.logs.amazonaws.com to perform s3:PutObject is in place. Creating the destination must happen before the delivery destination policy in Step 3.\n\n### Option 2: Firehose stream\n\nFor the Firehose flow, Account B needs iam:CreateServiceLinkedRole, firehose:TagDeliveryStream, and logs delivery destination permissions. The Firehose stream must be configured with the DirectPut delivery stream type and have the tag LogDeliveryEnabled set to true.\n\nAccount B then creates a delivery destination with the Firehose stream as the destination resource. This holds only when the stream is of the DirectPut type and has the LogDeliveryEnabled=true tag. Creating the destination must happen before the delivery destination policy in Step 3.\n\nOnce the delivery destination exists, Account B has created a delivery destination.\n\n## Step 3: Create the delivery destination policy in Account B\n\nAccount B can create the delivery destination policy on the delivery destination, which must already exist from Step 2. The policy gives Account A permission to call logs:CreateDelivery. Account B attaches the policy by using put-delivery-destination-policy. This attachment must happen before Account A creates the delivery in Step 4. Once it is attached, Account B has created a delivery destination policy granting Account A access.\n\n## Step 4: Create the delivery in Account A\n\nAccount A creates the delivery by using create-delivery. The delivery links Account A's delivery source to Account B's delivery destination. The delivery destination policy that gives Account A permission to call logs:CreateDelivery is enough to allow this call, provided it has been attached as described in Step 3.",
@@ -4133,6 +4220,11 @@
      4,
      6
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 0.6666666666666666,
+    "n_probes": 6,
+    "n_correct": 4
    }
   },
   "log": [
