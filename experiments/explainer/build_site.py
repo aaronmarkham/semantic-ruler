@@ -28,7 +28,7 @@ PAGES = [
     ("adventure.html", "trail.json", "detour-map.html",
      "Walk 219 AWS how-to pages as a map: where the prerequisites are, which links deliver, and which are dead ends."),
     ("drift.html", "drift-explainer.json", "drift.html",
-     "What a fact store can't hold: measuring semantic drift when documentation is distilled to atomic facts and regenerated."),
+     "What a document loses on its way through a fact store and back: an evaluation that sees it and a repair loop that puts it back, on thirty AWS how-to pages."),
 ]
 # Short names for the navigation bar, by published name.
 SHORT = {"index.html": "Rulers and Detours", "detour-map.html": "The Detour Map", "drift.html": "Drift"}

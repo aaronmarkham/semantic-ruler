@@ -161,18 +161,31 @@ def summarise(runs, source, path=Path('')):
     return out
 
 
+def page_names():
+    """slug -> "Service · title" from the detour set, for pages the page script has no name for."""
+    try:
+        rows = json.loads((root / "experiments" / "doc_ordering" / "detours.json").read_text(encoding="utf-8"))["rows"]
+    except OSError:
+        return {}
+    return {r["url"].split("/")[-1].replace(".html", ""): f'{r["service"]} · {r.get("goal", "")[:60]}' for r in rows}
+
+
+NAMES = page_names()
+
+
 def cohort(paths):
     """Per-page medians for a set of pages, then rates across the pages."""
     pages = []
     for path in paths:
         runs = json.loads(path.read_text(encoding="utf-8"))
         s = summarise(runs, runs[0].get("source", path.stem), path)
-        page = {"slug": path.stem.replace("-runs", ""), "source": s["source"], "n_runs": s["n_runs"], "shown": s["shown"],
+        page = {"slug": path.stem.replace("-runs", ""), "name": NAMES.get(path.stem.replace("-runs", "")), "source": s["source"], "n_runs": s["n_runs"], "shown": s["shown"],
                 "atomizer": s["atomizer"], "granularity": s["granularity"], "load": s["load"],
                 "n_facts": s["orig"] and len(s["orig"]["facts"]), "n_edges": s["orig"] and len(s["orig"]["edges"]),
                 "scores": {k: (v["median"] if v else None) for k, v in s["spread"].items()},
                 "probes_total": s["probes_total"], "structural_applicable": s["structural_applicable"],
                 "procedure_lost_runs": sum(bool(x["structural"].get("procedure_lost")) for x in s["runs"]),
+                "procedure_restored_runs": sum(bool(x["structural"].get("procedure_lost")) and x.get("repair") and not x["repair"]["structural"].get("procedure_lost") for x in s["runs"]),
                 "structural": {k: (v["median"] if v else None) for k, v in s["structural_spread"].items()},
                 "detours_rose_runs": sum((x["structural"].get("detour_rate_delta") or 0) > 0 for x in s["runs"]),
                 "n_prereqs": [x["structural"].get("n_orig_prereqs") for x in s["runs"]][0]}
@@ -215,6 +228,8 @@ def cohort(paths):
             "pages_tbr_scored": sum(p["scores"].get("tbr") is not None for p in repaired),
             "pages_detours_fell": sum((p["repair"]["structural"].get("regen_detour_rate") or 0) < (p["structural"].get("regen_detour_rate") or 0)
                                       for p in repaired if p["structural_applicable"]),
+            "pages_procedure_restored": sum(p["procedure_restored_runs"] > 0 for p in repaired),
+            "pages_procedure_lost_after_repair": sum(p["procedure_lost_runs"] > 0 and p["procedure_restored_runs"] < p["procedure_lost_runs"] for p in repaired),
         }
     return out
 
@@ -238,7 +253,7 @@ def instrument_agreement(folder):
     """Across every scored run under a folder: rank correlations between graph bridge recall, text bridge
     recall and the probe rate, first drafts and repairs pooled. Says which instruments agree."""
     xs = []
-    for path in list(folder.glob("*-runs.json")) + (list((folder / "cohort").glob("*-runs.json")) if (folder / "cohort").exists() else []):
+    for path in list(folder.glob("*-runs.json")) + list((folder / "cohort").glob("*-runs.json")) + list((folder / "holdout").glob("*-runs.json")):
         for r in json.loads(path.read_text(encoding="utf-8")):
             for s in (r["scores"], r.get("repair")):
                 if s and s.get("text_bridge") and s["text_bridge"].get("rate") is not None:
@@ -264,16 +279,18 @@ def build(folder):
               f"drift median {s['spread']['drift']['median']}, f1 {s['spread']['f1']['median']}, cbr {s['spread']['cbr']['median']}, "
               f"probes {s['probes_total'][0]}/{s['probes_total'][1]}, text bridge {s['spread'].get('tbr') and s['spread']['tbr']['median']}, structural {'yes' if s['structural_applicable'] else 'no'}"
               + (f", repaired drift {s['repair']['spread']['drift']['median']}" if "repair" in s else ""))
-    co = cohort(sorted((folder / "cohort").glob("*-runs.json"))) if (folder / "cohort").exists() else None
-    if co:
-        o["cohort"] = co
+    for name in ("cohort", "holdout"):
+        co = cohort(sorted((folder / name).glob("*-runs.json"))) if (folder / name).exists() else None
+        if not co:
+            continue
+        o[name] = co
         st = co["structural"]
-        print(f"{folder.name}/cohort: {co['n_pages']} pages, {co['n_runs']} runs; drift median {co['across_pages']['drift']['median']}; "
+        print(f"{folder.name}/{name}: {co['n_pages']} pages, {co['n_runs']} runs; drift median {co['across_pages']['drift']['median']}; "
               f"detours rose on {st['pages_detours_rose']} (every run on {st['pages_detours_rose_every_run']}), procedure lost on {st['pages_procedure_lost']}"
-              + (f"; repair: drift fell on {co['repair']['pages_drift_fell']}, cbr rose on {co['repair']['pages_cbr_rose']}, detours fell on {co['repair']['pages_detours_fell']}" if "repair" in co else ""))
+              + (f"; repair: drift fell on {co['repair']['pages_drift_fell']}, cbr rose on {co['repair']['pages_cbr_rose']}, tbr rose on {co['repair'].get('pages_tbr_rose')}, detours fell on {co['repair']['pages_detours_fell']}" if "repair" in co else ""))
     # every source as one point, for the load correlation: the singles plus each cohort page
     everything = dict(o["scenarios"])
-    for path in sorted((folder / "cohort").glob("*-runs.json")) if (folder / "cohort").exists() else []:
+    for path in sorted(list((folder / "cohort").glob("*-runs.json")) + list((folder / "holdout").glob("*-runs.json"))):
         runs = json.loads(path.read_text(encoding="utf-8"))
         everything[path.stem.replace("-runs", "")] = summarise(runs, runs[0].get("source", path.stem), path)
     o["load_correlation"] = correlate(everything)

@@ -97,13 +97,15 @@ td.n,th.n{text-align:right;padding:6px 8px;border-bottom:1px solid var(--rule);v
 #atomizer-table td,#atomizer-table th{padding:6px 8px 6px 0;border-bottom:1px solid var(--rule);vertical-align:top}
 #atomizer-table th{font:11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:400;border-bottom:1px solid var(--ink)}
 #cohort-table th{font:11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:400;border-bottom:1px solid var(--ink);padding:6px 8px 6px 0}
+#holdout-table td,#holdout-table th{padding:6px 8px 6px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+#holdout-table th{font:11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:400;border-bottom:1px solid var(--ink)}
 </style>
 
 <div class="col">
 <p class="eyebrow">A hypothesis · An evaluation · A repair loop</p>
-<h1>You kept the facts.<br><em>What did you lose?</em></h1>
+<h1>You kept the facts.<br><em>The order moved.</em></h1>
 <p class="lede">Distil a document into atomic facts and store them, and you keep the words. The hypothesis behind this page is that what you lose is the connective tissue: the conjunctions, the conditions, and the order that says what to have ready first. The questions were whether an evaluation can see that loss where atom coverage can't, whether, once seen, it can be sent back to be rebuilt, and, after a first round of runs, whether the extractor had been answering the question before the round trip could.</p>
-<p class="lede">It had. The first extractor kept half the conditions inside the atoms, and under it two short passages came through the round trip almost untouched. An extractor that is forbidden to do that produces the loss the hypothesis predicted: the regeneration gets half the multi-fact questions wrong on both passages, and on ten how-to pages it springs half the prerequisites on the reader. Fed back what the evaluation found missing, the regeneration recovers most of the order and, under the strict extractor, most of the bridges.</p>
+<p class="lede">It had. The first extractor kept half the conditions inside the atoms, and under it two short passages came through the round trip almost untouched. An extractor that is forbidden to do that produces the loss the hypothesis predicted: the regeneration gets half the multi-fact questions wrong on both passages, and on ten how-to pages it springs half the prerequisites on the reader. Fed back what the evaluation found missing, the regeneration recovers most of the order and most of the bridges. Twenty more pages, chosen by rule, say the same, and add that a third of them came back as something other than a how-to.</p>
 <div class="tiles" id="found">
   <div class="tile bad"><b id="t-fold">51% → 29%</b><span>atoms carrying a condition, sentence → strict extractor</span><small>medians over the ten pages</small></div>
   <div class="tile bad"><b id="t-probes">25 of 50</b><span>multi-fact probes passed on the two passages, strict</span><small id="t-probes-r">48 of 50 under the sentence extractor</small></div>
@@ -114,7 +116,7 @@ td.n,th.n{text-align:right;padding:6px 8px;border-bottom:1px solid var(--rule);v
 
 <section id="passage">
 <p class="eyebrow">01 · The hypothesis, on one paragraph</p>
-<h2>Three facts that only matter <em>together.</em></h2>
+<h2>Three facts that only matter together, <em>and an extractor that kept them that way.</em></h2>
 <p>A single paragraph about Lambda logging. An LLM extracts the facts. It then writes new documentation from those facts alone, with the edges withheld: that is the round trip a fact store imposes. Walk through what happened at each stage under the first extractor, in the run closest to the median of five.</p>
 
 <div class="panel">
@@ -193,7 +195,7 @@ td.n,th.n{text-align:right;padding:6px 8px;border-bottom:1px solid var(--rule);v
 
 <section id="atomizer">
 <p class="eyebrow">02 · The extractor's thumb on the scale</p>
-<h2>Half the conditions never <em>left the atoms.</em></h2>
+<h2>Half the conditions <em>stayed inside the atoms.</em></h2>
 <p>The first extraction prompt asked for "one complete, self-contained sentence" per fact and told the model to "preserve negations, conditions, quantifiers, and scope word-for-word." It did. Across every source run under it, <span id="g-corpus">49%</span> of the atoms carry a conditional word: "only when", "if", "unless", "must", "before". The extractor was storing half the connective tissue inside the facts, and the round trip was being asked how much of that the regeneration keeps. That is a real question about regeneration, and a different one from the hypothesis.</p>
 <p>The strict extractor forbids conditions inside atoms: when the source says A holds only when B and C, it writes A, B and C as three facts and the dependence as an edge. It is the extractor a fact store under test should have. On the two passages it folds nothing. On the pages it still folds between a tenth and a half of the atoms, because a step like "you must create the bucket before you enable logging" resists being split, so the two extractors differ in degree on pages and in kind on passages.</p>
 
@@ -384,7 +386,7 @@ td.n,th.n{text-align:right;padding:6px 8px;border-bottom:1px solid var(--rule);v
 
 <section id="cohort">
 <p class="eyebrow">06 · Ten pages, two extractors</p>
-<h2>The atoms come back. <em>The bridges and the order don't.</em></h2>
+<h2>The atoms come back. <em>The prerequisites come back somewhere else.</em></h2>
 <p>Ten how-to pages from the detour set, each about granting some service access to S3, each run twice per extractor: the first draft, then the repaired draft. One row per page, medians over its runs. Detour rate is the share of a page's prerequisites that arrive as a surprise with no steps: in the original, after the round trip, and after repair.</p>
 
 <div class="panel" style="overflow-x:auto">
@@ -399,8 +401,24 @@ td.n,th.n{text-align:right;padding:6px 8px;border-bottom:1px solid var(--rule);v
 <p>Three things the table says, and the strict rows say them more plainly. The atoms survive on every page under either extractor. A third to a half of the bridges are lost on every page by the text reader's count, more by the graph matcher's. The prerequisites are displaced on most: under the strict extractor the median detour rate after the round trip is <span id="co-det-strict">35%</span> against <span id="co-det-sentence">17%</span> under the sentence extractor, from originals near zero, and it rose on <span id="co-rose-strict">8 of 10</span> pages. That displacement is the detour pattern the <a href="detour-map.html">Detour Map</a> counts in original documentation, produced here by the round trip. A page that stated its prerequisites up front comes back mentioning them at the step that needs them, with no steps.</p>
 </section>
 
+<section id="holdout">
+<p class="eyebrow">07 · Twenty more pages</p>
+<h2>Chosen by rule, <em>and they say the same.</em></h2>
+<p>The ten cohort pages were the longest how-tos in the detour set. To check that the rates are not a property of long pages or of my picking, a second set was drawn by rule: every fourth page among the detour set's procedures with four or more prerequisites that three reads agreed on, skipping the ones already used. Twenty pages across eighteen services, shorter than the cohort (a median of <span id="h-prereqs">5</span> prerequisites against <span id="c-prereqs">7</span>), run the same way under both extractors.</p>
+
+<div class="panel" style="overflow-x:auto">
+  <table id="holdout-table" style="border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums;min-width:760px">
+    <thead><tr style="text-align:left"><th>Medians across pages</th><th class="n">Cohort, sentence</th><th class="n">Holdout, sentence</th><th class="n">Cohort, strict</th><th class="n">Holdout, strict</th></tr></thead>
+    <tbody id="holdout-body"><tr><td>Pages</td><td class="n">10</td><td class="n">20</td><td class="n">10</td><td class="n">20</td></tr><tr><td>Prerequisites per page</td><td class="n">7</td><td class="n">5</td><td class="n">7</td><td class="n">5</td></tr><tr><td>Atoms carrying a condition</td><td class="n">51%</td><td class="n">50%</td><td class="n">29%</td><td class="n">15%</td></tr><tr><td>Atomic F1</td><td class="n">98%</td><td class="n">98%</td><td class="n">97%</td><td class="n">95%</td></tr><tr><td>Text bridges, first draft → repaired</td><td class="n">41% → 82%</td><td class="n">51% → 86%</td><td class="n">69% → 89%</td><td class="n">69% → 90%</td></tr><tr><td>Pages where repair raised text bridges</td><td class="n">10 of 10</td><td class="n">19 of 20</td><td class="n">8 of 10</td><td class="n">18 of 20</td></tr><tr><td>Probes passed</td><td class="n">101 of 107</td><td class="n">243 of 266</td><td class="n">196 of 204</td><td class="n">279 of 308</td></tr><tr><td>Detour rate, original → draft → repaired</td><td class="n">0% → 17% → 12%</td><td class="n">8% → 21% → 9%</td><td class="n">0% → 35% → 19%</td><td class="n">9% → 42% → 15%</td></tr><tr><td>Pages where detours rose</td><td class="n">6 of 10</td><td class="n">10 of 20</td><td class="n">8 of 10</td><td class="n">9 of 20</td></tr><tr><td>Pages no longer a procedure → restored by repair</td><td class="n">1 → 1 restored</td><td class="n">7 → 4 restored</td><td class="n">1 → 1 restored</td><td class="n">9 → 6 restored</td></tr><tr><td>Structural loss, draft → repaired</td><td class="n">26% → 14%</td><td class="n">32% → 12%</td><td class="n">21% → 12%</td><td class="n">48% → 12%</td></tr><tr><td>Drift, draft → repaired</td><td class="n">31% → 29%</td><td class="n">34% → 30%</td><td class="n">31% → 26%</td><td class="n">37% → 32%</td></tr></tbody>
+  </table>
+  <p class="note" id="holdout-note" style="margin-top:12px">Each cell is the median over that set's pages, each page the median of its two runs. The structural loss median under the strict extractor is high on the holdout because a page that comes back as prose scores a loss of 1 by rule.</p>
+</div>
+
+<p>What held: the atoms come back, a third to a half of the bridges go and the repair pass puts most of them back, the prerequisites move on about half the pages and repair moves them back. What changed is the failure the cohort had shown once. On the holdout, the regeneration came back as something other than a procedure on <span id="h-lost-sentence">7 of 20</span> pages under the sentence extractor and <span id="h-lost-strict">9 of 20</span> under the strict one, against one of ten in the cohort. Shorter how-tos dissolve into articles more readily: the facts survive, and the frame that made them a procedure does not. The repair pass, told to open with the prerequisites, restored the procedure on <span id="h-restored-sentence">4</span> and <span id="h-restored-strict">6</span> of those pages.</p>
+</section>
+
 <section id="structural">
-<p class="eyebrow">07 · The structural layer, up close</p>
+<p class="eyebrow">08 · The structural layer, up close</p>
 <h2>Every fact survived. <em>Four prerequisites moved.</em></h2>
 <p>The CloudWatch Logs page for exporting log data to S3, run three times per extractor. It reads as a procedure in every read: nine prerequisites, seven with their steps on the page, and no detours in the run shown.</p>
 
@@ -431,21 +449,21 @@ td.n,th.n{text-align:right;padding:6px 8px;border-bottom:1px solid var(--rule);v
 </section>
 
 <section id="load">
-<p class="eyebrow">08 · How many ifs, ands and buts</p>
-<h2>Does a harder passage <em>lose more?</em></h2>
+<p class="eyebrow">09 · How many ifs, ands and buts</p>
+<h2>Harder passages drift <em>about the same.</em></h2>
 <p>Some passages you read five times and still aren't sure you have them. The conditional load number is an attempt to measure that from the text and its graph: condition words per sentence, edges per atom, the widest REQUIRES junction, the longest chain. The contravention passage scores <span id="ld-s3">0.56</span>, the Lambda passage <span id="ld-lambda">0.44</span>, the pages <span id="ld-range">0.34 to 0.66</span>. If the hypothesis is right, harder passages should lose more in the round trip. One point per source, drift on the vertical axis.</p>
 
 <div class="panel">
   <div class="seg" id="load-seg" style="margin-bottom:10px"><button data-a="strict" aria-pressed="true">Strict extractor</button><button data-a="sentence" aria-pressed="false">Sentence extractor</button></div>
   <svg id="load-svg" viewBox="0 0 680 300" role="img" aria-label="Conditional load against drift, one point per source" style="display:block;width:100%;height:auto"></svg>
-  <p class="note" id="load-note" style="margin-top:10px">Strict extractor. Amber: the passages and the two single pages; violet: the cohort pages. Rank correlation of load with drift +0.15 on 13 sources, bootstrap interval −0.51 to +0.69; with bridge loss −0.01, with structural loss +0.34.</p>
+  <p class="note" id="load-note" style="margin-top:10px">Strict extractor. Amber: the passages and the two single pages; violet: the cohort pages. Rank correlation of load with drift −0.09 on 33 sources, bootstrap interval −0.43 to +0.27; with bridge loss +0.07, with structural loss −0.23.</p>
 </div>
 
-<p>No relation the data can support. Under the strict extractor the rank correlation between load and drift is <span id="ld-rho-strict">+0.15</span> on thirteen sources, with a bootstrap interval from <span id="ld-ci-strict">−0.51 to +0.69</span>; against bridge loss and structural loss the intervals are as wide. Under the sentence extractor it comes out <span id="ld-rho-sentence">−0.41</span>, which is the extractor folding the harder sentences into atoms, where they are safe. Two readings follow. The first is that thirteen or fourteen points cannot find a moderate effect, which is true and is what more pages are for. The second is that what the round trip loses is governed by what the extractor externalised, and the load number measures the source, so it predicts loss only through an extractor that respects it. The difficulty you feel reading a passage is real; it is not yet a quantity this evaluation can use. A reader-side measure, the probes put to the original rather than the regeneration, would be the next thing to try.</p>
+<p>No relation the data can support. Under the strict extractor the rank correlation between load and drift is <span id="ld-rho-strict">−0.09</span> on thirteen sources, with a bootstrap interval from <span id="ld-ci-strict">−0.43 to +0.27</span>; against bridge loss and structural loss the intervals are as wide. Under the sentence extractor it comes out <span id="ld-rho-sentence">−0.14</span>, which is the extractor folding the harder sentences into atoms, where they are safe. Two readings follow. The first is that thirteen or fourteen points cannot find a moderate effect, which is true and is what more pages are for. The second is that what the round trip loses is governed by what the extractor externalised, and the load number measures the source, so it predicts loss only through an extractor that respects it. The difficulty you feel reading a passage is real; it is not yet a quantity this evaluation can use. A reader-side measure, the probes put to the original rather than the regeneration, would be the next thing to try.</p>
 </section>
 
 <section id="loop">
-<p class="eyebrow">09 · The repair loop</p>
+<p class="eyebrow">10 · The repair loop</p>
 <h2>Score it, name what's missing, <em>send it back.</em></h2>
 <p>The evaluation returns more than numbers. Bridge recall returns the edges it could not find. The structural layer returns the prerequisites it could not match and the ones that arrive as detours. The repair pass hands those to the regenerator with the same atoms: each lost relationship stated in words ("[f01] holds only when [f02] and [f03] and [f04] all hold"), and the prerequisites to state up front, with where their steps are. Then it scores the new draft with the same four layers. Two more model calls per page, and the loop can run again.</p>
 
@@ -463,12 +481,12 @@ td.n,th.n{text-align:right;padding:6px 8px;border-bottom:1px solid var(--rule);v
 <p>The loop as it stands is a proof of the shape: a round trip that loses structure, an evaluation that names the loss, a regeneration that takes the names back, and now a reader that can tell a repaired bridge from a re-split one. Atom F1 drops a few points after repair, because the repaired draft restructures and the re-extraction splits it differently; the probes do not. What it needs next is more pages.</p>
 
 <div class="callout">
-  <p><strong>Which instrument to trust.</strong> Across every scored draft and repair under the strict extractor, the graph matcher and the text reader agree moderately, rank correlation <span id="ins-gt-strict">+0.43</span>; under the sentence extractor they do not agree at all, <span id="ins-gt-sentence">−0.00</span>, because the matcher is scoring how the re-extraction split sentences that already carried their conditions. The text reader agrees with the probes only loosely, <span id="ins-tp-strict">+0.14</span>, and that is expected: the probes ask contrapositive questions a document can entail without stating. Where the three disagree, read the quotes the reader returns.</p>
+  <p><strong>Which instrument to trust.</strong> Across every scored draft and repair under the strict extractor, the graph matcher and the text reader agree moderately, rank correlation <span id="ins-gt-strict">+0.42</span>; under the sentence extractor they do not agree at all, <span id="ins-gt-sentence">+0.05</span>, because the matcher is scoring how the re-extraction split sentences that already carried their conditions. The text reader agrees with the probes only loosely, <span id="ins-tp-strict">+0.09</span>, and that is expected: the probes ask contrapositive questions a document can entail without stating. Where the three disagree, read the quotes the reader returns.</p>
 </div>
 </section>
 
 <section id="run">
-<p class="eyebrow">10 · Running it</p>
+<p class="eyebrow">11 · Running it</p>
 <h2>One script. <em>One report.</em></h2>
 <p>The pipeline is a single script in <code>experiments/doc_drift/</code>. Pass a URL or a local file. It fetches, extracts, regenerates, re-extracts, and scores; with <code>--repair</code> it regenerates once more with what was lost and scores that too. It needs a Claude model for extraction and an OpenAI key for embeddings; <code>--mock</code> runs offline with a hash embedder and tells you nothing about meaning.</p>
 <pre>python -I experiments/doc_drift/run.py &lt;url-or-file&gt;
@@ -520,7 +538,7 @@ After repair (fed back 7 relationship(s), 1 prerequisite(s))
   </div>
   <div class="card">
     <h3>How sure</h3>
-    <p>Ten cohort pages at two runs per extractor, three on the CloudWatch page, five on each passage; one model for extraction (Claude Sonnet 5.5) and one embedding model. The original graph is extracted once per extractor and cached, so the variation between runs comes from the regeneration and its re-extraction. The 0.70 threshold was set by looking at the Lambda runs, so it is calibrated on data it also scores. The cohort pages were chosen because three reads agreed they are procedures, which selects for clear how-tos. The strict extractor still folds between a tenth and a half of the atoms on pages, so the "strict" rows are stricter, not pure. The repair fed back only what the graph matcher flagged; feeding back every edge was tried on two sources and did no better, and feeding back what the text reader flagged is now an option that has not been run. The text reader is one model's judgement of one call per draft, with unknowns counted as lost; on long pages it answers unknown often. Ten pages is a rate, not a law.</p>
+    <p>Ten cohort pages at two runs per extractor, three on the CloudWatch page, five on each passage; one model for extraction (Claude Sonnet 5.5) and one embedding model. The original graph is extracted once per extractor and cached, so the variation between runs comes from the regeneration and its re-extraction. The 0.70 threshold was set by looking at the Lambda runs, so it is calibrated on data it also scores. The cohort pages were chosen because three reads agreed they are procedures, which selects for clear how-tos. The strict extractor still folds between a tenth and a half of the atoms on pages, so the "strict" rows are stricter, not pure. The repair fed back only what the graph matcher flagged; feeding back every edge was tried on two sources and did no better, and feeding back what the text reader flagged is now an option that has not been run. The text reader is one model's judgement of one call per draft, with unknowns counted as lost; on long pages it answers unknown often. The holdout was drawn by rule and run once, so its rates are a check on the cohort's, not a second experiment. Thirty pages is a rate, not a law.</p>
   </div>
 </div>
 
@@ -586,6 +604,31 @@ fetch("drift-explainer.json").then(r=>r.json()).then(D=>{
     for(const [key,label] of [['lambda','Lambda passage'],['s3public','Block Public Access passage'],['cwlogs','CloudWatch Logs export page']]) for(const [src,ex] of [[SEN,'sentence'],[STR,'strict']]){ const s=src.scenarios[key]; if(!s) continue; const g=s.granularity, passage=key!=='cwlogs';
       rows+=`<tr><td>${label}</td><td>${ex}</td><td class="n">${g.n_atoms}</td><td class="n">${pct(g.folded)}</td><td class="n">${passage&&g.atoms_per_sentence?g.atoms_per_sentence.toFixed(1):'–'}</td><td class="n">${g.n_edges}</td><td class="n">${pct(s.spread.f1.median)}</td><td class="n">${pct(s.spread.cbr.median)}</td><td class="n">${s.spread.tbr?pct(s.spread.tbr.median):'–'}</td><td class="n">${s.probes_total[0]}/${s.probes_total[1]}</td><td class="n">${pct(s.spread.drift.median)}</td><td class="n">${s.repair?pct(s.repair.spread.drift.median):'–'}</td></tr>`; }
     tb.innerHTML=rows; }
+  // holdout comparison
+  const HO=SEN.holdout, HOS=STR.holdout;
+  if(CO&&HO&&COS&&HOS){
+    const med=(co,k)=>{const v=co.pages.map(p=>p[k]).filter(x=>x!=null).sort((a,b)=>a-b); return v[Math.floor(v.length/2)];};
+    const cols=[CO,HO,COS,HOS];
+    const row=(label,f)=>`<tr><td>${label}</td>${cols.map(c=>`<td class="n">${f(c)}</td>`).join('')}</tr>`;
+    el('holdout-body').innerHTML=[
+      row('Pages',c=>c.n_pages),
+      row('Prerequisites per page',c=>med(c,'n_prereqs')),
+      row('Atoms carrying a condition',c=>pct(c.pages.map(p=>p.granularity.folded).sort((a,b)=>a-b)[Math.floor(c.n_pages/2)])),
+      row('Atomic F1',c=>pct(c.across_pages.f1.median)),
+      row('Text bridges, first draft → repaired',c=>`${pct(c.across_pages.tbr.median)} → ${pct(c.repair.across_pages.tbr.median)}`),
+      row('Pages where repair raised text bridges',c=>`${c.repair.pages_tbr_rose} of ${c.repair.pages_tbr_scored}`),
+      row('Probes passed',c=>`${c.probes_total[0]} of ${c.probes_total[1]}`),
+      row('Detour rate, original → draft → repaired',c=>`${pct(c.structural.orig_detour_rate.median)} → ${pct(c.structural.regen_detour_rate.median)} → ${pct(c.repair.structural.regen_detour_rate.median)}`),
+      row('Pages where detours rose',c=>`${c.structural.pages_detours_rose} of ${c.structural.pages_applicable}`),
+      row('Pages no longer a procedure → restored by repair',c=>`${c.structural.pages_procedure_lost} → ${c.repair.pages_procedure_restored} restored`),
+      row('Structural loss, draft → repaired',c=>`${pct(c.structural.structural_loss.median)} → ${pct(c.repair.structural.structural_loss.median)}`),
+      row('Drift, draft → repaired',c=>`${pct(c.across_pages.drift.median)} → ${pct(c.repair.across_pages.drift.median)}`),
+    ].join('');
+    set('holdout-note',`Each cell is the median over that set's pages, each page the median of its two runs. The structural loss median under the strict extractor is high on the holdout because a page that comes back as prose scores a loss of 1 by rule.`);
+    set('h-prereqs',med(HO,'n_prereqs')); set('c-prereqs',med(CO,'n_prereqs'));
+    set('h-lost-sentence',`${HO.structural.pages_procedure_lost} of ${HO.n_pages}`); set('h-lost-strict',`${HOS.structural.pages_procedure_lost} of ${HOS.n_pages}`);
+    set('h-restored-sentence',HO.repair.pages_procedure_restored); set('h-restored-strict',HOS.repair.pages_procedure_restored);
+  }
   // lambda bars (sentence)
   if(L){ const probes=L.probes_total[0]/L.probes_total[1]; bar('l-af',L.spread.f1.median); set('l-af-v',pct(L.spread.f1.median)); bar('l-cbr',L.spread.cbr.median); set('l-cbr-v',pct(L.spread.cbr.median)); bar('l-ep',probes); set('l-ep-v',pct(probes)); bar('l-dr',L.spread.drift.median); set('l-dr-v',pct(L.spread.drift.median)); if(L.repair){ bar('l-rdr',L.repair.spread.drift.median); set('l-rdr-v',pct(L.repair.spread.drift.median)); }
     const hi=L.runs.filter(r=>r.cbr>0).length; set('lambda-note',`Sentence extractor, medians over ${L.n_runs} runs. Atomic F1 ranged from ${p100(L.spread.f1.min)}% to ${p100(L.spread.f1.max)}%, bridge recall was ${pct(L.spread.cbr.max)} in ${hi} runs and 0% in ${L.n_runs-hi}, the probes got ${L.probes_total[0]} of ${L.probes_total[1]} right, and the first draft's drift ran from ${p100(L.spread.drift.min)}% to ${p100(L.spread.drift.max)}%.`+(L.repair?` Repaired, drift ran from ${p100(L.repair.spread.drift.min)}% to ${p100(L.repair.spread.drift.max)}%.`:'')); }
