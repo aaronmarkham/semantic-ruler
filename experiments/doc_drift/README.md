@@ -80,7 +80,11 @@ their text are stripped from the records.
 
 To make more: `record.py` runs one source N times and writes a runs file; `cohort.sh`
 runs a list of pages two times each with repair; `rescore_bridge.py` adds the text bridge
-measure to runs recorded before it existed. `python -I experiments/explainer/build_drift.py .`
+measure to runs recorded before it existed; `regrade_probes.py` re-grades a run's probes
+by the reply's first word and keeps the replies (the recorded runs have all been through it;
+each run's stored question set was put to both drafts, so `entailment_before_regrade`
+holds the earlier figure). The probes' expected answers lean yes by about seven to three,
+so a pass rate sits above a floor near 70%. `python -I experiments/explainer/build_drift.py .`
 turns the results into the page's data file, and
 `python -I experiments/explainer/build_site.py .` rebuilds the page.
 

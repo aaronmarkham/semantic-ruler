@@ -66,7 +66,29 @@
    "entailment": {
     "rate": 0.875,
     "n_probes": 8,
-    "n_correct": 7
+    "n_correct": 7,
+    "n_generated": 8,
+    "expected": [
+     "yes",
+     "no",
+     "no",
+     "no",
+     "no",
+     "no",
+     "no",
+     "yes"
+    ],
+    "replies": [
+     "Yes. The document states that tables with slashes in their names are skipped during export, so the export would skip tha",
+     "No",
+     "No. The document says that exporting to a cross-account S3 bucket requires the AWS CLI or RDS API, so the console isn't ",
+     "No. According to the document, the export task first restores and scales the entire database before extracting data. \"St",
+     "No",
+     "No. The document states that the S3 bucket must be in the same AWS Region as the snapshot, so a bucket in a different Re",
+     "unknown\n\nThe document says the KMS key policy includes kms:CreateGrant and kms:DescribeKey and that a deny statement in ",
+     "Yes. The document says you can use AWS Glue to transform the exported data and import it into RDS using AWS DMS or custo"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -147,6 +169,11 @@
      12,
      13
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 0.875,
+    "n_probes": 8,
+    "n_correct": 7
    }
   },
   "regen_doc": "# Exporting DB Snapshot Data to Amazon S3\n\nYou can export DB snapshot data to an Amazon S3 bucket. The export process runs in the background and doesn't affect the performance of the active database. Exported data is stored in Apache Parquet format that is compressed and consistent. You can export manual snapshots, automated system snapshots, and AWS Backup snapshots. By default, all data in the snapshot is exported, but you can choose to export specific databases, schemas, or tables. Exported data can be analyzed with Amazon Athena or Amazon Redshift Spectrum.\n\nYou can't restore exported snapshot data from S3 to a new DB instance, and you can't import it from S3 into an existing DB instance. However, you can use AWS Glue to transform the exported data and import it into RDS using AWS DMS or custom scripts.\n\n## Prerequisites and setup\n\nThe S3 bucket must be in the same AWS Region as the snapshot. An IAM role must grant the snapshot export task access to the S3 bucket.\n\nFor server-side encryption of the export, a symmetric encryption KMS key is created. The KMS key policy includes the kms:CreateGrant and kms:DescribeKey permissions, and a deny statement in the policy explicitly excludes the service principal export.rds.amazonaws.com. You can use a cross-account KMS key.\n\nThe export task is given write access to the S3 bucket via an IAM policy attached to an IAM role. The IAM policy includes the actions s3:PutObject*, s3:GetObject*, s3:ListBucket, s3:DeleteObject*, and s3:GetBucketLocation. The IAM role trust policy names export.rds.amazonaws.com as the service principal, and the IAM policy is attached to the IAM role. If a Lambda function exports a snapshot, kms:DescribeKey is added to its policy.\n\n### Cross-account use\n\nYou can use S3 buckets across AWS accounts. For a cross-account bucket, a bucket policy allowing the export IAM role is added to the bucket. For a cross-account KMS key, a key policy is added to the local account, and IAM policies are added in the external account.\n\n## Running exports\n\nYou can have up to five concurrent DB snapshot export tasks per AWS account. You can't run multiple export tasks for the same DB snapshot simultaneously. After an export completes, you might have to wait briefly before starting another export from the same snapshot.\n\nYou can export using the console, AWS CLI, or RDS API. Exporting to a cross-account S3 bucket requires the AWS CLI or RDS API. In the console, the Export to Amazon S3 option appears for exportable snapshots, meaning the DB engine and the DB engine version are supported for S3 export, and S3 export is supported in the Region where the snapshot was created. The Export identifier is also used for the name of the file created in the S3 bucket.\n\nThe start-export-task command requires --export-task-identifier, --source-arn, --s3-bucket-name, --iam-role-arn, and --kms-key-id. The --s3-prefix option provides a folder path in the bucket. A non-unique export task name might cause an ExportTaskAlreadyExists error.\n\n## Export progress and performance\n\nThe export task first restores and scales the entire database before extracting data. Export progress displays as Starting during the restore phase and as In progress when exporting data to S3.\n\nTables with well-distributed numeric primary key or index columns export fastest. Tables without a column suitable for partitioning, or with only one index on a string column, export slower, because slower tables are exported using a single-threaded process.\n\n## Limitations\n\n- Exporting snapshots from databases using magnetic storage isn't supported.\n- S3 prefixes containing a colon aren't supported.\n- The characters \\ ` \" and space in the S3 file path are converted to underscores.\n- If a database, schema, or table name contains characters other than Latin letters, digits, $ and underscore, partial export isn't supported for such names. The entire DB snapshot can still be exported.\n- Tables with certain special characters in column names are skipped during export, as are tables with slashes in their names.\n- RDS for PostgreSQL temporary and unlogged tables are skipped.\n- If data contains a large object close to or greater than 500 MB, the export fails.\n- If a table contains a row close to or greater than 2 GB, the table is skipped during export.\n- The ExportOnly list has a maximum size of 200 KB.\n- You can't export views or materialized views.\n- RDS Export to S3 doesn't support tag-based access control for GuardDuty Malware Protection for S3.\n\n## Snapshot deletion and charges\n\nYou can delete a snapshot while exporting its data, but you're charged for snapshot storage until the export task completes.",
@@ -2210,7 +2237,29 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 8,
-    "n_correct": 8
+    "n_correct": 8,
+    "n_generated": 8,
+    "expected": [
+     "yes",
+     "no",
+     "no",
+     "no",
+     "no",
+     "no",
+     "no",
+     "yes"
+    ],
+    "replies": [
+     "Yes",
+     "No. The document says partial export isn't supported for a database, schema, or table name that contains characters othe",
+     "No. The document says that exporting to a cross-account S3 bucket requires the AWS CLI or RDS API, and the console canno",
+     "No. The document says progress displays as Starting during the restore phase, and as In progress when data is being expo",
+     "No. The document says you can't restore exported snapshot data from S3 to a new DB instance, and you can't import it fro",
+     "No. The document says the export works only when the S3 bucket is in the same AWS Region as the snapshot, and if any of ",
+     "No.\n\nThe document says the key policy works only when it includes both kms:CreateGrant and kms:DescribeKey, and it also ",
+     "Yes. The document says that if you need the data back in RDS, you can use AWS Glue to transform the exported data and im"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -2412,6 +2461,11 @@
     "lost": [
      13
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 8,
+    "n_correct": 8
    }
   },
   "log": [
@@ -2601,7 +2655,29 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 8,
-    "n_correct": 8
+    "n_correct": 8,
+    "n_generated": 8,
+    "expected": [
+     "no",
+     "no",
+     "no",
+     "no",
+     "no",
+     "yes",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "No. The document states that the S3 bucket must be in the same AWS Region as the snapshot, so a bucket in a different Re",
+     "No. The document states that exporting to a cross-account S3 bucket requires the AWS CLI or RDS API, so the console alon",
+     "no",
+     "no. The document says that if a database, schema, or table name contains characters other than Latin letters, digits, $ ",
+     "No. The document's limitations state that you can't run multiple export tasks for the same DB snapshot simultaneously, r",
+     "Yes. The document says the Export to Amazon S3 option appears for exportable snapshots, meaning the DB engine and engine",
+     "Yes. The document says exported data can't be restored directly from S3 to a new DB instance or imported into an existin",
+     "Yes. The document says tables without a column suitable for partitioning, or with only one index on a string column, exp"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -2686,6 +2762,11 @@
      12,
      13
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 8,
+    "n_correct": 8
    }
   },
   "regen_doc": "# Exporting DB Snapshot Data to Amazon S3\n\n## Overview\n\nYou can export DB snapshot data to an Amazon S3 bucket. The export process runs in the background and doesn't affect the performance of the active database. Exported data is stored in Apache Parquet format that is compressed and consistent. You can export manual snapshots, automated system snapshots, and AWS Backup snapshots. By default, all data in the snapshot is exported, but you can choose to export specific databases, schemas, or tables.\n\nExported data can be analyzed with Amazon Athena or Amazon Redshift Spectrum. However, you can't restore exported snapshot data from S3 to a new DB instance, and you can't import it from S3 into an existing DB instance. If you want to get the data back into RDS, you can use AWS Glue to transform the exported data and then import it into RDS using AWS DMS or custom scripts.\n\n## Prerequisites and Setup\n\nThe S3 bucket must be in the same AWS Region as the snapshot. An IAM role must grant the snapshot export task access to the S3 bucket.\n\nA symmetric encryption KMS key is created for server-side encryption of the export. The KMS key policy includes the kms:CreateGrant and kms:DescribeKey permissions, and a deny statement in the policy explicitly excludes the service principal export.rds.amazonaws.com. You can use a cross-account KMS key. If a Lambda function exports a snapshot, kms:DescribeKey is added to the Lambda function's policy.\n\nThe export task is given write access to the S3 bucket through an IAM policy attached to an IAM role. The IAM policy includes the actions s3:PutObject*, s3:GetObject*, s3:ListBucket, s3:DeleteObject*, and s3:GetBucketLocation. The IAM role trust policy names export.rds.amazonaws.com as the service principal, and the IAM policy is attached to the IAM role.\n\nYou can use S3 buckets across AWS accounts. In that case, a bucket policy allowing the export IAM role is added to the cross-account bucket. If you use a cross-account KMS key, a key policy is added to the local account, and IAM policies are added in the external account.\n\n## Performing an Export\n\nYou can export using the console, the AWS CLI, or the RDS API. Exporting to a cross-account S3 bucket requires the AWS CLI or RDS API. In the console, the Export to Amazon S3 option appears for exportable snapshots, which means the DB engine and the DB engine version are supported for S3 export, and S3 export is supported in the Region where the snapshot was created. The Export identifier is also used for the name of the file created in the S3 bucket.\n\nWith the AWS CLI, the start-export-task command requires --export-task-identifier, --source-arn, --s3-bucket-name, --iam-role-arn, and --kms-key-id. The --s3-prefix option provides a folder path in the bucket.\n\n## Performance and Concurrency\n\nYou can have up to five concurrent DB snapshot export tasks per AWS account. The export task first restores and scales the entire database before extracting data. Export progress displays as Starting during the restore phase and as In progress when data is being exported to S3.\n\nTables with well-distributed numeric primary key or index columns export fastest. Tables without a column suitable for partitioning, or with only one index on a string column, export slower, because they are exported using a single-threaded process.\n\n## Limitations\n\n- You can't run multiple export tasks for the same DB snapshot simultaneously.\n- Exporting snapshots from databases using magnetic storage isn't supported.\n- S3 prefixes containing a colon aren't supported.\n- The characters \\ ` \" and space in the S3 file path are converted to underscores.\n- If a database, schema, or table name contains characters other than Latin letters, digits, $ and underscore, partial export isn't supported for such names. The entire DB snapshot can still be exported.\n- Tables with certain special characters in column names are skipped during export, as are tables with slashes in their names.\n- RDS for PostgreSQL temporary and unlogged tables are skipped.\n- If data contains a large object close to or greater than 500 MB, the export fails.\n- If a table contains a row close to or greater than 2 GB, the table is skipped during export.\n- The ExportOnly list has a maximum size of 200 KB.\n- A non-unique export task name might cause an ExportTaskAlreadyExists error.\n- You can't export views or materialized views.\n- RDS Export to S3 doesn't support tag-based access control for GuardDuty Malware Protection for S3.\n\n## Snapshot Deletion, Charges, and Repeat Exports\n\nYou can delete a snapshot while exporting its data, but you're charged for snapshot storage until the export task completes. After an export completes, you might have to wait briefly before starting another export from the same snapshot.",
@@ -4747,7 +4828,29 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 8,
-    "n_correct": 8
+    "n_correct": 8,
+    "n_generated": 8,
+    "expected": [
+     "no",
+     "no",
+     "no",
+     "no",
+     "no",
+     "yes",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "No. The document says the S3 bucket must be in the same AWS Region as the snapshot, and that the export works only when ",
+     "No. The document says exporting to a cross-account S3 bucket requires the AWS CLI or RDS API, so the console alone isn't",
+     "No. The document says RDS for PostgreSQL temporary and unlogged tables are skipped during export, so the temporary table",
+     "No. The document says that if a database, schema, or table name contains characters other than Latin letters, digits, $ ",
+     "No. The document says you can't run multiple export tasks for the same DB snapshot simultaneously, even when the account",
+     "Yes\n\nThe document says a snapshot is exportable when the DB engine is supported, the DB engine version is supported, and",
+     "Yes. The document says exported data can't be restored from S3 to a new DB instance or imported directly into an existin",
+     "Yes"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -5004,6 +5107,11 @@
     "lost": [
      13
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 8,
+    "n_correct": 8
    }
   },
   "log": [

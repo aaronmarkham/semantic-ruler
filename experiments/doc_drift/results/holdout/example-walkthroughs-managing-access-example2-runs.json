@@ -65,7 +65,23 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "no"
+    ],
+    "replies": [
+     "Yes. The document says Dave has only s3:ListBucket, so if he tries get-bucket-lifecycle-configuration, Amazon S3 returns",
+     "Yes",
+     "No. The document says a user in Account B still needs permission from the parent account, and access works only when the",
+     "**Yes.** The document says an explicit deny in either a bucket policy or a user policy takes precedence over any other p",
+     "No"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.8124999999999999,
@@ -141,6 +157,11 @@
     "cbr_loss": 0.5625,
     "entailment_loss": 0.0,
     "structural_loss": 0.0
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "regen_doc": "# Example: Bucket Owner Granting Cross-Account Bucket Permissions\n\nGranting permissions to IAM roles is a better practice than granting permissions to individual users. That said, this example walks through the user-based case. An AWS account such as Account A can grant another AWS account, Account B, permission to access its resources, such as buckets and objects. Account B can then delegate the permissions it receives from Account A to users in its own account. Account A can also directly grant a user in Account B permissions by using a bucket policy. Even so, a user in Account B still needs permission from the parent account, Account B, even if Account B doesn't have permissions from Account A. As long as the user has permission from both the resource owner and the parent account, the user will be able to access the resource.\n\n## How the walkthrough works\n\nThe Account A administrator user attaches a bucket policy granting cross-account permissions to Account B to perform specific bucket operations. The administrator user in Account B automatically inherits the permissions granted to Account B. The Account B administrator user then attaches a user policy to the user, delegating the permissions it received from Account A. Finally, the user in Account B verifies permissions by accessing an object in the bucket owned by Account A.\n\n## Setup\n\nThe walkthrough does not use root user credentials. Instead, an administrator user is created in each account and used to create resources and grant permissions. Account A has AWS account ID 1111-1111-1111 and administrator user AccountAadmin; Account B has AWS account ID 2222-2222-2222 and administrator user AccountBadmin.\n\nCreating users and granting permissions is done in the AWS Management Console. Permissions are verified using the AWS CLI or AWS Tools for Windows PowerShell, so no code needs to be written. AccountAadmin is granted administrator privileges by attaching a user policy giving full access. All users in an account must use the account's IAM user sign-in URL when signing in to the AWS Management Console. With the AWS CLI, two profiles, AccountAadmin and AccountBadmin, are created for the administrator users' credentials.\n\n## Step 1: Account A grants permissions\n\nAccountAadmin signs in to the console, creates the bucket amzn-s3-demo-bucket, and attaches a policy to it. The bucket policy grants Account B the s3:GetLifecycleConfiguration and s3:ListBucket permissions on amzn-s3-demo-bucket. After the bucket policy is attached, Account B (and thus its administrator user) can perform s3:ListBucket and s3:GetLifecycleConfiguration on the bucket.\n\n## Step 2: Account B delegates to a user\n\nThe Account B administrator creates user Dave in Account B. An inline policy attached to Dave allows only the s3:ListBucket action on amzn-s3-demo-bucket.\n\n## Step 3: Verify permissions\n\nDave in Account B can list the contents of amzn-s3-demo-bucket owned by Account A. Dave doesn't have any permissions other than s3:ListBucket, so if Dave tries get-bucket-lifecycle-configuration, Amazon S3 returns permission denied.\n\n## Step 4: Explicit deny (optional check)\n\nPermissions can be granted by using an ACL, a bucket policy, or a user policy. However, an explicit deny set by either a bucket policy or a user policy takes precedence over any other permissions. If the bucket policy explicitly denies Account B the s3:ListBucket permission, Account B and users in Account B will not be able to list objects in amzn-s3-demo-bucket. After the explicit deny policy replaces the bucket policy, AccountBadmin's attempt to get a bucket list is denied access.\n\n## Cleanup\n\nFor cleanup, the bucket policy is removed from amzn-s3-demo-bucket, and the objects and then the bucket are deleted if the bucket was created for this exercise. The AccountAadmin and AccountBadmin users are also deleted.",
@@ -1328,7 +1349,23 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "no"
+    ],
+    "replies": [
+     "**Yes.** The document states that Dave has no permissions other than s3:ListBucket, and that if he tries get-bucket-life",
+     "Yes. The document says Dave can list the contents of amzn-s3-demo-bucket when both conditions hold: Account A's bucket p",
+     "No. The document says a user in Account B still needs permission from the parent account, and that the user can access t",
+     "Yes",
+     "No. Dave needs permission from both the resource owner (the bucket policy from Account A) and his parent account (his us"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.9423076923076923,
@@ -1456,6 +1493,11 @@
      }
     ],
     "detours": []
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "log": [
@@ -1622,7 +1664,23 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "no",
+     "yes",
+     "no",
+     "no"
+    ],
+    "replies": [
+     "Yes",
+     "No. The document says a user needs permission from both the resource owner (Account A) and the parent account (Account B",
+     "yes",
+     "No. The document states that an explicit deny in a bucket policy takes precedence over any other permissions. If the buc",
+     "No. Dave's inline policy allows only s3:ListBucket, so if he tries get-bucket-lifecycle-configuration, Amazon S3 returns"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.5144230769230769,
@@ -1704,6 +1762,11 @@
     "cbr_loss": 0.298076923076923,
     "entailment_loss": 0.0,
     "structural_loss": 0.15
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "regen_doc": "# Cross-Account Bucket Permissions Walkthrough\n\n## Concepts\n\nGranting permissions to IAM roles is a better practice than granting permissions to individual users. Even so, this walkthrough delegates to a user to illustrate the mechanics.\n\nAn AWS account such as Account A can grant another AWS account, Account B, permission to access its resources, such as buckets and objects. Account B can then delegate the permissions it receives from Account A to users in its own account. Account A can also directly grant a user in Account B permissions using a bucket policy.\n\nAccess depends on two sources of permission. A user in Account B still needs permission from the parent account, Account B, even if Account B doesn't have permissions from Account A. As long as the user has permission from both the resource owner and the parent account, the user will be able to access the resource.\n\nPermissions can be granted by using an ACL, a bucket policy, or a user policy. An explicit deny set by either a bucket policy or a user policy takes precedence over any other permissions.\n\n## Overview of the Steps\n\n1. The Account A administrator user attaches a bucket policy granting cross-account permissions to Account B to perform specific bucket operations.\n2. The administrator user in Account B automatically inherits the permissions granted to Account B.\n3. The Account B administrator user attaches a user policy to the user, delegating the permissions it received from Account A.\n4. The user in Account B verifies permissions by accessing an object in the bucket owned by Account A.\n\n## Setup\n\nThe walkthrough does not use root user credentials. Instead, an administrator user is created in each account and used to create resources and grant permissions. Account A has AWS account ID 1111-1111-1111 and administrator user AccountAadmin. Account B has AWS account ID 2222-2222-2222 and administrator user AccountBadmin.\n\nCreating users and granting permissions is done in the AWS Management Console. Permissions are verified using the AWS CLI or AWS Tools for Windows PowerShell, so no code needs to be written. AccountAadmin is granted administrator privileges by attaching a user policy giving full access. All users in an account must use the account's IAM user sign-in URL when signing in to the AWS Management Console. With the AWS CLI, two profiles, AccountAadmin and AccountBadmin, are created for the administrator users' credentials.\n\n## Step 1: Account A Grants Permissions\n\nAccountAadmin signs in to the console, creates the bucket amzn-s3-demo-bucket, and attaches a policy to it. The bucket policy grants Account B the s3:GetLifecycleConfiguration and s3:ListBucket permissions on amzn-s3-demo-bucket. After the bucket policy is attached, Account B (and thus its administrator user) can perform s3:ListBucket and s3:GetLifecycleConfiguration on the bucket.\n\n## Step 2: Account B Delegates to a User\n\nThe Account B administrator creates user Dave in Account B. An inline policy attached to Dave allows only the s3:ListBucket action on amzn-s3-demo-bucket.\n\n## Step 3: Verify Permissions\n\nDave in Account B can list the contents of amzn-s3-demo-bucket owned by Account A. Dave doesn't have any permissions other than s3:ListBucket, so if Dave tries get-bucket-lifecycle-configuration, Amazon S3 returns permission denied.\n\n## Step 4: Explicit Deny\n\nBecause an explicit deny takes precedence over any other permissions, if the bucket policy explicitly denies Account B the s3:ListBucket permission, Account B and users in Account B will not be able to list objects in amzn-s3-demo-bucket. After the explicit deny policy replaces the bucket policy, AccountBadmin's attempt to get a bucket list is denied access.\n\n## Cleanup\n\nRemove the bucket policy from amzn-s3-demo-bucket. If the bucket was created for this exercise, delete the objects and then the bucket. Finally, delete the AccountAadmin and AccountBadmin users.",
@@ -2992,7 +3055,23 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "no",
+     "yes",
+     "no",
+     "no"
+    ],
+    "replies": [
+     "Yes. Dave's inline policy allows s3:ListBucket, and Account A's bucket policy grants Account B that permission too, so h",
+     "**No.** The document says a user in Account B can access the resource only when both the resource owner (Account A, via ",
+     "**Yes.** The document says that after the explicit deny policy replaces the bucket policy, AccountBadmin's attempt to ge",
+     "No. The document says an explicit deny set by either a bucket policy or a user policy takes precedence over any other pe",
+     "No. Dave's inline policy allows only s3:ListBucket, and the document states that if Dave tries get-bucket-lifecycle-conf"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.9182692307692308,
@@ -3122,6 +3201,11 @@
      }
     ],
     "detours": []
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "log": [

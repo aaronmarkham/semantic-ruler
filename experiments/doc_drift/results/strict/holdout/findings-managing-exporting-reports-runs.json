@@ -70,7 +70,23 @@
    "entailment": {
     "rate": 0.8,
     "n_probes": 5,
-    "n_correct": 4
+    "n_correct": 4,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes",
+     "unknown",
+     "yes",
+     "Yes. The document says that GetFindingsReportStatus returns the report ID of the report currently being generated, and t",
+     "Yes"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.504424778761062,
@@ -156,6 +172,11 @@
     "cbr_loss": 0.7079646017699115,
     "entailment_loss": 0.19999999999999996,
     "structural_loss": 1.0
+   },
+   "entailment_before_regrade": {
+    "rate": 0.8,
+    "n_probes": 5,
+    "n_correct": 4
    }
   },
   "regen_doc": "# Exporting Amazon Inspector Findings Reports\n\nA findings report is a CSV or JSON file that provides a detailed snapshot of findings. It can be exported to AWS Security Hub CSPM, Amazon EventBridge, and Amazon S3. Findings for resources in connected cloud providers, including Azure and GCP, can be exported as well.\n\n## What a report contains\n\nBy default, a findings report includes data for all active findings. Without filter criteria, the report includes all Active findings in the current Region. If you are the delegated administrator for an organization, the report includes data for all member accounts in the organization. You can customize a report by creating and applying a filter.\n\nThe format you choose affects the fields included. The JSON option includes all fields for each finding, while the CSV option includes only a subset of about 45 fields.\n\nThe CreateFindingsReport API also exports only active findings by default. If you specify SUPPRESSED or CLOSED in the filter criteria, you can view suppressed or closed findings in an API-exported report.\n\n## How export works\n\nWhen exporting, Amazon Inspector encrypts findings data with an AWS KMS key that you specify, and stores the findings report in an Amazon S3 bucket that you specify. The KMS key must be in the same AWS Region as the S3 bucket. The S3 bucket must be in the same AWS Region as the findings data you want to export.\n\nOnly one findings report can be exported at a time. If an export is currently in progress, you can export another findings report only once it finishes.\n\n## Permissions\n\nTo retrieve findings data and export it in reports, you must be allowed to perform inspector2:ListFindings and inspector2:CreateFindingsReport.\n\nWhen you export a report for the first time, steps 1-3 are optional. If you use the Inspector console to export a report, you also need the following permissions:\n\n- kms:GetKeyPolicy and kms:PutKeyPolicy.\n- kms:DescribeKey and kms:ListAliases.\n- s3:ListAllMyBuckets and s3:GetBucketLocation.\n- kms:CreateKey, if you create a new KMS key.\n\n## Configuring the KMS key and S3 bucket\n\nThe KMS key must be a customer managed, symmetric encryption key (SYMMETRIC_DEFAULT). Its key policy must give Amazon Inspector permission to use the key, so that Amazon Inspector can encrypt and export the report. The S3 bucket policy must allow Amazon Inspector to add objects to the bucket. If the bucket is owned by another account, the bucket owner must update the bucket policy.\n\nThe policies can use the following conditions:\n\n- The aws:SourceAccount condition limits Amazon Inspector to adding reports only for the specified account.\n- The aws:SourceArn condition limits Amazon Inspector to adding only findings reports created by the specified account and Region.\n\nTogether, the SourceAccount and SourceArn conditions help prevent the confused deputy problem. If you manually enable Inspector in a Region, add the Region code to the Service principal.\n\n## Troubleshooting\n\n**Timeouts.** Report generation times out if it takes longer than 12 hours. Adding filter criteria reduces the number of findings, and you can then retry the export.\n\n**\"Cannot have multiple reports in-progress.\"** If a report is already being generated for the account, creating another report yields this error. GetFindingsReportStatus returns the report ID of the report currently being generated, and CancelFindingsReport cancels an in-progress export using that report ID.",
@@ -1786,9 +1807,25 @@
     ]
    },
    "entailment": {
-    "rate": 1.0,
+    "rate": 0.8,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 4,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes",
+     "Unknown. The document says encryption works *only when* those three conditions hold, which makes them necessary but does",
+     "Yes",
+     "Yes",
+     "Yes"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.7876106194690266,
@@ -1859,10 +1896,10 @@
     ]
    },
    "drift": {
-    "drift": 0.3387198744819844,
+    "drift": 0.38038654114865106,
     "atomic_loss": 0.08603238866396756,
     "cbr_loss": 0.7699115044247787,
-    "entailment_loss": 0.0,
+    "entailment_loss": 0.19999999999999996,
     "structural_loss": 0.0
    },
    "regen_doc": "# Exporting Amazon Inspector findings reports\n\n## Before you begin\n\nComplete these prerequisites before any step that needs them.\n\n- **IAM permissions** for the Inspector, KMS, and S3 actions needed to export reports and configure resources: inspector2:ListFindings, inspector2:CreateFindingsReport, kms:GetKeyPolicy, kms:PutKeyPolicy, kms:DescribeKey, kms:ListAliases, s3:CreateBucket, s3:PutBucketPolicy, s3:ListAllMyBuckets, s3:GetBucketLocation, and so on. If you will create a new KMS key, you also need kms:CreateKey.\n- **An S3 bucket** in the same AWS Region as the findings data to export. Use an existing bucket or create a new one before proceeding. It stores the report.\n- **An S3 bucket policy statement** that allows the Amazon Inspector service principal to add objects (s3:PutObject) to the bucket. The steps are on this page.\n- **A customer managed, symmetric encryption AWS KMS key** (SYMMETRIC_DEFAULT) in the same Region as the S3 bucket. Use an existing key or create a new one. The steps for creating a key are at https://docs.aws.amazon.com/kms/latest/developerguide/create-keys.html.\n- **A KMS key policy statement** that allows Amazon Inspector to use the key to encrypt the report. The steps are on this page.\n\n## About findings reports\n\nA findings report is a CSV or JSON file that provides a detailed snapshot of findings. You can export a report to AWS Security Hub CSPM, Amazon EventBridge, and Amazon S3. Findings for resources in connected cloud providers, including Azure and GCP, can be exported.\n\nBy default, a findings report includes data for all active findings. Without filter criteria, the report includes all Active findings in the current Region. To customize a report, create and apply a filter. If you are the delegated administrator for an organization, the report includes data for all member accounts in the organization.\n\nThe JSON option includes all fields for each finding. The CSV option includes only a subset of about 45 fields.\n\n## Permissions\n\nThe kms:CreateKey permission is needed only if you create a new KMS key. Being allowed to perform inspector2:ListFindings and inspector2:CreateFindingsReport is enough for you to retrieve findings data and export it in reports. The kms:GetKeyPolicy and kms:PutKeyPolicy permissions let you read and update the key policy. The kms:DescribeKey and kms:ListAliases permissions let you look up keys. The s3:ListAllMyBuckets and s3:GetBucketLocation permissions let you list buckets and find their Regions.\n\n## Configure the S3 bucket and KMS key\n\nWhen exporting, Amazon Inspector stores the findings report in a user-specified Amazon S3 bucket and encrypts the findings data with a user-specified AWS KMS key. The S3 bucket must be in the same AWS Region as the findings data to export. If the bucket is owned by another account, the bucket owner must update the bucket policy.\n\nEncryption with your KMS key works only when all of the following hold: the KMS key is in the same AWS Region as the S3 bucket, the KMS key policy allows Amazon Inspector to use the key, and the S3 bucket policy allows Amazon Inspector to add objects to the bucket. The key must be a customer managed, symmetric encryption key (SYMMETRIC_DEFAULT).\n\nAmazon Inspector can encrypt and export the report only if the key policy gives it permission to use the key.\n\nIn the policies, you can use the aws:SourceAccount and aws:SourceArn conditions. The aws:SourceAccount condition limits Amazon Inspector to adding reports only for the specified account. The aws:SourceArn condition limits it to adding only findings reports created by the specified account and Region. Together, the two conditions help prevent the confused deputy problem.\n\nIf you manually enabled Inspector in a Region, add the Region code to the Service principal.\n\n## Export a report\n\nYou use the Inspector console to export a report. After you export a findings report for the first time, steps 1-3 are optional.\n\nOnly one findings report can be exported at a time. While an export is in progress, you cannot export another findings report; you can export another one only when none is in progress. If a report is already being generated for the account, creating another report yields the error \"Cannot have multiple reports in-progress\". GetFindingsReportStatus returns the report ID of the report currently being generated. CancelFindingsReport cancels an in-progress export using that report ID.\n\n## Include suppressed or closed findings\n\nThe CreateFindingsReport API exports only active findings by default. You can view suppressed or closed findings in an API-exported report only when the API's default of active findings applies and you specify SUPPRESSED or CLOSED in the filter criteria.\n\n## Timeouts\n\nReport generation times out if it takes longer than 12 hours. When that happens, add filter criteria to reduce the number of findings, then retry the export.",
@@ -1944,6 +1981,11 @@
      }
     ],
     "detours": []
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "log": [
