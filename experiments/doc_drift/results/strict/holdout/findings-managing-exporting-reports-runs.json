@@ -2156,9 +2156,25 @@
     ]
    },
    "entailment": {
-    "rate": 0.6,
+    "rate": 0.8,
     "n_probes": 5,
-    "n_correct": 3
+    "n_correct": 4,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes",
+     "unknown\n\nThe document also requires the KMS key to be a customer managed, symmetric encryption key (SYMMETRIC_DEFAULT), ",
+     "Yes",
+     "Yes",
+     "Yes. The document says that if report generation times out after 12 hours, you should add filter criteria to reduce the "
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.5309734513274336,
@@ -2239,11 +2255,16 @@
     ]
    },
    "drift": {
-    "drift": 0.5222340674848814,
+    "drift": 0.48056740081821475,
     "atomic_loss": 0.050086355785837644,
     "cbr_loss": 0.6283185840707965,
-    "entailment_loss": 0.4,
+    "entailment_loss": 0.19999999999999996,
     "structural_loss": 1.0
+   },
+   "entailment_before_regrade": {
+    "rate": 0.6,
+    "n_probes": 5,
+    "n_correct": 3
    }
   },
   "regen_doc": "# Exporting Amazon Inspector Findings Reports\n\nA findings report is a CSV or JSON file that provides a detailed snapshot of findings. A report can be exported to AWS Security Hub CSPM, Amazon EventBridge, and Amazon S3. Findings for resources in connected cloud providers, including Azure and GCP, can be exported as well.\n\n## Scope and filtering\n\nBy default, a findings report includes data for all active findings. If you are the delegated administrator for an organization, the report includes data for all member accounts in the organization. To customize a report, create and apply a filter. Without filter criteria, the report includes all Active findings in the current Region.\n\nThe CreateFindingsReport API likewise exports only active findings by default. If SUPPRESSED or CLOSED is specified in the filter criteria, you can view suppressed or closed findings in an API-exported report.\n\n## Report formats\n\nThe JSON option includes all fields for each finding, whereas the CSV option includes only a subset of about 45 fields.\n\n## Encryption and storage\n\nWhen exporting, Amazon Inspector encrypts findings data with an AWS KMS key that you specify, and it stores the findings report in an Amazon S3 bucket that you specify. The following requirements apply:\n\n- The S3 bucket must be in the same AWS Region as the findings data to export.\n- The KMS key must be in the same AWS Region as the S3 bucket.\n- The KMS key must be a customer managed, symmetric encryption key (SYMMETRIC_DEFAULT).\n- The KMS key policy must allow Amazon Inspector to use the key, so that Amazon Inspector can encrypt and export the report.\n- The S3 bucket policy must allow Amazon Inspector to add objects to the bucket. If the bucket is owned by another account, the bucket owner must update the bucket policy.\n\nThe policy can include the aws:SourceAccount and aws:SourceArn conditions. The aws:SourceAccount condition limits Amazon Inspector to adding reports only for the specified account. The aws:SourceArn condition limits Amazon Inspector to adding only findings reports created by the specified account and Region. Together, these conditions help prevent the confused deputy problem. If you manually enabled Inspector in a Region, add the Region code to the Service principal.\n\n## Required permissions\n\nIf you use the Inspector console to export a report, you must be allowed to perform the following actions:\n\n- inspector2:ListFindings and inspector2:CreateFindingsReport, so that you can retrieve findings data and export it in reports.\n- kms:GetKeyPolicy and kms:PutKeyPolicy.\n- kms:DescribeKey and kms:ListAliases.\n- s3:ListAllMyBuckets and s3:GetBucketLocation.\n- kms:CreateKey, if you create a new KMS key.\n\nSteps 1-3 are optional once a findings report has been exported for the first time.\n\n## Limits and troubleshooting\n\nOnly one findings report can be exported at a time. If an export is currently in progress, you must wait for it to finish before another findings report can be exported. If a report is already being generated for the account, creating another report yields the error \"Cannot have multiple reports in-progress\". In that case, GetFindingsReportStatus returns the report ID of the report currently being generated, and CancelFindingsReport cancels the in-progress export using that report ID.\n\nReport generation times out if it takes longer than 12 hours. If that happens, add filter criteria to reduce the number of findings, and then retry the export.",
@@ -4013,7 +4034,23 @@
    "entailment": {
     "rate": 0.8,
     "n_probes": 5,
-    "n_correct": 4
+    "n_correct": 4,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes",
+     "unknown\n\nThe document says encryption works only when all three conditions hold (same Region, key policy allows Inspecto",
+     "Yes",
+     "Yes\n\nThe document says that by default a report includes data for all active findings, and that a delegated administrato",
+     "Yes. The document says a timeout is enough to justify retrying: adding filter criteria reduces the number of findings, a"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.7876106194690266,
@@ -4171,6 +4208,11 @@
      }
     ],
     "detours": []
+   },
+   "entailment_before_regrade": {
+    "rate": 0.8,
+    "n_probes": 5,
+    "n_correct": 4
    }
   },
   "log": [

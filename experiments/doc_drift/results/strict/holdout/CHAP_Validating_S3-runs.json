@@ -72,9 +72,31 @@
     ]
    },
    "entailment": {
-    "rate": 0.875,
+    "rate": 1.0,
     "n_probes": 8,
-    "n_correct": 7
+    "n_correct": 8,
+    "n_generated": 8,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "no"
+    ],
+    "replies": [
+     "Yes",
+     "Yes",
+     "**Yes.** The document says tables for which S3 validation would create more than 100,000 buckets fail validation. Increa",
+     "Yes. The document says table names must not contain special characters except underscore, since Athena doesn't support o",
+     "Yes",
+     "No. A Full-Load task with Validation only enabled validates only the Full-Load data in the S3 target and does not valida",
+     "Yes. The document says that mismatches that occurred more than a day ago are found in the s3_validation_failures folder ",
+     "No. S3 target validation requires AWS DMS version 3.5.0 or later, so version 3.4.7 does not support it, even with all th"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.8656126482213438,
@@ -159,11 +181,16 @@
     ]
    },
    "drift": {
-    "drift": 0.4830094422485728,
+    "drift": 0.4569677755819061,
     "atomic_loss": 0.04166666666666663,
     "cbr_loss": 0.6758893280632412,
-    "entailment_loss": 0.125,
+    "entailment_loss": 0.0,
     "structural_loss": 1.0
+   },
+   "entailment_before_regrade": {
+    "rate": 0.875,
+    "n_probes": 8,
+    "n_correct": 7
    }
   },
   "regen_doc": "# Validating Data in Amazon S3 Targets with AWS DMS\n\nAWS DMS supports validating replicated data in Amazon S3 targets. Because AWS DMS stores replicated data as flat files in Amazon S3, it uses Amazon Athena CREATE TABLE AS SELECT (CTAS) queries to validate the S3 data. Queries on data stored in Amazon S3 are computationally intense, and S3 target validation therefore incurs additional Amazon Athena costs.\n\n## How validation runs\n\nDuring CDC, AWS DMS runs validation on S3 data once a day at 00:00 UTC. Each of these daily validations is called an interval validation, and each one validates all change records that were migrated to the target S3 bucket during the previous 24 hours.\n\n## Prerequisites\n\nS3 target validation requires AWS DMS version 3.5.0 or later. In addition, the following must all be true:\n\n- The DataFormat value in the endpoint's S3Settings is set to parquet.\n- The role assigned to the user account that created the migration task has the required permissions.\n- The task uses ongoing replication (CDC).\n- Supplemental logging is turned on.\n- The TimestampColumnName parameter is set for the target endpoint. There are no limitations on the timestamp column name.\n- Date-based folder partitioning is set up for the target, and the DatePartitionSequence value has a Day component. S3 target validation does not support the YYYYMM format.\n\n## Limitations and considerations\n\n### False validation errors\n\nFalse validation errors may appear in the awsdms_validation_failures_v1 table during interval validation in CDC. Changes that arrive during an interval validation are migrated by AWS DMS into the next day's partition folder, although such changes are normally written into the current day's partition folder. These false errors are a limitation of validating replication from a dynamic source to a static target such as S3. They typically appear for records near the end of the validation window (00:00 UTC). A low CDCLatencySource for the task minimizes false errors.\n\n### Task state\n\nTasks in the failed or stopped state don't validate the previous day's changes. Running separate validation only tasks with the same table mappings and endpoints minimizes validation errors from unexpected failures.\n\n### Interpreting validation status\n\nThe Validation Status column in table statistics reflects the state of the most recent interval validation. A table with mismatches might therefore show as validated after the next day's interval validation. Mismatches that occurred more than a day ago are found in the s3_validation_failures folder in the target bucket.\n\n### Bucket limit\n\nS3 validation uses the Athena bucketed table feature to make a bucketed copy of the target table data. Athena bucketed tables have a limit of 100,000 buckets, and tables for which S3 validation would create more than this limit fail validation. The number of buckets equals the number of records in the table divided by the validation partition size setting, so increasing the validation partition size setting reduces the number of buckets created.\n\n### Table names\n\nTable names must not contain special characters except underscore, because Athena does not support special characters other than underscore in table names.\n\n### AWS Lake Formation\n\nValidation fails when AWS DMS data validation is used with an S3 target managed by AWS Lake Formation.\n\n## Validation only tasks\n\nA validation only task runs validation on data to be migrated without running the migration. Validation only tasks continue to run even if the migration task stops, and they ensure that AWS DMS doesn't miss the 00:00 UTC interval validation window. However, they validate only changes since the last interval validation window; they don't validate full-load data or CDC data from previous days.\n\nA Full-Load task with Validation only enabled validates only the Full-Load data in the S3 target, and it does not validate data migrated by CDC. Consequently, validating a target that has an active CDC task using Full-Load validation only mode does not produce an effective validation.",
@@ -2227,7 +2254,29 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 8,
-    "n_correct": 8
+    "n_correct": 8,
+    "n_generated": 8,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "no"
+    ],
+    "replies": [
+     "Yes\n\nThe document says tasks in the failed or stopped state don't validate the previous day's changes, and that running ",
+     "yes",
+     "Yes. The document says tables whose bucket calculation (records divided by validation partition size) produces more than",
+     "yes",
+     "Yes. The document says false validation errors can appear in the awsdms_validation_failures_v1 table during CDC interval",
+     "No. According to the document, a Full-Load task with Validation only enabled validates only the Full-Load data in the S3",
+     "Yes. The document says mismatches that occurred more than a day ago are found in the s3_validation_failures folder in th",
+     "No. The document says validation works only when AWS DMS is version 3.5.0 or later, and 3.4.7 is earlier than that."
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.7470355731225296,
@@ -2506,6 +2555,11 @@
       "automatic": false
      }
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 8,
+    "n_correct": 8
    }
   },
   "log": [
@@ -2702,9 +2756,31 @@
     ]
    },
    "entailment": {
-    "rate": 0.5,
+    "rate": 1.0,
     "n_probes": 8,
-    "n_correct": 4
+    "n_correct": 8,
+    "n_generated": 8,
+    "expected": [
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "no",
+     "no",
+     "no",
+     "yes"
+    ],
+    "replies": [
+     "Yes. The document says the number of buckets equals the number of records in the table divided by the validation partiti",
+     "Yes. According to the document, AWS DMS migrates changes that arrive during interval validation into the next day's part",
+     "No. According to the document, a Full-Load task with validation only enabled validates only the Full-Load data in the S3",
+     "Yes. The document says a table with mismatches might show as validated after the next day's interval validation, because",
+     "No. The table name 'sales-data' contains a hyphen, which is a special character other than underscore. The document says",
+     "No",
+     "No. S3 target validation requires AWS DMS version 3.5.0 or later, and version 3.4.7 is earlier than that, so validation ",
+     "Yes. The document says tasks in the failed or stopped state don't validate the previous day's changes, and that separate"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.7470355731225296,
@@ -2793,11 +2869,16 @@
     ]
    },
    "drift": {
-    "drift": 0.5569828722002635,
+    "drift": 0.45281620553359686,
     "atomic_loss": 0.021739130434782594,
     "cbr_loss": 0.6758893280632412,
-    "entailment_loss": 0.5,
+    "entailment_loss": 0.0,
     "structural_loss": 1.0
+   },
+   "entailment_before_regrade": {
+    "rate": 0.5,
+    "n_probes": 8,
+    "n_correct": 4
    }
   },
   "regen_doc": "# Validating replicated data in Amazon S3 targets\n\nAWS DMS supports validating replicated data in Amazon S3 targets. DMS stores replicated data as flat files in Amazon S3, and it validates that data with Amazon Athena CREATE TABLE AS SELECT (CTAS) queries. Queries on data stored in Amazon S3 are computationally intense, so S3 target validation incurs additional Athena costs.\n\n## Prerequisites\n\nS3 target validation requires AWS DMS version 3.5.0 or later. It also applies only when all of the following hold:\n\n- The DataFormat value in the endpoint's S3Settings is set to parquet.\n- The role assigned to the user account that created the migration task has the required permissions.\n- The task uses ongoing replication (CDC).\n- Supplemental logging is turned on.\n- The TimestampColumnName parameter is set for the target endpoint. There are no limitations on the timestamp column name.\n- Date-based folder partitioning is set up for the target, and the DatePartitionSequence value has a Day component. S3 target validation does not support the YYYYMM format.\n\n## How validation runs\n\nDuring CDC, AWS DMS runs validation on S3 data once a day at 00:00 UTC. Each of these daily runs is called an interval validation, and it validates all change records migrated to the target S3 bucket during the previous 24 hours.\n\n## Validation results and false errors\n\nThe Validation Status column in table statistics reflects the state of the most recent interval validation. A table with mismatches might show as validated after the next day's interval validation. Mismatches that occurred more than a day ago are found in the s3_validation_failures folder in the target bucket.\n\nFalse validation errors may appear in the awsdms_validation_failures_v1 table during interval validation in CDC. AWS DMS migrates changes that arrived during interval validation into the next day's partition folder, although such changes are normally written into the current day's partition folder. These false errors are a limitation of validating replication from a dynamic source to a static target such as S3. They typically appear for records near the end of the validation window (00:00 UTC). A low CDCLatencySource for the task minimizes them.\n\nTasks in the failed or stopped state don't validate the previous day's changes. Separate validation only tasks with the same table mappings and endpoints minimize validation errors from unexpected failures.\n\n## Limitations\n\n- **Bucket limit:** S3 validation uses the Athena bucketed table feature to make a bucketed copy of the target table data. Athena bucketed tables have a limit of 100,000 buckets, and tables for which S3 validation would create more than that limit fail validation. The number of buckets equals the number of records in the table divided by the validation partition size setting, so increasing that setting reduces the number of buckets created.\n- **Table names:** Table names must not contain special characters except underscore, because Athena does not support other special characters in table names.\n- **AWS Lake Formation:** Validation fails when AWS DMS data validation is used with an S3 target managed by AWS Lake Formation.\n\n## Validation only tasks\n\nA validation only task runs validation on data to be migrated without running the migration. These tasks continue to run even if the migration task stops, which ensures AWS DMS doesn't miss the 00:00 UTC interval validation window. They validate only changes since the last interval validation window, so they don't validate full-load data or CDC data from previous days.\n\nA Full-Load task with Validation only enabled validates only the Full-Load data in the S3 target. It does not validate data migrated by CDC. Validating a target with an active CDC task using Full-Load validation only mode therefore does not produce an effective validation.",
@@ -4847,9 +4928,31 @@
     ]
    },
    "entailment": {
-    "rate": 0.875,
+    "rate": 1.0,
     "n_probes": 8,
-    "n_correct": 7
+    "n_correct": 8,
+    "n_generated": 8,
+    "expected": [
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "no",
+     "no",
+     "no",
+     "yes"
+    ],
+    "replies": [
+     "Yes\n\nThe document states that the number of buckets equals the number of records in the table divided by the validation ",
+     "Yes. The document says AWS DMS migrates changes that arrive during interval validation into the next day's partition fol",
+     "No. According to the document, a Full-Load task with validation only enabled validates only the Full-Load data in the S3",
+     "Yes. The document says the Validation Status column reflects only the most recent interval validation, so a table with m",
+     "No. The document says table names must not contain special characters except underscore, and 'sales-data' contains a hyp",
+     "No. The document says validation only tasks validate only changes since the last interval validation window, and they do",
+     "**No.** S3 target validation requires AWS DMS version 3.5.0 or later, so version 3.4.7 doesn't meet that requirement. Th",
+     "Yes. The document says tasks in the failed or stopped state don't validate the previous day's changes. It also says sepa"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.9209486166007905,
@@ -4933,10 +5036,10 @@
     ]
    },
    "drift": {
-    "drift": 0.3745102270917488,
+    "drift": 0.3484685604250822,
     "atomic_loss": 0.01098901098901095,
     "cbr_loss": 0.43083003952569165,
-    "entailment_loss": 0.125,
+    "entailment_loss": 0.0,
     "structural_loss": 1.0
    },
    "regen_doc": "# Validating replicated data in Amazon S3 targets with AWS DMS\n\n## Before you begin\n\nComplete each of the following before creating a task that uses S3 target validation.\n\n- **AWS DMS version:** Use an AWS DMS replication instance/engine version 3.5.0 or later.\n- **DataFormat:** Set the DataFormat value in the S3 target endpoint's S3Settings to parquet. Steps: https://docs.aws.amazon.com/dms/latest/userguide/CHAP_Target.S3.html\n- **IAM permissions:** Grant the Athena, Glue, and S3 permissions to the role assigned to the user account that created the migration task. The steps are on this page.\n- **Supplemental logging (CDC tasks):** Turn on supplemental logging at the source so CDC data has complete records. Steps: https://docs.aws.amazon.com/dms/latest/userguide/CHAP_Troubleshooting.html\n- **TimestampColumnName (CDC tasks):** Set the TimestampColumnName parameter on the target endpoint. Steps: https://docs.aws.amazon.com/dms/latest/APIReference/API_S3Settings.html\n- **Date-based folder partitioning (CDC tasks):** Configure date-based folder partitioning for the S3 target, with a Day component in DatePartitionSequence. Steps: https://docs.aws.amazon.com/dms/latest/userguide/CHAP_Target.S3.html\n\n## Overview\n\nAWS DMS supports validating replicated data in Amazon S3 targets, but only when all of the following hold: the version is 3.5.0 or later; the DataFormat value in the endpoint's S3Settings is set to parquet and the role assigned to the user account that created the migration task has the required permissions; the DatePartitionSequence value has a Day component; and the task uses ongoing replication (CDC) with supplemental logging turned on, the TimestampColumnName parameter set for the target endpoint, and date-based folder partitioning set up for the target. There are no limitations on the timestamp column name. S3 target validation does not support the YYYYMM format.\n\nAWS DMS stores replicated data as flat files in Amazon S3, so it uses Amazon Athena CREATE TABLE AS SELECT (CTAS) queries to validate that data. Queries on data stored in Amazon S3 are computationally intense, so AWS DMS runs validation on S3 data during CDC once a day at 00:00 UTC. Each of these daily validations is called an interval validation. An interval validation validates all change records migrated to the target S3 bucket during the previous 24 hours. S3 target validation incurs additional Amazon Athena costs.\n\n## Validation results and false errors\n\nFalse validation errors may appear in the awsdms_validation_failures_v1 table during interval validation in CDC. AWS DMS migrates changes that arrived during interval validation into the next day's partition folder, although such changes are normally written into the current day's partition folder. These false errors are a limitation of validating replication from a dynamic source to a static target such as S3. They typically appear for records near the end of the validation window (00:00 UTC). A low CDCLatencySource for the task minimizes false errors.\n\nTasks in the failed or stopped state don't validate the previous day's changes. Separate validation only tasks with the same table mappings and endpoints minimize validation errors from unexpected failures, and this applies in the situation where tasks fail or stop.\n\nThe Validation Status column in table statistics reflects the state of the most recent interval validation. Because of this, a table with mismatches might show as validated after the next day's interval validation. Mismatches that occurred more than a day ago are found in the s3_validation_failures folder in the target bucket.\n\n## Bucket limits\n\nS3 validation uses the Athena bucketed table feature to make a bucketed copy of the target table data. Athena bucketed tables have a limit of 100,000 buckets. The number of buckets equals the number of records in the table divided by the validation partition size setting. Because of that limit and that calculation, tables for which S3 validation would create more than the bucket limit fail validation. Increasing the validation partition size setting reduces the number of buckets created.\n\n## Table names\n\nTable names must not contain special characters except underscore, because Athena does not support special characters other than underscore in table names.\n\n## Lake Formation\n\nValidation fails when AWS DMS data validation is used with an S3 target managed by AWS Lake Formation.\n\n## Validation only tasks\n\nA validation only task runs validation on data to be migrated without running the migration. Validation only tasks continue to run even if the migration task stops, which ensures AWS DMS doesn't miss the 00:00 UTC interval validation window. They validate only changes since the last interval validation window, and they don't validate full-load data or CDC data from previous days.\n\nA Full-Load task with Validation only enabled validates only the Full-Load data in the S3 target. It does not validate data migrated by CDC. Validating a target with an active CDC task using Full-Load validation only mode therefore does not produce an effective validation.",
@@ -5125,6 +5228,11 @@
       "automatic": false
      }
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 0.875,
+    "n_probes": 8,
+    "n_correct": 7
    }
   },
   "log": [

@@ -65,7 +65,23 @@
    "entailment": {
     "rate": 0.8,
     "n_probes": 5,
-    "n_correct": 4
+    "n_correct": 4,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes. The document says the export API requires version 1.4.6.0 or later, and support for exportFilter requires version 1",
+     "No.\n\nUsing the formula: export_seconds = 960,000,000 / (64 × 50,000) = 960,000,000 / 3,200,000 = 300 seconds.\n\nSo the an",
+     "Yes. The document says only one export can be active on a cluster at a time, and a new request submitted while another i",
+     "Yes. The document says the export API needs write permissions to S3, unlike the bulk loader, which only needs read acces",
+     "Yes. The document says that if the cluster is servicing write traffic during an export, the exported data may be partial"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.5644171779141104,
@@ -143,6 +159,11 @@
     "cbr_loss": 0.5337423312883436,
     "entailment_loss": 0.19999999999999996,
     "structural_loss": 0.18000000000000002
+   },
+   "entailment_before_regrade": {
+    "rate": 0.8,
+    "n_probes": 5,
+    "n_correct": 4
    }
   },
   "regen_doc": "# Neptune Export API\n\n## Overview\n\nThe Neptune export API enables exporting data from a Neptune database to Amazon S3. RDF data can be exported in N-Triples or N-Quads format. Native export runs on the writer instance of the Neptune cluster and writes exported data to Amazon S3 using multipart uploads.\n\n## Performance and Sizing\n\nExport uses the writer instance's compute resources, so running exports against a cloned cluster is strongly recommended to avoid impacting production workloads. Export throughput scales approximately linearly with instance size up to r7i.16xlarge, and 16xlarge instances are recommended for export operations for optimal price-to-performance ratio.\n\nA conservative planning estimate is approximately 50,000 statements per second per vCPU. Estimated export duration is therefore:\n\nexport_seconds = total_statements / (vCPUs × 50,000)\n\nActual throughput depends on dataset characteristics, including predicate cardinality, statement complexity, and cluster size.\n\n## Prerequisites\n\n- The export API requires a Neptune database cluster running version 1.4.6.0 or later. Support for exportFilter requires version 1.4.8.0 or later.\n- An IAM role with permissions to access the S3 bucket must be created and associated with the Neptune cluster.\n- An S3 VPC endpoint must be configured in the Neptune cluster's VPC.\n- Running export on a cloned cluster without any read/write workloads is strongly recommended to avoid impact on production performance.\n\n## IAM Permissions\n\nTwo sets of permissions are involved. First, the caller's IAM principal needs Neptune data-access permissions: neptune-db:StartExportJob, GetExportJobStatus, ListExportJobs, and CancelExportJob.\n\nSecond, the S3 access IAM role is the role Neptune assumes to write exported data to S3. It is passed in the iamRoleArn parameter and must be associated with the cluster. Unlike the bulk loader, which only requires read access, the export API requires write permissions to S3. For this reason, the AmazonS3ReadOnlyAccess managed policy should not be used for the export S3 role; the write-capable policy should be used instead. If a kmsKeyIdentifier is specified, the S3 access role also needs kms:Decrypt, kms:Encrypt, and kms:GenerateDataKey permissions.\n\n## Starting an Export\n\nExports are started by sending an HTTP POST to `https://your-neptune-endpoint:port/export`. The destination, format, iamRoleArn, and region parameters are required. The region must be the same region as the Neptune cluster.\n\nOptional parameters include:\n\n- **compression**: The only valid value is `gz`.\n- **namedGraphUris**: Accepts a maximum of 100 graph URIs. When specified, only data in the specified graphs is exported. If a specified named graph is empty, the export succeeds with an empty result. Invalid named graph URIs fail with InvalidParameterException.\n\n## Managing Exports\n\n- **Check status**: Send an HTTP GET to the export endpoint with exportId.\n- **List export tasks**: Send an HTTP GET to the export endpoint without exportId.\n- **Cancel an export**: Send an HTTP DELETE to the export endpoint with exportId.\n\n## Output\n\nExported data files are written under the data/ directory of `s3://your-bucket/export-id/`, and metadata is in export_status.json.\n\n## Errors\n\n- **BadRequestException**: Returned when the request contains invalid parameters or an export is already in progress.\n- **AccessDeniedException**: Returned when the IAM role lacks required permissions for S3 or KMS access.\n\n## Limitations and Considerations\n\n- Native export is not supported on Neptune Serverless instances or on read replicas.\n- Only one export can be active on a cluster at a time. If a new export request is submitted while another export is in progress, the request fails.\n- If the engine restarts during an export, the export fails and must be restarted from the beginning, because export progress is not preserved across engine restarts.\n- If the engine crashes, the export status cannot be retrieved through the status API.\n- If the cluster is servicing write traffic during an export, the exported data may reflect a partial or inconsistent view of the graph. To guarantee a consistent export, run the export against a cloned cluster.",
@@ -1921,7 +1942,23 @@
    "entailment": {
     "rate": 0.8,
     "n_probes": 5,
-    "n_correct": 4
+    "n_correct": 4,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes. The document says support for `exportFilter` requires version 1.4.8.0 or later, so a cluster on 1.4.7.0 does not su",
+     "Calculation: 64 × 50,000 = 3,200,000 statements per second. 960,000,000 / 3,200,000 = 300 seconds.\n\n**Yes**",
+     "Yes. The document says only one export can be active on a cluster at a time, and a new request submitted while another i",
+     "Yes. The document says export requires write permissions to S3, unlike the bulk loader, which only needs read access, an",
+     "Yes. The document says that if the cluster is servicing write traffic during an export, the exported data may be partial"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.9386503067484663,
@@ -2108,6 +2145,11 @@
       "automatic": false
      }
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 0.8,
+    "n_probes": 5,
+    "n_correct": 4
    }
   },
   "log": [
@@ -2270,9 +2312,25 @@
     ]
    },
    "entailment": {
-    "rate": 0.4,
+    "rate": 0.8,
     "n_probes": 5,
-    "n_correct": 2
+    "n_correct": 4,
+    "n_generated": 5,
+    "expected": [
+     "no",
+     "yes",
+     "no",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "No. The document says exportFilter support requires Neptune version 1.4.8.0 or later, so a cluster running 1.4.7.0 can't",
+     "Calculation: 64 × 50,000 = 3,200,000 statements per second. 96,000,000,000 / 3,200,000 = 30,000 seconds.\n\n**Yes**",
+     "No. The export API requires write permissions to S3, unlike the bulk loader, which only needs read access. The document ",
+     "Yes. The document says only one export can be active on a cluster at a time, and a new request submitted while another i",
+     "Yes. The document says to run the export against a cloned cluster to avoid impacting production workloads, since export "
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.5644171779141104,
@@ -2345,11 +2403,16 @@
     ]
    },
    "drift": {
-    "drift": 0.2935984926816939,
+    "drift": 0.21026515934836057,
     "atomic_loss": 0.011235955056179803,
     "cbr_loss": 0.3190184049079755,
-    "entailment_loss": 0.6,
+    "entailment_loss": 0.19999999999999996,
     "structural_loss": 0.2
+   },
+   "entailment_before_regrade": {
+    "rate": 0.4,
+    "n_probes": 5,
+    "n_correct": 2
    }
   },
   "regen_doc": "# Neptune Export API\n\n## Overview\n\nThe Neptune export API enables exporting data from a Neptune database to Amazon S3. RDF data can be exported in N-Triples or N-Quads format. Native export runs on the writer instance of the Neptune cluster and writes exported data to Amazon S3 using multipart uploads.\n\n## Performance and Sizing\n\nExport uses the writer instance's compute resources, so running exports against a cloned cluster is strongly recommended to avoid impacting production workloads. Export throughput scales approximately linearly with instance size up to r7i.16xlarge, and 16xlarge instances are recommended for export operations for optimal price-to-performance ratio.\n\nA conservative planning estimate is approximately 50,000 statements per second per vCPU. Estimated export duration is:\n\nexport_seconds = total_statements / (vCPUs × 50,000)\n\nActual throughput depends on dataset characteristics, including predicate cardinality, statement complexity, and cluster size.\n\n## Prerequisites\n\n- The Neptune database cluster must run version 1.4.6.0 or later. Support for exportFilter requires version 1.4.8.0 or later.\n- An IAM role with permissions to access the S3 bucket must be created and associated with the Neptune cluster.\n- An S3 VPC endpoint must be configured in the Neptune cluster's VPC.\n- Running the export on a cloned cluster without any read/write workloads is strongly recommended to avoid impact on production performance.\n\n## IAM Permissions\n\nTwo sets of permissions are involved. First, the caller's IAM principal needs Neptune data-access permissions: neptune-db:StartExportJob, GetExportJobStatus, ListExportJobs, and CancelExportJob.\n\nSecond, the S3 access IAM role is the role Neptune assumes to write exported data to S3. It is passed in the iamRoleArn parameter and must be associated with the cluster. Unlike the bulk loader, which only requires read access, the export API requires write permissions to S3. For this reason, the AmazonS3ReadOnlyAccess managed policy should not be used for the export S3 role; use a write-capable policy instead. If a kmsKeyIdentifier is specified, the S3 access role also needs kms:Decrypt, kms:Encrypt, and kms:GenerateDataKey permissions.\n\n## Starting an Export\n\nStart an export by sending an HTTP POST to `https://your-neptune-endpoint:port/export`. The destination, format, iamRoleArn, and region parameters are required. The region must be the same region as the Neptune cluster.\n\nOptional parameters include:\n\n- **compression**: The only valid value is `gz`.\n- **namedGraphUris**: Accepts a maximum of 100 graph URIs. When specified, only data in the specified graphs is exported. If a specified named graph is empty, the export succeeds with an empty result. Invalid named graph URIs fail with InvalidParameterException.\n\n## Managing Exports\n\n- **Check status**: Send an HTTP GET to the export endpoint with exportId.\n- **List export tasks**: Send an HTTP GET to the export endpoint without exportId.\n- **Cancel an export**: Send an HTTP DELETE to the export endpoint with exportId.\n\n## Output\n\nExported data files are written under the data/ directory of s3://your-bucket/export-id/, and metadata is in export_status.json.\n\n## Errors\n\n- **BadRequestException**: Returned when the request contains invalid parameters or an export is already in progress.\n- **AccessDeniedException**: Returned when the IAM role lacks required permissions for S3 or KMS access.\n\n## Limitations and Considerations\n\n- Native export is not supported on Neptune Serverless instances or on read replicas.\n- Only one export can be active on a cluster at a time. If a new export request is submitted while another is in progress, the request fails.\n- If the engine restarts during an export, the export fails and must be restarted from the beginning, because export progress is not preserved across engine restarts.\n- If the engine crashes, the export status cannot be retrieved through the status API.\n- If the cluster is servicing write traffic during an export, the exported data may reflect a partial or inconsistent view of the graph. To guarantee a consistent export, run the export against a cloned cluster.",
@@ -4021,9 +4084,25 @@
     ]
    },
    "entailment": {
-    "rate": 1.0,
+    "rate": 0.8,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 4,
+    "n_generated": 5,
+    "expected": [
+     "no",
+     "yes",
+     "no",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "No. The document says exportFilter requires version 1.4.8.0 or later, and the cluster runs 1.4.7.0, which is older.",
+     "Compute: 64 × 50,000 = 3,200,000 statements per second. 96,000,000,000 / 3,200,000 = 30,000 seconds.\n\n**Yes**",
+     "No. The export API requires write permissions to S3, whereas the bulk loader only needs read access. The document says e",
+     "Yes. The document says only one export can be active on a cluster at a time, so a new request submitted during an export",
+     "Yes. The document says that running the export on a cloned cluster avoids impacting production performance, since export"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.6993865030674846,
@@ -4094,10 +4173,10 @@
     ]
    },
    "drift": {
-    "drift": 0.22984623260609668,
+    "drift": 0.27151289927276334,
     "atomic_loss": 0.023016517736257902,
     "cbr_loss": 0.4601226993865031,
-    "entailment_loss": 0.0,
+    "entailment_loss": 0.19999999999999996,
     "structural_loss": 0.2
    },
    "regen_doc": "# Neptune export API\n\n## Before you begin\n\nComplete the following before you start an export:\n\n- **Associate the S3 access IAM role with the Neptune cluster.** Steps: https://docs.aws.amazon.com/neptune/latest/userguide/bulk-load-tutorial-IAM-add-role-cluster.html\n- **Attach an identity policy to the caller's IAM identity that grants the Neptune data-access actions (neptune-db) for the export API.** Steps: https://docs.aws.amazon.com/neptune/latest/userguide/iam-dp-actions.html\n- **Have an AWS KMS key for encrypting exported data**, needed only if you use kmsKeyIdentifier.\n\n## Overview\n\nThe Neptune export API enables exporting data from a Neptune database to Amazon S3. RDF data can be exported in N-Triples or N-Quads format. Native export runs on the writer instance of the Neptune cluster and writes exported data to Amazon S3 using multipart uploads. Because native export is not supported on Neptune Serverless instances or on read replicas, it runs on the writer instance.\n\n## Requirements\n\nThe export API requires a Neptune database cluster running version 1.4.6.0 or later. Support for exportFilter requires version 1.4.8.0 or later. An IAM role with permissions to access the S3 bucket must be created and associated with the Neptune cluster, and an S3 VPC endpoint must be configured in the Neptune cluster's VPC.\n\nThe caller's IAM principal needs the Neptune data-access permissions neptune-db:StartExportJob, GetExportJobStatus, ListExportJobs, and CancelExportJob.\n\nThe S3 access IAM role is the role Neptune assumes to write exported data to S3. You pass it in the iamRoleArn parameter, and it must be associated with the cluster. The export API requires write permissions to S3, unlike the bulk loader, which only requires read access. For this reason, do not use the AmazonS3ReadOnlyAccess managed policy for the export S3 role; use the write-capable policy instead. If you specify a kmsKeyIdentifier, the S3 access role needs kms:Decrypt, kms:Encrypt, and kms:GenerateDataKey permissions.\n\n## Performance and sizing\n\nExport uses the writer instance's compute resources, so running exports against a cloned cluster is strongly recommended to avoid impacting production workloads. Running the export on a cloned cluster without any read/write workloads is strongly recommended to avoid impact on production performance. 16xlarge instances are recommended for export operations for the optimal price-to-performance ratio.\n\nExport throughput scales approximately linearly with instance size up to r7i.16xlarge. A conservative planning estimate is approximately 50,000 statements per second per vCPU. Combining the linear scaling with this per-vCPU estimate gives the estimated export duration:\n\nexport_seconds = total_statements / (vCPUs × 50,000)\n\nActual throughput depends on dataset characteristics including predicate cardinality, statement complexity, and cluster size.\n\n## Starting an export\n\nStart an export by sending an HTTP POST to https://your-neptune-endpoint:port/export. The destination, format, iamRoleArn, and region parameters are required. The region must be the same region as the Neptune cluster. The compression parameter is optional, and its only valid value is gz.\n\nThe namedGraphUris parameter accepts a maximum of 100 graph URIs. When namedGraphUris is specified, only data in the specified graphs is exported; this holds only when the cluster runs version 1.4.8.0 or later. If a specified named graph is empty, the export succeeds with an empty result. Invalid named graph URIs fail with InvalidParameterException.\n\n## Checking, listing, and cancelling exports\n\nCheck export status with an HTTP GET to the export endpoint with exportId. List export tasks with an HTTP GET to the export endpoint without exportId. Cancel an export task with an HTTP DELETE to the export endpoint with exportId.\n\n## Output\n\nExported data files are written under the data/ directory of s3://your-bucket/export-id/, and metadata is in export_status.json.\n\n## Errors\n\nBadRequestException is returned when the request contains invalid parameters or an export is already in progress. AccessDeniedException is returned when the IAM role lacks required permissions for S3 or KMS access.\n\n## Limitations and consistency\n\nOnly one export can be active on a cluster at a time. If a new export request is submitted while another export is in progress, the request fails.\n\nIf the engine restarts during an export, the export fails and must be restarted from the beginning. As a result, export progress is not preserved across engine restarts. If the engine crashes, the export status cannot be retrieved through the status API.\n\nIf the cluster is servicing write traffic during an export, the exported data may reflect a partial or inconsistent view of the graph. To guarantee a consistent export, run the export against a cloned cluster.",
@@ -4197,6 +4276,11 @@
      }
     ],
     "detours": []
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "log": [

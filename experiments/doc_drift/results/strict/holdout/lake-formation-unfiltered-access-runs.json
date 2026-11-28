@@ -76,7 +76,29 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 8,
-    "n_correct": 8
+    "n_correct": 8,
+    "n_generated": 8,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "no",
+     "no"
+    ],
+    "replies": [
+     "Yes. The document says that jobs with a user-defined runtime role holding lakeformation:GetDataAccess can read Lake Form",
+     "Yes. The document says that when a Hive table is created by a job without full table access and no records are inserted,",
+     "Yes. The document lists creating an S3 folder at the table location as one of the three ways to resolve the failure for ",
+     "Yes. According to the document, FTA is supported with EMRFS starting in EMR release 7.8.0 and with the S3A filesystem st",
+     "No. The document says FTA is supported with the S3A filesystem starting in EMR release 7.10.0, so release 7.9.0 doesn't ",
+     "Yes. The document says Hudi FTA write support starts in EMR 7.12 and requires hoodie.storage.class=org.apache.spark.sql.",
+     "No. The document lists \"CREATE TABLE with LOCATION (external table)\" as not supported under Hudi FTA, even on EMR 7.12 w",
+     "no"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.611111111111111,
@@ -170,6 +192,11 @@
     "cbr_loss": 0.7592592592592593,
     "entailment_loss": 0.0,
     "structural_loss": 1.0
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 8,
+    "n_correct": 8
    }
   },
   "regen_doc": "# Using Lake Formation Full Table Access (FTA) with EMR Serverless\n\n## Overview\n\nAmazon EMR release 7.8.0 and higher lets jobs use Lake Formation with Glue Data Catalog where the job runtime role has full table permissions. Full table access allows reading and writing Lake Formation protected tables from EMR Serverless Spark batch and interactive jobs. Lake Formation does not need to be enabled on the EMR Serverless application for full table access.\n\nA Spark job configured for FTA uses Lake Formation credentials to read and write S3 data for Lake Formation registered tables. For tables not registered with Lake Formation, it uses the job runtime role credentials instead.\n\n## Prerequisites and requirements\n\n- A job cannot simultaneously run FTA and FGAC on the same EMR cluster or application. Lake Formation must not be enabled for fine-grained access control when using FTA.\n- To use FTA mode, third-party query engines must be allowed to access data without IAM session tag validation in Lake Formation.\n- For cross-account tables, full-table access must be enabled in both the producer and consumer accounts. Likewise, for cross-region tables, it must be enabled in both the producer and consumer regions.\n- The job runtime role needs the lakeformation:GetDataAccess IAM permission for read or write access to the underlying data. With this permission, Lake Formation grants requests for temporary credentials to access the data.\n- A user defined role must be used, not a service-linked role.\n- Glue Data Catalog must be configured as a metastore to access Lake Formation tables.\n- For Spark to use Lake Formation credentials, the Lake Formation credential resolver configuration must be set during Spark initialization.\n\n## Lake Formation permissions\n\n- Spark jobs that read data from S3 require Lake Formation SELECT permission.\n- Spark jobs that write or delete data in S3 require Lake Formation ALL (SUPER) permission.\n- Spark jobs that interact with Glue Data Catalog require DESCRIBE, ALTER, or DROP permission as appropriate.\n\n## SageMaker Unified Studio JupyterLab\n\nIn SageMaker Unified Studio JupyterLab, accessing Lake Formation registered tables from interactive Spark sessions uses compatibility permission mode. Spark configurations must be set via %%configure before executing any Spark operations in the notebook.\n\n## Supported formats and filesystems\n\nFTA is supported with EMRFS starting in EMR release 7.8.0, and with the S3A filesystem starting in EMR release 7.10.0. It is supported for Hive, Iceberg, Delta, and Hudi tables.\n\n## Considerations and limitations\n\n**Operations and credentials.** Listed operations such as CREATE TABLE, INSERT INTO, MERGE INTO, DROP TABLE and datasource reads/writes use Lake Formation credentials to access table data. Operations not listed as supported continue to use IAM permissions to access table data. Creating external tables requires IAM permissions.\n\n**Unsupported scenarios.**\n- Jobs referencing tables with Lake Formation FGAC rules or Glue Data Catalog Views fail under FTA. FGAC mode must be used to query such a table or view.\n- Full table access does not support Spark Streaming.\n- Only APPEND mode is supported when writing a Spark DataFrame to a Lake Formation Hive or Iceberg table.\n\n**Credential caching.** Lake Formation temporarily caches credentials within a Spark job. As a result, a currently running Spark batch job or interactive session might not reflect permission changes.\n\n**$folder$ suffix.** Lake Formation credentials do not allow reading table folders with the $folder$ suffix. Setting useDirectoryHeaderAsFolderObject and folderObject.autoAction.disabled makes EMRFS use the application/x-directory content type header instead of the $folder$ suffix.\n\nA related problem arises when a Hive table is created by a job without full table access and no records are inserted. In that case EMR Spark without full table access adds the $folder$ suffix to the table folder name, and subsequent reads or writes from an FTA job on such a table fail. Any of the following resolves the failure:\n- Inserting at least one row from a non-FTA job.\n- Setting spark.hadoop.fs.s3.useDirectoryHeaderAsFolderObject=true in the non-FTA job.\n- Creating an S3 folder at the table location.\n\n**Table creation and deletion.**\n- Lake Formation credentials to verify an empty table location are available only after Glue Data Catalog table creation. Without skipLocationValidationOnCreateTable, the job runtime role credentials validate the empty table location.\n- Lake Formation credentials to create the S3 folder are likewise available only after Glue Data Catalog table creation.\n- Lake Formation credentials to drop the S3 folder are not available after table deletion from the Glue Data Catalog.\n\n## Hudi-specific considerations\n\n- Hudi FTA write support is available starting from EMR release 7.12, and requires hoodie.storage.class=org.apache.spark.sql.hudi.storage.HoodieCredentialedHadoopStorage. It works only with default Hudi configurations.\n- Clustering for Hudi MOR tables is not supported under FTA write mode.\n\n**Supported under Hudi FTA:**\n- SQL INSERT, INSERT OVERWRITE, UPDATE, DELETE, DROP, managed CREATE TABLE, CTAS and other ALTER operations, for COW and MOR.\n- saveAsTable with Overwrite, Ignore and ErrorIfExists.\n\n**Not supported under Hudi FTA:**\n- UPDATE TABLE changing partition, for COW and MOR.\n- ALTER TABLE RENAME TO.\n- CREATE TABLE with LOCATION (external table).\n- saveAsTable.Append for INSERT, UPSERT, DELETE and BULK_INSERT dataframe operations.\n- saveAsTable external table (Path) and save(path) DF v1.",
@@ -2202,7 +2229,29 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 8,
-    "n_correct": 8
+    "n_correct": 8,
+    "n_generated": 8,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "no",
+     "no"
+    ],
+    "replies": [
+     "Yes. The role having lakeformation:GetDataAccess and Lake Formation SELECT permission for S3 reads matches two of the th",
+     "Yes. The document says the failure occurs when both conditions hold: the table was created by a non-FTA job with no reco",
+     "Yes",
+     "Yes. According to the document, FTA is supported with EMRFS starting in EMR release 7.8.0 and with the S3A filesystem st",
+     "No. The document says FTA is supported with the S3A filesystem starting in EMR release 7.10.0, so release 7.9.0 does not",
+     "Yes. The document says SQL INSERT and managed CREATE TABLE are supported for COW and MOR tables under Hudi FTA when EMR ",
+     "No. The document lists \"CREATE TABLE with LOCATION (external table)\" as not supported under Hudi FTA, even with EMR 7.12",
+     "No. The document says a job cannot run FTA and FGAC together, and jobs referencing tables with Lake Formation FGAC rules"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.9074074074074074,
@@ -2397,6 +2446,11 @@
       "automatic": false
      }
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 8,
+    "n_correct": 8
    }
   },
   "log": [
@@ -2593,9 +2647,31 @@
     ]
    },
    "entailment": {
-    "rate": 1.0,
+    "rate": 0.875,
     "n_probes": 8,
-    "n_correct": 8
+    "n_correct": 7,
+    "n_generated": 8,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "no",
+     "no",
+     "no",
+     "yes",
+     "no"
+    ],
+    "replies": [
+     "unknown\n\nThe document says reads require both `lakeformation:GetDataAccess` and Lake Formation SELECT. It also lists oth",
+     "yes",
+     "Yes",
+     "No. The document lists \"CREATE TABLE with LOCATION (external table)\" as not supported under Hudi FTA, even on EMR 7.12 w",
+     "No. The document says FTA is supported with the S3A filesystem only starting in EMR release 7.10.0, so a job on EMR 7.9.",
+     "No. The document says a job cannot run FTA and FGAC at the same time on the same EMR cluster or application, and that La",
+     "Yes. The document lists setting `spark.hadoop.fs.s3.useDirectoryHeaderAsFolderObject=true` in the non-FTA job as one of ",
+     "No. The document says that when writing a Spark DataFrame to a Lake Formation Hive or Iceberg table under FTA, only APPE"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.5092592592592592,
@@ -2685,11 +2761,16 @@
     ]
    },
    "drift": {
-    "drift": 0.4594907407407408,
+    "drift": 0.48553240740740744,
     "atomic_loss": 0.01666666666666672,
     "cbr_loss": 0.6944444444444444,
-    "entailment_loss": 0.0,
+    "entailment_loss": 0.125,
     "structural_loss": 1.0
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 8,
+    "n_correct": 8
    }
   },
   "regen_doc": "# Using Lake Formation with Full Table Access in EMR Serverless\n\n## Overview\n\nAmazon EMR release 7.8.0 and higher lets jobs use Lake Formation with Glue Data Catalog where the job runtime role has full table permissions. Full table access (FTA) allows reading and writing Lake Formation protected tables from EMR Serverless Spark batch and interactive jobs. Lake Formation does not need to be enabled on the EMR Serverless application for full table access.\n\nA Spark job configured for FTA uses Lake Formation credentials to read and write S3 data for Lake Formation registered tables. For tables not registered with Lake Formation, the job uses the job runtime role credentials instead.\n\n## Requirements and prerequisites\n\nA job cannot simultaneously run FTA and fine-grained access control (FGAC) on the same EMR cluster or application. Accordingly, Lake Formation must not be enabled for fine-grained access control when using FTA. Third-party query engines must be allowed to access data without IAM session tag validation in Lake Formation to use FTA mode.\n\nFor cross-account tables, full-table access must be enabled in both producer and consumer accounts. Likewise, for cross-region tables, it must be enabled in both producer and consumer regions.\n\nThe job runtime role needs the lakeformation:GetDataAccess IAM permission for read or write access to the underlying data. With this permission, Lake Formation grants requests for temporary credentials to access the data. A user defined role must be used, not a service-linked role.\n\nBeyond that, the Lake Formation permissions required depend on what the Spark job does:\n\n- Jobs that read data from S3 require Lake Formation SELECT permission.\n- Jobs that write or delete data in S3 require Lake Formation ALL (SUPER) permission.\n- Jobs that interact with Glue Data Catalog require DESCRIBE, ALTER, or DROP permission, as appropriate.\n\nGlue Data Catalog must be configured as a metastore to access Lake Formation tables. In addition, for Spark to use Lake Formation credentials, the Lake Formation credential resolver configuration must be set during Spark initialization.\n\nIn SageMaker Unified Studio JupyterLab, accessing Lake Formation registered tables from interactive Spark sessions uses compatibility permission mode. There, Spark configurations must be set via %%configure before executing any Spark operations in the notebook.\n\n## Supported filesystems and table formats\n\nFTA is supported with EMRFS starting in EMR release 7.8.0, and with the S3A filesystem starting in EMR release 7.10.0. It is supported for Hive, Iceberg, Delta, and Hudi tables.\n\n## Operations and credentials\n\nListed operations such as CREATE TABLE, INSERT INTO, MERGE INTO, DROP TABLE and datasource reads/writes use Lake Formation credentials to access table data. Operations not listed as supported continue to use IAM permissions to access table data. Creating external tables requires IAM permissions.\n\n## Hudi-specific considerations\n\nHudi FTA writes require hoodie.storage.class=org.apache.spark.sql.hudi.storage.HoodieCredentialedHadoopStorage. Hudi FTA write support is available starting from EMR release 7.12, and works only with default Hudi configurations. Clustering for Hudi MOR tables is not supported under FTA write mode.\n\nUnder Hudi FTA, the following are supported:\n- SQL INSERT, INSERT OVERWRITE, UPDATE, DELETE, DROP, managed CREATE TABLE, CTAS and other ALTER operations, for COW and MOR.\n- saveAsTable with Overwrite, Ignore and ErrorIfExists.\n\nUnder Hudi FTA, the following are not supported:\n- UPDATE TABLE changing partition, for COW and MOR.\n- ALTER TABLE RENAME TO.\n- CREATE TABLE with LOCATION (external table).\n- saveAsTable.Append for INSERT, UPSERT, DELETE and BULK_INSERT dataframe operations.\n- saveAsTable external table (Path) and save(path) DF v1.\n\n## Limitations\n\n- Jobs referencing tables with Lake Formation FGAC rules or Glue Data Catalog Views fail under FTA. FGAC mode must be used to query such a table or view.\n- Full table access does not support Spark Streaming.\n- When writing a Spark DataFrame to a Lake Formation Hive or Iceberg table, only APPEND mode is supported.\n- Lake Formation temporarily caches credentials within a Spark job. As a result, a currently running Spark batch job or interactive session might not reflect permission changes.\n\n## Known issues with S3 folders and table locations\n\n**$folder$ suffix.** Lake Formation credentials do not allow reading table folders with the $folder$ suffix. Setting useDirectoryHeaderAsFolderObject and folderObject.autoAction.disabled makes EMRFS use the application/x-directory content type header instead of the $folder$ suffix.\n\n**Table creation and deletion.** Lake Formation credentials to verify an empty table location are available only after Glue Data Catalog table creation. Without skipLocationValidationOnCreateTable, the job runtime role credentials validate the empty table location. Likewise, Lake Formation credentials to create the S3 folder are available only after Glue Data Catalog table creation. Credentials to drop the S3 folder are not available after table deletion from the Glue Data Catalog.\n\n**Hive tables created without FTA.** Suppose a Hive table is created by a job without full table access and no records are inserted. EMR Spark without full table access adds the $folder$ suffix to the table folder name, so subsequent reads or writes from an FTA job on such a table fail. Any of the following resolves the failure:\n- Inserting at least one row from a non-FTA job.\n- Setting spark.hadoop.fs.s3.useDirectoryHeaderAsFolderObject=true in the non-FTA job.\n- Creating an S3 folder at the table location.",
@@ -4920,9 +5001,31 @@
     ]
    },
    "entailment": {
-    "rate": 0.875,
+    "rate": 0.75,
     "n_probes": 8,
-    "n_correct": 7
+    "n_correct": 6,
+    "n_generated": 8,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "no",
+     "no",
+     "no",
+     "yes",
+     "no"
+    ],
+    "replies": [
+     "unknown\n\nThe document says full table access works only when three conditions all hold. The role having `lakeformation:G",
+     "Yes. The document says subsequent reads or writes from an FTA job fail on a Hive table that a non-FTA job created with n",
+     "Yes",
+     "No. The document lists \"CREATE TABLE with LOCATION (external table)\" among the operations not supported under Hudi FTA, ",
+     "Yes. The document says FTA is supported with the S3A filesystem starting in EMR release 7.10.0. Release 7.9.0 is earlier",
+     "No. The document says a job cannot run FTA and FGAC at the same time on the same EMR cluster or application, so Lake For",
+     "Yes. The document lists setting `spark.hadoop.fs.s3.useDirectoryHeaderAsFolderObject=true` in the non-FTA job as one of ",
+     "No. The document says only APPEND mode is supported when writing a Spark DataFrame to a Lake Formation Hive or Iceberg t"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.9537037037037037,
@@ -4995,10 +5098,10 @@
     ]
    },
    "drift": {
-    "drift": 0.2734313435776203,
+    "drift": 0.2994730102442869,
     "atomic_loss": 0.13191489361702124,
     "cbr_loss": 0.5277777777777779,
-    "entailment_loss": 0.125,
+    "entailment_loss": 0.25,
     "structural_loss": 0.0
    },
    "regen_doc": "# Using Lake Formation with full table access on EMR Serverless\n\n## Before you begin\n\nComplete the following prerequisites before you configure a job for full table access (FTA).\n\n- **Lake Formation application integration setting.** Enable the setting for full table access, which allows third-party query engines to access data without IAM session tag validation. For cross-account or cross-region access, enable it in both the producer and consumer accounts and regions. Steps: https://docs.aws.amazon.com/lake-formation/latest/dg/full-table-credential-vending.html\n- **User-defined job runtime IAM role.** Create a user-defined role for the EMR Serverless job. A service-linked role cannot be used. Steps: https://docs.aws.amazon.com/lake-formation/latest/dg/registration-role.html\n- **IAM identity policy on the job runtime role.** Grant lakeformation:GetDataAccess, S3 script and log access, and Glue API permissions. Steps are on this page.\n- **Lake Formation permissions for the job runtime role.** Grant the role permissions on the Data Catalog resources: SELECT for reads, ALL (SUPER) for writes and deletes, and DESCRIBE, ALTER or DROP as needed. Steps: https://docs.aws.amazon.com/lake-formation/latest/dg/granting-catalog-permissions.html\n- **Glue Data Catalog as the metastore.** Configure the AWS Glue Data Catalog as the metastore for EMR Serverless. Steps: https://docs.aws.amazon.com/emr/latest/EMR-Serverless-UserGuide/metastore-config.html\n\n## Overview\n\nAmazon EMR release 7.8.0 and higher lets jobs use Lake Formation with the Glue Data Catalog where the job runtime role has full table permissions. Full table access allows reading and writing Lake Formation protected tables from EMR Serverless Spark batch and interactive jobs. This holds only when all of the following are true: third-party query engines are allowed to access data without IAM session tag validation in Lake Formation; the job runtime role has the lakeformation:GetDataAccess IAM permission and Lake Formation SELECT permission for reads; and the Glue Data Catalog is configured as a metastore. Lake Formation does not need to be enabled on the EMR Serverless application for full table access.\n\nA Spark job configured for FTA uses Lake Formation credentials to read and write S3 data for Lake Formation registered tables. It uses the job runtime role credentials to read and write tables not registered with Lake Formation.\n\n## Considerations and requirements\n\nA job cannot simultaneously run FTA and fine-grained access control (FGAC) on the same EMR cluster or application, so Lake Formation must not be enabled for fine-grained access control when using FTA. For this reason, a job that references tables with Lake Formation FGAC rules or Glue Data Catalog Views fails under FTA; use FGAC mode to query such a table or view.\n\nFor cross-account tables, full-table access must be enabled in both the producer and consumer accounts. For cross-region tables, it must be enabled in both the producer and consumer regions.\n\n## Permissions\n\nThe job runtime role needs the lakeformation:GetDataAccess IAM permission for read or write access to the underlying data. Lake Formation grants requests for temporary credentials to access data only when the job runtime role has this permission. Beyond that, Spark jobs that read data from S3 require Lake Formation SELECT permission. Jobs that write or delete data in S3 require Lake Formation ALL (SUPER) permission. Jobs that interact with the Glue Data Catalog require DESCRIBE, ALTER or DROP permission as appropriate.\n\nLake Formation temporarily caches credentials within a Spark job, so a currently running Spark batch job or interactive session might not reflect permission changes.\n\n## Spark configuration\n\nGlue Data Catalog must be configured as a metastore to access Lake Formation tables. The Lake Formation credential resolver configuration must be set during Spark initialization for Spark to use Lake Formation credentials.\n\nIn SageMaker Unified Studio JupyterLab, accessing Lake Formation registered tables from interactive Spark sessions uses compatibility permission mode. Spark configurations must be set via %%configure before executing any Spark operations in the notebook, so the configuration comes first, before the session accesses tables.\n\n## Supported operations and filesystems\n\nFTA is supported with EMRFS starting in EMR release 7.8.0 and with the S3A filesystem starting in EMR release 7.10.0. It is supported for Hive, Iceberg, Delta, and Hudi tables.\n\nOperations such as CREATE TABLE, INSERT INTO, MERGE INTO, DROP TABLE, and datasource reads and writes use Lake Formation credentials to access table data. Operations not listed as supported continue to use IAM permissions to access table data. Creating external tables requires IAM permissions.\n\n## Limitations\n\nFull table access does not support Spark Streaming. Only APPEND mode is supported when writing a Spark DataFrame to a Lake Formation Hive or Iceberg table.\n\n### The $folder$ suffix\n\nLake Formation credentials do not allow reading table folders with the $folder$ suffix. Setting useDirectoryHeaderAsFolderObject and folderObject.autoAction.disabled makes EMRFS use the application/x-directory content type header instead of the $folder$ suffix, so the suffix limitation is avoided.\n\nA related failure occurs in this scenario: a job without full table access creates a Hive table and inserts no records, and EMR Spark without full table access adds the $folder$ suffix to the table folder name. Subsequent reads or writes from an FTA job on such a table then fail. This failure occurs only when both conditions hold: the table was created by a non-FTA job with no records inserted, and the suffix was added. Any of the following resolves it:\n\n- Insert at least one row from a non-FTA job.\n- Set spark.hadoop.fs.s3.useDirectoryHeaderAsFolderObject=true in the non-FTA job.\n- Create an S3 folder at the table location.\n\n### Table location and folder handling\n\nLake Formation credentials to verify an empty table location are available only after Glue Data Catalog table creation. Therefore, without skipLocationValidationOnCreateTable, the job runtime role credentials validate the empty table location. Lake Formation credentials to create the S3 folder are likewise available only after Glue Data Catalog table creation. Lake Formation credentials to drop the S3 folder are not available after table deletion from the Glue Data Catalog.\n\n## Hudi support\n\nHudi FTA writes require hoodie.storage.class=org.apache.spark.sql.hudi.storage.HoodieCredentialedHadoopStorage. Set this configuration first; Hudi FTA write support, available starting from EMR release 7.12, follows from it. Hudi FTA write support works only with default Hudi configurations. Clustering for Hudi MOR tables is not supported under FTA write mode.\n\nThe following operations are supported for Hudi FTA only when the 7.12 write support, the storage class configuration, and default Hudi configurations are all in place: SQL INSERT, INSERT OVERWRITE, UPDATE, DELETE, DROP, managed CREATE TABLE, CTAS, and other ALTER operations for COW and MOR. saveAsTable Overwrite, Ignore and ErrorIfExists are also supported.\n\nThe following are not supported under Hudi FTA:\n\n- UPDATE TABLE changing partition, for COW and MOR\n- ALTER TABLE RENAME TO\n- CREATE TABLE with LOCATION (external table)\n- saveAsTable.Append for INSERT, UPSERT, DELETE and BULK_INSERT dataframe operations\n- saveAsTable external table (Path) and save(path) DF v1",
@@ -5084,6 +5187,11 @@
      }
     ],
     "detours": []
+   },
+   "entailment_before_regrade": {
+    "rate": 0.875,
+    "n_probes": 8,
+    "n_correct": 7
    }
   },
   "log": [

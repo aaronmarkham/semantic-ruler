@@ -59,7 +59,23 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "no",
+     "no"
+    ],
+    "replies": [
+     "Yes. The document says that if your File Gateway creates the policy, it contains a list of S3 actions. It also says the ",
+     "Yes",
+     "Yes. The document says a separate example policy lets the File Gateway access a bucket through an access point, and its ",
+     "No. The document says Storage Gateway can assume existing service roles passed using iam:PassRole, but it does not suppo",
+     "No. The document says the S3 bucket and any associated access points or VPC endpoints must also have an access policy th"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.38235294117647056,
@@ -125,6 +141,11 @@
     "cbr_loss": 0.47058823529411764,
     "entailment_loss": 0.0,
     "structural_loss": 1.0
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "regen_doc": "When you create a file share, your File Gateway requires access to upload files into your Amazon S3 bucket. It also requires access to perform actions on any access points or VPC endpoints that it uses to connect to the bucket. To grant this access, your File Gateway assumes an IAM role that is associated with an IAM policy granting it. The role requires both an IAM policy and a security token service (STS) trust relationship, and the IAM policy determines which actions the role can perform. Your S3 bucket and any associated access points or VPC endpoints must also have an access policy that allows the IAM role to access them.\n\nYou can create the role and access policy yourself, or your File Gateway can create them for you. If your File Gateway creates the policy for you, the policy contains a list of S3 actions. If you don't want your File Gateway to create a policy on your behalf, you can create your own policy and attach it to your file share.\n\nThe example trust policy allows the principal service storagegateway.amazonaws.com to perform sts:AssumeRole, which allows your File Gateway to assume an IAM role. Storage Gateway can assume existing service roles that are passed using the iam:PassRole policy action. However, Storage Gateway does not support IAM policies that use the iam:PassedToService context key to limit the action to specific services.\n\nThe first example policy statement allows s3:GetAccelerateConfiguration, s3:GetBucketLocation, s3:GetBucketVersioning, s3:ListBucket, s3:ListBucketVersions, and s3:ListBucketMultipartUploads on the S3 bucket named amzn-s3-demo-bucket. The second example policy statement allows s3:AbortMultipartUpload, s3:DeleteObject, s3:DeleteObjectVersion, s3:GetObject, s3:GetObjectAcl, s3:GetObjectVersion, s3:ListMultipartUploadParts, s3:PutObject, and s3:PutObjectAcl on all objects in amzn-s3-demo-bucket.\n\nA separate example policy allows your File Gateway to perform the actions required to access a bucket through an access point, with the resource being the access point ARN with a /* suffix. If you need to connect your file share to an S3 bucket through a VPC endpoint, see Endpoint policies for Amazon S3 in the AWS PrivateLink User Guide.\n\nFor encrypted buckets, the file share must use the key in the destination S3 bucket account.",
@@ -1236,9 +1257,25 @@
     ]
    },
    "entailment": {
-    "rate": 0.8,
+    "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 4
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "no",
+     "no"
+    ],
+    "replies": [
+     "Yes. The document says that if File Gateway creates the policy for you, the policy contains a list of S3 actions. It als",
+     "Yes",
+     "Yes. The document says a separate example policy lets File Gateway access a bucket through an access point, and its reso",
+     "No. The document says Storage Gateway can assume existing service roles passed using iam:PassRole, but it does not suppo",
+     "No. The document says the S3 bucket and any associated access points or VPC endpoints must have an access policy that al"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.8529411764705882,
@@ -1292,10 +1329,10 @@
     ]
    },
    "drift": {
-    "drift": 0.4795918367346939,
+    "drift": 0.4379251700680272,
     "atomic_loss": 0.10204081632653073,
     "cbr_loss": 1.0,
-    "entailment_loss": 0.19999999999999996,
+    "entailment_loss": 0.0,
     "structural_loss": 0.0
    },
    "regen_doc": "# Granting a File Gateway access to your Amazon S3 bucket\n\n## Before you begin\n\nMake sure the following are in place before you create a file share.\n\n- **An IAM role that File Gateway can assume, with an STS trust relationship (trust policy) for the Storage Gateway service.** For the steps, see https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for_service.html.\n- **An IAM identity policy attached to the role**, granting the S3 actions on the bucket and its objects (or on the access point). You don't need to create this yourself if File Gateway creates it automatically. The steps are on this page.\n- **An access policy on the S3 bucket**, and on any associated access points or VPC endpoints, that allows the IAM role to access them.\n- **A VPC endpoint policy allowing access to S3.** This is required only if you connect through a VPC endpoint. For the steps, see https://docs.aws.amazon.com/vpc/latest/privatelink/vpc-endpoints-s3.html.\n- **A KMS key in the destination S3 bucket's account**, for encrypted buckets.\n\n## Overview\n\nWhen you create a file share, your File Gateway requires access to upload files into your Amazon S3 bucket. It also requires access to perform actions on any access points or VPC endpoints that it uses to connect to the bucket. To grant this access, your File Gateway assumes an IAM role that is associated with an IAM policy that grants this access.\n\nThe role requires an IAM policy and a security token service (STS) trust relationship. The IAM policy determines which actions the role can perform. Your S3 bucket and any associated access points or VPC endpoints must have an access policy that allows the IAM role to access them. This holds only when the File Gateway assumes an IAM role associated with an IAM policy that grants the access, and that role has both the IAM policy and the STS trust relationship.\n\nYou can create the role and access policy yourself, or your File Gateway can create them for you. If your File Gateway creates the policy for you, the policy contains a list of S3 actions.\n\n## The trust policy\n\nThe example trust policy allows the principal service storagegateway.amazonaws.com to perform sts:AssumeRole, which allows your File Gateway to assume an IAM role. A trust policy like this is enough to establish the STS trust relationship the role requires.\n\nStorage Gateway can assume existing service roles that are passed using the iam:PassRole policy action. Storage Gateway does not support IAM policies that use the iam:PassedToService context key to limit the action to specific services.\n\n## Creating your own policy\n\nIf you don't want your File Gateway to create a policy on your behalf, you can create your own policy and attach it to your file share. Doing so is enough to put the first example policy statement below into effect.\n\nThe first example policy statement allows s3:GetAccelerateConfiguration, s3:GetBucketLocation, s3:GetBucketVersioning, s3:ListBucket, s3:ListBucketVersions, and s3:ListBucketMultipartUploads on the S3 bucket named amzn-s3-demo-bucket.\n\nThe second example policy statement allows s3:AbortMultipartUpload, s3:DeleteObject, s3:DeleteObjectVersion, s3:GetObject, s3:GetObjectAcl, s3:GetObjectVersion, s3:ListMultipartUploadParts, s3:PutObject, and s3:PutObjectAcl on all objects in amzn-s3-demo-bucket.\n\n## Access points and VPC endpoints\n\nA separate example policy allows your File Gateway to perform the actions required to access a bucket through an access point. The resource in that policy is the access point ARN with a /* suffix.\n\nIf you need to connect your file share to an S3 bucket through a VPC endpoint, see Endpoint policies for Amazon S3 in the AWS PrivateLink User Guide.\n\n## Encrypted buckets\n\nFor encrypted buckets, the file share must use the key in the destination S3 bucket account.",
@@ -1394,6 +1431,11 @@
       "automatic": false
      }
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 0.8,
+    "n_probes": 5,
+    "n_correct": 4
    }
   },
   "log": [
@@ -1557,7 +1599,23 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes. The document says the role requires both an IAM policy and an STS trust relationship, and that the trust policy let",
+     "Yes.\n\nThe document says the role needs an IAM policy that determines which actions it can perform, and that the S3 bucke",
+     "No. The document says Storage Gateway does not support IAM policies that use the iam:PassedToService context key to limi",
+     "**Yes.** The document says the role's access policy allows s3:PutObject on all objects in the bucket (second example sta",
+     "Yes. The document says you can create your own policy and attach it to your file share if you don't want the File Gatewa"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.38235294117647056,
@@ -1622,6 +1680,11 @@
     "cbr_loss": 0.7941176470588236,
     "entailment_loss": 0.0,
     "structural_loss": 1.0
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "regen_doc": "## Granting your File Gateway access to Amazon S3\n\nWhen you create a file share, your File Gateway requires access to upload files into your Amazon S3 bucket. It also requires access to perform actions on any access points or VPC endpoints that it uses to connect to the bucket. To grant this access, your File Gateway assumes an IAM role that is associated with an IAM policy that grants this access.\n\nThe role requires two things: an IAM policy and a security token service (STS) trust relationship. The IAM policy determines which actions the role can perform. In addition, your S3 bucket and any associated access points or VPC endpoints must have an access policy that allows the IAM role to access them. You can create the role and access policy yourself, or your File Gateway can create them for you.\n\n## Trust policy and service roles\n\nThe example trust policy allows the principal service storagegateway.amazonaws.com to perform sts:AssumeRole, which allows your File Gateway to assume an IAM role. Storage Gateway can assume existing service roles that are passed using the iam:PassRole policy action. However, Storage Gateway does not support IAM policies that use the iam:PassedToService context key to limit the action to specific services.\n\n## Access policies\n\nIf your File Gateway creates the policy for you, the policy contains a list of S3 actions. If you don't want your File Gateway to create a policy on your behalf, you can create your own policy and attach it to your file share.\n\nThe first example policy statement allows s3:GetAccelerateConfiguration, s3:GetBucketLocation, s3:GetBucketVersioning, s3:ListBucket, s3:ListBucketVersions, and s3:ListBucketMultipartUploads on the S3 bucket named amzn-s3-demo-bucket.\n\nThe second example policy statement allows s3:AbortMultipartUpload, s3:DeleteObject, s3:DeleteObjectVersion, s3:GetObject, s3:GetObjectAcl, s3:GetObjectVersion, s3:ListMultipartUploadParts, s3:PutObject, and s3:PutObjectAcl on all objects in amzn-s3-demo-bucket.\n\n## Access points, VPC endpoints, and encryption\n\nA separate example policy allows your File Gateway to perform the actions required to access a bucket through an access point, with the resource being the access point ARN with a /* suffix.\n\nIf you need to connect your file share to an S3 bucket through a VPC endpoint, see Endpoint policies for Amazon S3 in the AWS PrivateLink User Guide.\n\nFor encrypted buckets, the file share must use the key in the destination S3 bucket account.",
@@ -2735,7 +2798,23 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes. The document says the role requires both an IAM policy and an STS trust relationship. The trust policy that lets `s",
+     "Yes.\n\nThe document says the role needs an IAM identity policy granting S3 actions on the bucket or access point. For acc",
+     "No. The document says Storage Gateway does not support IAM policies that use the `iam:PassedToService` context key to li",
+     "Yes.",
+     "Yes. The document says you can create your own policy and attach it to your file share if you don't want the File Gatewa"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 1.0,
@@ -2847,6 +2926,11 @@
      }
     ],
     "detours": []
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "log": [

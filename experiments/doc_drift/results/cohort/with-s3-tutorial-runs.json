@@ -45,7 +45,23 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "no"
+    ],
+    "replies": [
+     "Yes. The document says the destination bucket name must be the source bucket name followed by -resized, so 'my-images-re",
+     "Yes",
+     "Yes. The document says sharp 0.33 isn't compatible with Lambda, so version 0.32.6 must be installed. It also says the No",
+     "Yes\n\nThe document says those options make pip install pre-compiled Pillow binaries compatible with Amazon Linux 2, so th",
+     "No. The document says the add-permission policy allows Amazon S3 to invoke the function only when an action takes place "
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -130,6 +146,11 @@
      11,
      12
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "regen_doc": "# Tutorial: Creating a Thumbnail Generator with Amazon S3 and Lambda\n\n## Overview\n\nWhen an image file is added to the source Amazon S3 bucket, Amazon S3 invokes the Lambda Event Function. The function creates a thumbnail version of the image and outputs it to a different Amazon S3 bucket. The tutorial can be completed using the AWS CLI or the AWS Management Console. The Lambda Event Function code can be written in Python or Node.js. In Windows, some Bash CLI commands commonly used with Lambda (such as zip) are not supported by the operating system's built-in terminals.\n\n## Creating the buckets\n\nThe source bucket is the bucket that images are uploaded to, and the destination bucket is used by Lambda to save the resized thumbnail. Bucket names can contain only lower case letters, numbers, dots (.), and hyphens (-). Each bucket name must be globally unique and meet the Amazon S3 bucket naming rules. The destination bucket name must be the source bucket name followed by -resized. The Lambda Event Function must be created in the same AWS Region as the source bucket.\n\nThe source bucket must contain a test image to confirm the function operates correctly. This test image can be any JPG or PNG file.\n\n## Creating the execution role\n\nAn execution role is an IAM role that grants a Lambda Event Function permission to access AWS services and resources. The role has two policies. The permissions policy gives Lambda read and write permissions for Amazon S3 buckets and allows it to write to Amazon CloudWatch Logs; it is attached to the execution role to give the function read and write access to an Amazon S3 bucket. The trust policy allows Lambda to use the role's permissions by giving the service principal lambda.amazonaws.com permission to call the AWS STS AssumeRole action.\n\n## Creating the deployment package\n\nA deployment package contains the function code and its dependencies. The CreateThumbnail function code uses a separate library for image resizing.\n\n**Node.js:** The latest version of sharp (0.33) isn't compatible with Lambda, so version 0.32.6 must be installed for the tutorial. The Node.js function only processes jpg and png image types and returns without resizing for other types. It sets the thumbnail width to 200, and the height is set automatically to maintain aspect ratio.\n\n**Python:** The Pillow library contains C/C++ code. Using the --platform manylinux_2014_x86_64 and --only-binary=:all: options makes pip install Pillow pre-compiled binaries compatible with Amazon Linux 2, so the deployment package works regardless of the local build machine's OS and architecture. AWS recommends adding all of the function's dependencies to the deployment package even if they are included in the Lambda Python runtime.\n\n## Creating the function\n\nThe Lambda Event Function is created with a function name of CreateThumbnail.\n\n## Configuring the Amazon S3 trigger\n\nThe S3 trigger should be configured only on the source bucket. Configuring the S3 trigger on the bucket that the function also writes to can cause the function to be invoked continuously in a loop, which can result in unexpected charges.\n\nWhen a trigger is created in the Lambda console, Lambda automatically creates a resource-based policy giving the selected service permission to invoke the function. With the AWS CLI, however, a resource-based policy must be configured via add-permission to give Amazon S3 permission to invoke the function. The add-permission policy allows Amazon S3 to invoke the function only when an action takes place on the source bucket.\n\nIf a bucket is deleted, another AWS account may be able to create a bucket with the same ARN. It is therefore best practice to specify in resource-based policies that the bucket must belong to your account.\n\nThe notification configuration sends a notification to the Lambda function every time a new object is added to the source bucket.\n\n## Testing the function\n\nThe function is tested first with a dummy event and then by uploading an image to the source bucket. An event in Lambda is a JSON-formatted document that contains data for the function to process. When invoking with the CLI, specifying RequestResponse as the invocation-type invokes the function synchronously. The cli-binary-format option is required if using version 2 of the AWS CLI.\n\nAfter testing with both the dummy event and the S3 trigger, the destination bucket contains two resized image files.\n\n## Cleaning up\n\nDeleting AWS resources that are no longer used prevents unnecessary charges.",
@@ -1555,7 +1576,23 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "no"
+    ],
+    "replies": [
+     "Yes\n\nThe document says the destination bucket name must be the source bucket name followed by -resized, so 'my-images-re",
+     "Yes",
+     "Yes. The document says sharp 0.32.6 must be installed because the latest version (0.33) isn't compatible with Lambda. Th",
+     "Yes",
+     "No. The document says the add-permission policy allows Amazon S3 to invoke the function only when an action takes place "
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -1726,6 +1763,11 @@
      6,
      11
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "log": [
@@ -1865,9 +1907,25 @@
     ]
    },
    "entailment": {
-    "rate": 0.6,
+    "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 3
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes. According to the document, using the --platform manylinux_2014_x86_64 and --only-binary=:all: options makes pip ins",
+     "Yes"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -1893,10 +1951,10 @@
     ]
    },
    "drift": {
-    "drift": 0.39300865124035855,
+    "drift": 0.3096753179070252,
     "atomic_loss": 0.024390243902439046,
     "cbr_loss": 0.641025641025641,
-    "entailment_loss": 0.4,
+    "entailment_loss": 0.0,
     "structural_loss": 0.22499999999999998
    },
    "text_bridge": {
@@ -1951,6 +2009,11 @@
      11,
      12
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 0.6,
+    "n_probes": 5,
+    "n_correct": 3
    }
   },
   "regen_doc": "# Tutorial: Creating a Thumbnail with a Lambda Event Function and Amazon S3\n\n## Overview\n\nIn this tutorial, when an image file is added to the source Amazon S3 bucket, Amazon S3 invokes the Lambda Event Function. The function creates a thumbnail version of the image and outputs it to a different Amazon S3 bucket. You can complete the tutorial using either the AWS CLI or the AWS Management Console. The Lambda Event Function code can be written in Python or Node.js. Note that in Windows, some Bash CLI commands commonly used with Lambda (such as zip) are not supported by the operating system's built-in terminals.\n\n## Create the Amazon S3 buckets\n\nThe tutorial uses two buckets. The source bucket is the bucket that images are uploaded to. The destination bucket is used by Lambda to save the resized thumbnail.\n\nBucket names can contain only lower case letters, numbers, dots (.), and hyphens (-). Each bucket name must be globally unique and meet the Amazon S3 bucket naming rules. The destination bucket name must be the source bucket name followed by -resized. The Lambda Event Function must be created in the same AWS Region as the source bucket.\n\nThe source bucket must contain a test image to confirm the function operates correctly. The test image can be any JPG or PNG file.\n\n## Create the execution role and policies\n\nAn execution role is an IAM role that grants a Lambda Event Function permission to access AWS services and resources. The permissions policy gives Lambda read and write permissions for Amazon S3 buckets and allows it to write to Amazon CloudWatch Logs. It is attached to the execution role to give the function read and write access to an Amazon S3 bucket.\n\nThe role's trust policy allows Lambda to use the role's permissions by giving the service principal lambda.amazonaws.com permission to call the AWS STS AssumeRole action.\n\n## Create the deployment package\n\nA deployment package contains the function code and its dependencies. The CreateThumbnail function code uses a separate library for image resizing.\n\n**Node.js:** The latest version of sharp (0.33) isn't compatible with Lambda, so version 0.32.6 must be installed for the tutorial. The Node.js function only processes jpg and png image types and returns without resizing for other types. It sets the thumbnail width to 200, and the height is set automatically to maintain aspect ratio.\n\n**Python:** The Pillow library contains C/C++ code. Using the --platform manylinux_2014_x86_64 and --only-binary=:all: options makes pip install Pillow pre-compiled binaries compatible with Amazon Linux 2, so the deployment package works regardless of the local build machine's OS and architecture. AWS recommends adding all of the function's dependencies to the deployment package even if they are included in the Lambda Python runtime.\n\n## Create the Lambda function\n\nThe Lambda Event Function is created with a function name of CreateThumbnail.\n\n## Configure Amazon S3 to invoke the function\n\nThe S3 trigger should be configured only on the source bucket. Configuring the S3 trigger on the bucket that the function also writes to can cause the function to be invoked continuously in a loop, which can result in unexpected charges.\n\nThe way permission is granted depends on how the trigger is created. When a trigger is created in the Lambda console, Lambda automatically creates a resource-based policy giving the selected service permission to invoke the function. With the AWS CLI, a resource-based policy must instead be configured via add-permission to give Amazon S3 permission to invoke the function. This policy allows Amazon S3 to invoke the function only when an action takes place on the source bucket.\n\nIf a bucket is deleted, another AWS account may be able to create a bucket with the same ARN. It is best practice to specify in resource-based policies that the bucket must belong to your account.\n\nThe notification configuration sends a notification to the Lambda function every time a new object is added to the source bucket.\n\n## Test the function\n\nThe function is tested first with a dummy event and then by uploading an image to the source bucket. An event in Lambda is a JSON-formatted document that contains data for the function to process. When invoking with the AWS CLI, using RequestResponse as the invocation-type invokes the function synchronously. The cli-binary-format option is required if using version 2 of the AWS CLI.\n\nAfter testing with both the dummy event and the S3 trigger, the destination bucket contains two resized image files.\n\n## Clean up\n\nDeleting AWS resources that are no longer used prevents unnecessary charges.",
@@ -3584,7 +3647,23 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes. The destination name must be the source bucket name followed by -resized, and \"my-images-resized\" follows that patt",
+     "Yes",
+     "yes",
+     "Yes",
+     "Yes"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -3800,6 +3879,11 @@
      10,
      11
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "log": [

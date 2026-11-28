@@ -32,7 +32,23 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "no"
+    ],
+    "replies": [
+     "Yes. The document says the bucket must be set up in the same account that manages the protection pack (web ACL), and its",
+     "Yes",
+     "Yes. The document says the log files are compressed, and that if you download them, you must decompress them to view the",
+     "yes",
+     "No. The document says that specifying prefixes in the logging bucket name is not available through the console. You have"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": false
@@ -83,6 +99,11 @@
      2,
      7
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "regen_doc": "# Logging Protection Pack (Web ACL) Traffic to Amazon S3\n\nYou are charged for logging in addition to the charges for using AWS WAF.\n\n## Setting up the bucket\n\nTo send protection pack (web ACL) traffic logs to Amazon S3, you set up an Amazon S3 bucket from the same account as you use to manage the protection pack (web ACL). You name the bucket starting with aws-waf-logs-. Bucket names for AWS WAF logging must start with aws-waf-logs- and can end with any suffix you want. When you enable logging in AWS WAF, you provide the bucket name. If you use prefixes in your object keys name, you can provide your prefixes in your logging bucket names. Specifying prefixes in the logging bucket name is not available through the console; use the AWS WAF APIs, CLI, or AWS CloudFormation instead.\n\nYou can access and analyze your Amazon S3 logs using the Amazon Athena interactive query service.\n\n## Encryption\n\nAWS WAF supports encryption with Amazon S3 buckets for key type Amazon S3 key (SSE-S3) and for AWS Key Management Service (SSE-KMS) AWS KMS keys. AWS WAF doesn't support encryption for AWS Key Management Service keys that are managed by AWS.\n\n## Log file delivery and format\n\nLog files from your protection pack (web ACL) are published to the Amazon S3 bucket at 5-minute intervals. Each log file contains log records for the traffic recorded in the previous 5 minutes. Multiple log files may be published within a 5-minute period, and the log files may contain some or all of the AWS WAF log records for the traffic recorded in the previous five minutes. A single log file contains interleaved entries with multiple records.\n\nThe log files are compressed. If you open the log files using the Amazon S3 console, Amazon S3 decompresses the log records and displays them. If you download the log files, you must decompress them to view the records.\n\nAWS WAF logs are written under a folder structure determined by account ID, Region, protection pack (web ACL) name, and date and time. The time specifications in the folder structure and log file name adhere to the timestamp format YYYYMMddTHHmmZ.\n\n## Required permissions\n\nConfiguring protection pack (web ACL) traffic logging for an Amazon S3 bucket requires specific permissions settings. The required logging permissions are set for you when you use the AWSWAFConsoleFullAccess or AWSWAFFullAccess managed policies. The logging permissions must be attached to the user that you use to manage AWS WAF. When you set the listed permissions, you might see access denied errors in your AWS CloudTrail logs, but the permissions are correct for AWS WAF logging. A Resource setting of \"*\" permits actions on all AWS resources that each action supports.\n\n## Bucket policy and ownership\n\nBy default, Amazon S3 buckets and the objects they contain are private, and only the bucket owner can access them. If the user creating the log owns the bucket, the service automatically attaches a policy to the bucket giving the log permission to publish logs to it.\n\nIf the user creating the log doesn't own the bucket, or doesn't have the GetBucketPolicy and PutBucketPolicy permissions for the bucket, the log creation fails. In that case, the bucket owner must manually add the policy to the bucket and specify the log creator's AWS account ID. If the bucket receives logs from multiple accounts, you add a Resource element entry to the AWSLogDeliveryWrite policy statement for each account.\n\nAccessDenied errors may appear in CloudTrail if the s3:ListBucket permission has not been granted to delivery.logs.amazonaws.com. To avoid these CloudTrail errors, you must grant s3:ListBucket to delivery.logs.amazonaws.com and include the Condition parameters shown with the s3:GetBucketAcl permission.\n\n## KMS key permissions\n\nIf your logging destination uses SSE-KMS with a customer managed key, you must give AWS WAF permission to use your KMS key. To do so, you add a key policy to the KMS key for your chosen destination.\n\n## Access control on log files\n\nAmazon S3 uses access control lists (ACLs) to manage access to the log files created by an AWS WAF log. By default, the bucket owner has FULL_CONTROL permissions on each log file. The log delivery owner, if different from the bucket owner, has no permissions by default. The log delivery account has READ and WRITE permissions.",
@@ -705,7 +726,23 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes. The document says you set up an S3 bucket from the same account that manages the protection pack (web ACL) and name",
+     "Yes\n\nThe document says the log files are compressed, and that if you download them (rather than opening them in the Amaz",
+     "yes",
+     "**Yes.** The document says that with SSE-KMS and a customer managed key, you must add a key policy to the KMS key giving",
+     "Yes"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": false
@@ -756,6 +793,11 @@
      2,
      7
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "regen_doc": "# Sending Protection Pack (Web ACL) Traffic Logs to Amazon S3\n\n## Overview and costs\n\nYou are charged for logging in addition to the charges for using AWS WAF. To send protection pack (web ACL) traffic logs to Amazon S3, you set up an Amazon S3 bucket from the same account as you use to manage the protection pack (web ACL), and you name the bucket starting with aws-waf-logs-. When you enable logging in AWS WAF, you provide the bucket name. You can then access and analyze your Amazon S3 logs using the Amazon Athena interactive query service.\n\n## Encryption\n\nAWS WAF supports encryption with Amazon S3 buckets for key type Amazon S3 key (SSE-S3) and for AWS Key Management Service (SSE-KMS) AWS KMS keys. AWS WAF doesn't support encryption for AWS Key Management Service keys that are managed by AWS.\n\n## Log file delivery\n\nLog files from your protection pack (web ACL) are published to the Amazon S3 bucket at 5-minute intervals. Each log file contains log records for the traffic recorded in the previous 5 minutes. Multiple log files may be published within a 5-minute period, and the log files may contain some or all of the AWS WAF log records for the traffic recorded in the previous five minutes. A single log file contains interleaved entries with multiple records.\n\nThe log files are compressed. If you open the log files using the Amazon S3 console, Amazon S3 decompresses the log records and displays them. If you download the log files, you must decompress them to view the records.\n\n## Bucket names, prefixes, and folder structure\n\nBucket names for AWS WAF logging must start with aws-waf-logs- and can end with any suffix you want. If you use prefixes in your object keys name, you can provide your prefixes in your logging bucket names. Specifying prefixes in the logging bucket name is not available through the console; use the AWS WAF APIs, CLI, or AWS CloudFormation.\n\nAWS WAF logs are written under a folder structure determined by account ID, Region, protection pack (web ACL) name, and date and time. The time specifications in the folder structure and log file name adhere to the timestamp format YYYYMMddTHHmmZ.\n\n## Required permissions\n\nConfiguring protection pack (web ACL) traffic logging for an Amazon S3 bucket requires specific permissions settings. The required logging permissions are set for you when you use the AWSWAFConsoleFullAccess or AWSWAFFullAccess managed policies. The logging permissions must be attached to the user that you use to manage AWS WAF.\n\nWhen you set the listed permissions, you might see access denied errors in your AWS CloudTrail logs, but the permissions are correct for AWS WAF logging. A Resource setting of \"*\" permits actions on all AWS resources that each action supports.\n\n## Bucket policy and ownership\n\nBy default, Amazon S3 buckets and the objects they contain are private, and only the bucket owner can access them. If the user creating the log owns the bucket, the service automatically attaches a policy to the bucket giving the log permission to publish logs to it.\n\nIf the user creating the log doesn't own the bucket, or doesn't have the GetBucketPolicy and PutBucketPolicy permissions for the bucket, the log creation fails. In that case, the bucket owner must manually add the policy to the bucket and specify the log creator's AWS account ID. If the bucket receives logs from multiple accounts, you add a Resource element entry to the AWSLogDeliveryWrite policy statement for each account.\n\n## Avoiding AccessDenied errors in CloudTrail\n\nAccessDenied errors may appear in CloudTrail if the s3:ListBucket permission has not been granted to delivery.logs.amazonaws.com. To avoid these CloudTrail errors, you must grant s3:ListBucket to delivery.logs.amazonaws.com and include the Condition parameters shown with the s3:GetBucketAcl permission.\n\n## SSE-KMS with a customer managed key\n\nIf your logging destination uses SSE-KMS with a customer managed key, you must give AWS WAF permission to use your KMS key. To do so, you add a key policy to the KMS key for your chosen destination.\n\n## Access control on log files\n\nAmazon S3 uses access control lists (ACLs) to manage access to the log files created by an AWS WAF log. By default, the bucket owner has FULL_CONTROL permissions on each log file. The log delivery owner, if different from the bucket owner, has no permissions by default. The log delivery account has READ and WRITE permissions.",
@@ -1388,7 +1430,23 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes. The document says you set up the bucket in the same account you use to manage the protection pack (web ACL). The bu",
+     "Yes. The document states that the log files are compressed, and if you download them (rather than opening them in the Am",
+     "**Yes.** According to the document, if the user creating the log doesn't own the bucket (or lacks the GetBucketPolicy an",
+     "Yes. The name starts with the required `aws-waf-logs-` prefix and can end with any suffix, so `aws-waf-logs-prod-us-east",
+     "Yes. The document says AccessDenied errors may appear in CloudTrail if s3:ListBucket hasn't been granted to delivery.log"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": false
@@ -1439,6 +1497,11 @@
      2,
      7
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "regen_doc": "# Sending Protection Pack (Web ACL) Traffic Logs to Amazon S3\n\n## Costs and setup\n\nYou are charged for logging in addition to the charges for using AWS WAF. To send protection pack (web ACL) traffic logs to Amazon S3, you set up an Amazon S3 bucket from the same account as you use to manage the protection pack (web ACL). You name the bucket starting with `aws-waf-logs-`, and when you enable logging in AWS WAF, you provide the bucket name. Bucket names must start with `aws-waf-logs-` and can end with any suffix you want. If you use prefixes in your object key names, you can provide your prefixes in your logging bucket names. Specifying prefixes in the logging bucket name is not available through the console; use the AWS WAF APIs, CLI, or AWS CloudFormation instead. You can access and analyze your Amazon S3 logs using the Amazon Athena interactive query service.\n\n## Encryption\n\nAWS WAF supports encryption with Amazon S3 buckets for key type Amazon S3 key (SSE-S3) and for AWS Key Management Service (SSE-KMS) AWS KMS keys. AWS WAF doesn't support encryption for AWS Key Management Service keys that are managed by AWS.\n\n## Log file delivery and format\n\nLog files from your protection pack (web ACL) are published to the Amazon S3 bucket at 5-minute intervals. Each log file contains log records for the traffic recorded in the previous 5 minutes. Multiple log files may be published within a 5-minute period, so the log files may contain some or all of the AWS WAF log records for the traffic recorded in the previous five minutes. A single log file contains interleaved entries with multiple records.\n\nThe log files are compressed. If you open the log files using the Amazon S3 console, Amazon S3 decompresses the log records and displays them. If you download the log files, you must decompress them to view the records.\n\nAWS WAF logs are written under a folder structure determined by account ID, Region, protection pack (web ACL) name, and date and time. The time specifications in the folder structure and log file name adhere to the timestamp format YYYYMMddTHHmmZ.\n\n## Required permissions\n\nConfiguring protection pack (web ACL) traffic logging for an Amazon S3 bucket requires specific permissions settings. The required logging permissions are set for you when you use the AWSWAFConsoleFullAccess or AWSWAFFullAccess managed policies. The logging permissions must be attached to the user that you use to manage AWS WAF. When you set the listed permissions, you might see access denied errors in your AWS CloudTrail logs, but the permissions are correct for AWS WAF logging. A Resource setting of \"*\" permits actions on all AWS resources that each action supports.\n\n## Bucket access and policies\n\nBy default, Amazon S3 buckets and the objects they contain are private, and only the bucket owner can access them. If the user creating the log owns the bucket, the service automatically attaches a policy to the bucket giving the log permission to publish logs to it.\n\nIf the user creating the log doesn't own the bucket, or doesn't have the GetBucketPolicy and PutBucketPolicy permissions for the bucket, the log creation fails. In that case, the bucket owner must manually add the policy to the bucket and specify the log creator's AWS account ID. If the bucket receives logs from multiple accounts, you add a Resource element entry to the AWSLogDeliveryWrite policy statement for each account.\n\n## CloudTrail AccessDenied errors\n\nAccessDenied errors may appear in CloudTrail if the s3:ListBucket permission has not been granted to delivery.logs.amazonaws.com. To avoid these CloudTrail errors, you must grant s3:ListBucket to delivery.logs.amazonaws.com and include the Condition parameters shown with the s3:GetBucketAcl permission.\n\n## SSE-KMS with a customer managed key\n\nIf your logging destination uses SSE-KMS with a customer managed key, you must give AWS WAF permission to use your KMS key. To do so, you add a key policy to the KMS key for your chosen destination.\n\n## Log file ownership and ACLs\n\nAmazon S3 uses access control lists (ACLs) to manage access to the log files created by an AWS WAF log. By default, the bucket owner has FULL_CONTROL permissions on each log file. The log delivery owner, if different from the bucket owner, has no permissions by default. The log delivery account has READ and WRITE permissions.",

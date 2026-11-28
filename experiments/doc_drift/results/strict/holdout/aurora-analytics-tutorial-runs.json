@@ -68,7 +68,53 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 20,
-    "n_correct": 20
+    "n_correct": 20,
+    "n_generated": 20,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes",
+     "Yes",
+     "Yes",
+     "**Yes.** The document says to attach the IAM role to the cluster \"once the instance is available,\" and the role must alr",
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes. The prerequisites list an AWS account with permissions to create IAM roles, Amazon RDS clusters, and VPC endpoints,",
+     "Yes",
+     "Yes",
+     "Yes. The document says the cluster is in a private subnet and that you create an Amazon S3 gateway VPC endpoint for it. ",
+     "Yes. The document says the policy allows `s3:GetBucketLocation` (along with `s3:ListBucket` and `s3:GetObject`). The rol",
+     "Yes. The Clean up section says to delete the resources you created to avoid ongoing charges, and that includes the db.r8",
+     "Yes. The document sets `aurora_analytics.enabled` to `true` in the cluster parameter group before the cluster is created",
+     "Yes"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.8354978354978355,
@@ -149,6 +195,11 @@
     "cbr_loss": 0.5194805194805195,
     "entailment_loss": 0.0,
     "structural_loss": 0.0
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 20,
+    "n_correct": 20
    }
   },
   "regen_doc": "# Getting Started with Aurora PostgreSQL Analytics on Amazon S3 Data\n\nThis tutorial sets up the analytics feature from scratch and runs an analytical query against Parquet data in Amazon S3. By the end, you will have an Aurora PostgreSQL DB cluster that queries Amazon S3 data through standard SQL.\n\n## Prerequisites\n\nBefore you begin, make sure you have the following:\n\n- An AWS account with permissions to create IAM roles, Amazon RDS clusters, and VPC endpoints.\n- The AWS CLI installed and configured.\n- A VPC with at least two subnets in different Availability Zones.\n- A DB subnet group and a security group for Aurora.\n- Parquet data files in an Amazon S3 bucket. You can upload a sample orders dataset file to serve as this Parquet data.\n\n## Create the IAM role and policy\n\nCreate an IAM policy that grants the extension read access to the S3 bucket. The policy allows `s3:ListBucket`, `s3:GetObject`, and `s3:GetBucketLocation` on the bucket and its objects. The role's trust policy lets the `rds.amazonaws.com` service principal assume the role. Attach the policy to the role `AuroraAnalyticsRole`.\n\n## Create the parameter group and DB cluster\n\nCreate a DB cluster parameter group with the family `aurora-postgresql17`. In it, set the parameter `aurora_analytics.enabled` to `true` with ApplyMethod `immediate`.\n\nNext, create the DB cluster using the `aurora-postgresql` engine, version 17.11, and the custom parameter group `my-analytics-params`. Then create a DB instance of class `db.r8gd.xlarge` in the cluster, and wait for the DB instance to become available.\n\nOnce the instance is available, attach the IAM role to the DB cluster with the feature name `AuroraAnalytics`.\n\n## Configure networking\n\nThe Aurora DB cluster is in a private subnet, so create an Amazon S3 gateway VPC endpoint for the cluster.\n\n## Install the extension\n\nConnect to the cluster using `psql`. Install the `aurora_analytics` extension with `CREATE EXTENSION`. The installed extension version is 1.0. After the extension is installed, a foreign server named `aurora_analytics_server` exists.\n\n## Create a foreign table and query it\n\nCreate a foreign table that points to the Parquet data in S3 using the `aurora_analytics_server` server. If you use empty parentheses in `CREATE FOREIGN TABLE`, Aurora PostgreSQL automatically infers the schema from the Parquet metadata. The foreign table options specify the `location`, `format parquet`, and `region`.\n\nYour first queries count rows and aggregate with a filter on the foreign table. You can then create a local table, `customer_segments`, and join it with the foreign table.\n\n## Materialize results locally\n\nYou can store query results from S3 as a local PostgreSQL table with `CREATE TABLE AS`. This materialized local table gives fast repeated access.\n\n## Check the cache\n\nAfter queries run, the cache size is non-zero. The `aurora_analytics_stat_statements` function reports cache hit bytes and remote read bytes per query. When you execute the same query a second time, it reads from the cache instead of Amazon S3, and you see improved performance.\n\n## Clean up\n\nDelete the resources you created to avoid ongoing charges.",
@@ -1715,7 +1766,53 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 20,
-    "n_correct": 20
+    "n_correct": 20,
+    "n_generated": 20,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes",
+     "Yes",
+     "Yes. The tutorial attaches AuroraAnalyticsRole to the DB cluster with the feature name AuroraAnalytics. It does this aft",
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes.",
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes. The prerequisites list an AWS account with permissions to create IAM roles, Amazon RDS clusters, and VPC endpoints,",
+     "yes",
+     "Yes. The document says the prerequisites include Parquet data files in S3 (you can upload a sample orders dataset file a",
+     "Yes. The document says the Aurora DB cluster is in a private subnet, so you create an Amazon S3 gateway VPC endpoint for",
+     "Yes. The policy that allows s3:GetBucketLocation is attached to the role AuroraAnalyticsRole, which was created with a t",
+     "Yes. The tutorial's Clean up section says to delete the created resources to avoid ongoing charges. That covers the DB i",
+     "Yes",
+     "Yes"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.8874458874458874,
@@ -1931,6 +2028,11 @@
      }
     ],
     "detours": []
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 20,
+    "n_correct": 20
    }
   },
   "log": [

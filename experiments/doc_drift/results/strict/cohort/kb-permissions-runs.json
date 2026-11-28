@@ -63,7 +63,33 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 10,
-    "n_correct": 10
+    "n_correct": 10,
+    "n_generated": 10,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "no",
+     "no"
+    ],
+    "replies": [
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes",
+     "No. The document says the Aurora cluster must reside in the same AWS account as the knowledge base, so placing it in a d",
+     "No. The document says that if the secret is encrypted with an AWS KMS key, you must also attach permissions to decrypt t"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -169,6 +195,11 @@
     "lost": [
      5
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 10,
+    "n_correct": 10
    }
   },
   "regen_doc": "# Creating a custom service role for an Amazon Bedrock knowledge base\n\nYou can use a custom service role for a knowledge base instead of the role that Amazon Bedrock creates automatically. To do so, create an IAM role and attach the permissions you need. For security, include only the necessary permissions in the role. When the service role is used, a policy cannot be shared between multiple roles.\n\n## Security considerations for data source actions\n\nCreateDataSource, UpdateDataSource, and StartIngestionJob don't pass a role, so the iam:PassRole check doesn't apply to them. Ingestion runs with the role already bound to the knowledge base. As a result, a principal that manages data sources can ingest any location that the knowledge base role can read. That principal can also query the ingested data with Retrieve without holding Amazon S3 permissions. Grant the role access to only the buckets and prefixes the data sources need, and treat data source actions as privileged.\n\n## Trust policy\n\nThe trust policy allows Amazon Bedrock to assume the role and to create and manage knowledge bases. You can restrict its scope using global condition context keys. Set the aws:SourceAccount value to your account ID. You can also use ArnEquals or ArnLike conditions to restrict the scope to specific knowledge bases. As a best practice, once the knowledge bases are created, replace the * in the source ARN with their specific knowledge base IDs.\n\n## Permissions for model access\n\n**Bedrock models.** This policy lets the role use Amazon Bedrock models to embed source data. It grants bedrock:InvokeModel on specific embedding foundation models.\n\n**RetrieveAndGenerate.** The bedrock:RetrieveAndGenerate policy lets the role use Bedrock models to generate responses from an external source. A policy can allow RetrieveAndGenerate while denying bedrock:Retrieve, which restricts a user to external sources only. Alternatively, a policy can allow RetrieveAndGenerate on all resources and allow Retrieve on a specific knowledge base ARN.\n\n## Permissions for data sources\n\n**Amazon S3.** If the data source is Amazon S3, the S3 policy grants s3:ListBucket and s3:GetObject on the data source bucket. If the S3 data source is encrypted with an AWS KMS key, attach permissions to decrypt the key to the role. The KMS decrypt policy for S3 uses a kms:ViaService condition for S3.\n\n**Confluence.** The Confluence data source connector is in preview release and is subject to change. secretsmanager:PutSecretValue is necessary for Confluence, which uses OAuth 2.0 authentication with a refresh token. The OAuth 2.0 access token has a default expiry of 60 minutes. If the access token expires during a sync job, Amazon Bedrock uses the refresh token to regenerate it, which refreshes both the access and refresh tokens. Amazon Bedrock requires write/put permissions on the secret to keep the tokens updated between sync jobs.\n\n**SharePoint, Salesforce, Web Crawler, OneDrive, and Google Drive.** The SharePoint and Salesforce data source connectors are in preview release and are subject to change. The policies for SharePoint, Salesforce, Web Crawler, OneDrive, and Google Drive grant secretsmanager:GetSecretValue and kms:Decrypt via Secrets Manager. If the Web Crawler website requires authentication, include permissions to access the Secrets Manager secret that stores the credentials.\n\n## Permissions for multimodal content\n\nProcessing multimodal content requires additional permissions, depending on the processing approach.\n\n- If you use Nova Multimodal Embeddings, attach permissions for asynchronous model invocation (bedrock:InvokeModel and bedrock:GetAsyncInvoke).\n- If you use Bedrock Data Automation (BDA) to process multimodal content, attach BDA invoke and status permissions. If you also use customer-managed KMS keys with BDA, attach additional KMS permissions (GenerateDataKey, Decrypt, DescribeKey, and CreateGrant).\n- If you configure a multimodal storage destination bucket, attach an S3 policy granting read, write and delete on that bucket.\n\n## Permissions for vector stores\n\n- **Amazon Kendra GenAI index:** If you create an Amazon Kendra GenAI index for the knowledge base, attach a policy granting kendra:Retrieve and kendra:DescribeIndex on the index.\n- **OpenSearch Serverless:** If you create a vector database in OpenSearch Serverless, attach a policy granting aoss:APIAccessAll on the collection.\n- **OpenSearch Managed Cluster:** If you create a vector database in OpenSearch Managed Cluster, attach a policy granting es:ESHttp* and es:DescribeDomain permissions.\n- **Amazon Aurora:** If you create a DB cluster in Amazon Aurora for the knowledge base, attach a policy granting rds:DescribeDBClusters and rds-data execute permissions on the cluster. The Aurora cluster must reside in the same AWS account as the knowledge base.\n- **Amazon Neptune Analytics:** If you create a Neptune Analytics graph for the knowledge base, attach a policy granting neptune-graph read, write and delete permissions on the graph.\n- **Amazon S3 Vectors:** If you use Amazon S3 Vectors for the knowledge base, attach a policy granting s3vectors permissions on the vector index.\n\n## Permissions for secrets and transient data\n\nIf the vector database is configured with a Secrets Manager secret, attach a policy granting secretsmanager:GetSecretValue on the secret. If the secret is encrypted with an AWS KMS key, also attach permissions to decrypt that key to the role.\n\nTo allow creation of a KMS key for transient data storage during ingestion, attach a policy granting kms:GenerateDataKey and kms:Decrypt.\n\n## Cross-account data sources\n\nIf a data source is in another user's AWS account, create a role that allows cross-account access to the S3 bucket in the other account. The knowledge base role requires S3 ListBucket and GetObject permissions for the cross-account bucket. The cross-account bucket also requires a bucket policy granting ListBucket and GetObject to the knowledge base account.\n\nIf the cross-account S3 bucket is encrypted with a KMS key, add a kms:Decrypt statement to the knowledge base role for the bucket owner's key. If the bucket is encrypted with a KMS key in the bucket owner's account, the KMS key policy must allow kms:Decrypt for the knowledge base role.",
@@ -2600,7 +2631,33 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 10,
-    "n_correct": 10
+    "n_correct": 10,
+    "n_generated": 10,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "no",
+     "no"
+    ],
+    "replies": [
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes. The document states that if the cross-account S3 bucket is encrypted with a KMS key in that account, the KMS key po",
+     "Yes",
+     "yes",
+     "Yes",
+     "No. The document says the Aurora cluster must reside in the same AWS account as the knowledge base, so a cluster in a di",
+     "No. According to the document, if the secret is encrypted with an AWS KMS key, you must also attach permissions to decry"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -2824,6 +2881,11 @@
      "If the bucket is encrypted with a KMS key in that account, the KMS key policy must allow kms:Decrypt for the knowledge base role."
     ],
     "lost": []
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 10,
+    "n_correct": 10
    }
   },
   "log": [
@@ -3018,9 +3080,35 @@
     ]
    },
    "entailment": {
-    "rate": 1.0,
+    "rate": 0.9,
     "n_probes": 10,
-    "n_correct": 10
+    "n_correct": 9,
+    "n_generated": 10,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "yes",
+     "no",
+     "no"
+    ],
+    "replies": [
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes",
+     "No. The document says CreateDataSource, UpdateDataSource, and StartIngestionJob don't pass a role, so the iam:PassRole c",
+     "Yes. The document says ingestion runs with the role already bound to the knowledge base, so a principal that manages dat",
+     "Yes. The document says OpenSearch Serverless requires a policy granting aoss:APIAccessAll on the collection. It also say",
+     "unknown",
+     "No. The document says the cross-account bucket also requires a bucket policy granting ListBucket and GetObject to the kn"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -3057,10 +3145,10 @@
     ]
    },
    "drift": {
-    "drift": 0.17881959393862643,
+    "drift": 0.19965292727195977,
     "atomic_loss": 0.006711409395973145,
     "cbr_loss": 0.16981132075471683,
-    "entailment_loss": 0.0,
+    "entailment_loss": 0.09999999999999998,
     "structural_loss": 0.64
    },
    "text_bridge": {
@@ -3151,6 +3239,11 @@
      23,
      24
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 10,
+    "n_correct": 10
    }
   },
   "regen_doc": "# Creating a custom service role for a knowledge base\n\nYou can use a custom service role for a knowledge base instead of the role that Amazon Bedrock creates automatically. To do so, create an IAM role and attach the permissions you need. For security, include only the necessary permissions in the role. When you use the service role, a policy cannot be shared between multiple roles.\n\n## Security considerations for data source actions\n\nCreateDataSource, UpdateDataSource, and StartIngestionJob don't pass a role, so the iam:PassRole check doesn't apply to them. Ingestion runs with the role already bound to the knowledge base. As a result, a principal that manages data sources can ingest any location that the knowledge base role can read. That principal can also query the ingested data with Retrieve without holding Amazon S3 permissions. Grant the role access to only the buckets and prefixes that the data sources need, and treat data source actions as privileged.\n\n## Trust relationship\n\nThe trust policy allows Amazon Bedrock to assume the role and to create and manage knowledge bases. You can restrict the scope of the trust policy by using global condition context keys. Set the aws:SourceAccount value to your account ID. You can also use ArnEquals or ArnLike conditions to restrict the scope to specific knowledge bases. As a best practice, after you create the knowledge bases, replace the * in the source ARN with their specific knowledge base IDs.\n\n## Permissions for model access\n\n**Bedrock models.** This policy lets the role use Amazon Bedrock models to embed source data. It grants bedrock:InvokeModel on the specific embedding foundation models.\n\n**RetrieveAndGenerate.** The bedrock:RetrieveAndGenerate policy lets the role use Bedrock models to generate responses from an external source. A policy can allow RetrieveAndGenerate while denying bedrock:Retrieve, which restricts a user to external sources only. A policy can also allow RetrieveAndGenerate on all resources and allow Retrieve on a specific knowledge base ARN.\n\n## Permissions for data sources\n\n**Amazon S3.** If the data source is Amazon S3, the S3 policy grants s3:ListBucket and s3:GetObject on the data source bucket. If the S3 data source is encrypted with an AWS KMS key, attach permissions to decrypt that key to the role. The KMS decrypt policy for S3 uses a kms:ViaService condition for S3.\n\n**Confluence.** The Confluence data source connector is in preview release and subject to change. For Confluence, secretsmanager:PutSecretValue is necessary. OAuth 2.0 authentication with a refresh token is used, and the OAuth 2.0 access token has a default expiry of 60 minutes. If the access token expires during a sync job, Amazon Bedrock uses the refresh token to regenerate the token, which refreshes both the access and refresh tokens. Amazon Bedrock requires write/put permissions on the secret to keep the tokens updated between sync jobs.\n\n**SharePoint, Salesforce, Web Crawler, OneDrive, and Google Drive.** The SharePoint and Salesforce data source connectors are in preview release and subject to change. The policies for SharePoint, Salesforce, Web Crawler, OneDrive, and Google Drive grant secretsmanager:GetSecretValue and kms:Decrypt via Secrets Manager. If the Web Crawler website requires authentication, include permissions to access the Secrets Manager secret that stores the credentials.\n\n## Permissions for multimodal content\n\nProcessing multimodal content requires additional permissions, depending on the processing approach.\n\n- If you use Nova Multimodal Embeddings, attach permissions for asynchronous model invocation (bedrock:InvokeModel and bedrock:GetAsyncInvoke).\n- If you use Bedrock Data Automation (BDA) to process multimodal content, attach the BDA invoke and status permissions.\n- If you use customer-managed KMS keys with BDA, also attach additional KMS permissions (GenerateDataKey, Decrypt, DescribeKey, and CreateGrant).\n- If you configure a multimodal storage destination bucket, attach an S3 policy that grants read, write, and delete on that bucket.\n\n## Permissions for vector stores and indexes\n\n- **Amazon Kendra GenAI index:** If you create a Kendra GenAI index for the knowledge base, attach a policy granting kendra:Retrieve and kendra:DescribeIndex on the index.\n- **OpenSearch Serverless:** If you create a vector database in OpenSearch Serverless, attach a policy granting aoss:APIAccessAll on the collection.\n- **OpenSearch Managed Cluster:** If you create a vector database in OpenSearch Managed Cluster, attach a policy granting es:ESHttp* and es:DescribeDomain permissions.\n- **Amazon Aurora:** If you create a DB cluster in Amazon Aurora for the knowledge base, attach a policy granting rds:DescribeDBClusters and rds-data execute permissions on the cluster. The Aurora cluster must reside in the same AWS account as the knowledge base.\n- **Amazon Neptune Analytics:** If you create a Neptune Analytics graph for the knowledge base, attach a policy granting neptune-graph read, write, and delete permissions on the graph.\n- **Amazon S3 Vectors:** If you use Amazon S3 Vectors for the knowledge base, attach a policy granting s3vectors permissions on the vector index.\n\n## Permissions for secrets and transient data\n\nIf the vector database is configured with a Secrets Manager secret, attach a policy granting secretsmanager:GetSecretValue on the secret. If the secret is encrypted with an AWS KMS key, also attach permissions to decrypt that key to the role.\n\nTo allow creation of a KMS key for transient data storage during ingestion, attach a policy granting kms:GenerateDataKey and kms:Decrypt.\n\n## Cross-account data sources\n\nIf a data source is in another user's AWS account, you must create a role that allows cross-account access to the S3 bucket in the other account. The knowledge base role requires S3 ListBucket and GetObject permissions for the cross-account bucket. The cross-account bucket also requires a bucket policy that grants ListBucket and GetObject to the knowledge base account.\n\nIf the cross-account S3 bucket is encrypted with a KMS key, add a kms:Decrypt statement to the knowledge base role for the bucket owner's key. If the bucket is encrypted with a KMS key in the bucket owner's account, the KMS key policy must also allow kms:Decrypt for the knowledge base role.",
@@ -5734,9 +5827,35 @@
     ]
    },
    "entailment": {
-    "rate": 0.9,
+    "rate": 1.0,
     "n_probes": 10,
-    "n_correct": 9
+    "n_correct": 10,
+    "n_generated": 10,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "yes",
+     "no",
+     "no"
+    ],
+    "replies": [
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes",
+     "No. The document says CreateDataSource, UpdateDataSource, and StartIngestionJob don't pass a role, so the iam:PassRole c",
+     "Yes. The document says CreateDataSource, UpdateDataSource, and StartIngestionJob don't pass a role, so the iam:PassRole ",
+     "Yes. The document says the role is granted access to the vector database, and for OpenSearch Serverless that means a pol",
+     "No. The document says a policy can allow RetrieveAndGenerate on all resources and Retrieve on a specific knowledge base ",
+     "No. The document says the knowledge base role needs S3 ListBucket and GetObject permissions for the cross-account bucket"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -5767,10 +5886,10 @@
     ]
    },
    "drift": {
-    "drift": 0.44959045678684273,
+    "drift": 0.42875712345350936,
     "atomic_loss": 0.014084507042253613,
     "cbr_loss": 0.8726415094339622,
-    "entailment_loss": 0.09999999999999998,
+    "entailment_loss": 0.0,
     "structural_loss": 0.3733333333333333
    },
    "regen_doc": "# Create a custom service role for an Amazon Bedrock knowledge base\n\n## Before you begin\n\nHave the following in place before you attach the policies that need them:\n\n- An Amazon S3 bucket holding the data source data (for an S3 data source). The role's policy grants access to this bucket.\n- An AWS KMS key used to encrypt the S3 data source, if it is encrypted. You need it to grant decrypt permissions.\n- A vector database that the role is granted access to. Depending on your choice, this is an OpenSearch Serverless collection, or an OpenSearch Managed Cluster domain (steps at https://docs.aws.amazon.com/bedrock/latest/userguide/kb-osm-permissions-prereq.html).\n- An Amazon Aurora DB cluster, in the same account as the knowledge base, that the role is granted access to.\n- An Amazon Kendra GenAI index that the role is granted access to.\n- An AWS Secrets Manager secret holding credentials for third-party data sources (Confluence, SharePoint, Salesforce, OneDrive, Google Drive, or an authenticated Web Crawler) or for a Pinecone or Redis vector database.\n- An S3 bucket for the multimodal storage destination.\n- Access to the Amazon Bedrock models (base and embedding models) that the role is permitted to invoke.\n- A customer-managed KMS key for Bedrock Data Automation, if you use it.\n\n## Overview\n\nYou can use a custom service role for a knowledge base instead of the role Amazon Bedrock automatically creates. You create it as an IAM role with permissions attached. For security, include only the permissions that are necessary. When the service role is used, a policy cannot be shared between multiple roles.\n\n## Security considerations for data source actions\n\nCreateDataSource, UpdateDataSource, and StartIngestionJob don't pass a role, so the iam:PassRole check doesn't apply to them. Ingestion runs with the role already bound to the knowledge base. Because the iam:PassRole check does not apply, a principal that manages data sources can ingest any location that the knowledge base role can read. Such a principal can also query the ingested data with Retrieve without holding Amazon S3 permissions. Grant the role access to only the buckets and prefixes the data sources need, and treat data source actions as privileged.\n\n## Trust policy\n\nThe trust policy allows Amazon Bedrock to assume the role and create and manage knowledge bases. You can restrict its scope using global condition context keys. Set aws:SourceAccount to your account ID. Use ArnEquals or ArnLike conditions to restrict the trust scope to specific knowledge bases. As a best practice, replace the * in the source ARN with specific knowledge base IDs after they are created.\n\n## Bedrock models policy\n\nThis policy lets the role use Amazon Bedrock models to embed source data. It grants bedrock:InvokeModel on specific embedding foundation models.\n\n## Data source policies\n\n### Amazon S3\n\nFor an S3 data source, the policy grants s3:ListBucket and s3:GetObject on the data source bucket. If the S3 data source is encrypted with an AWS KMS key, attach permissions to decrypt that key to the role. The KMS decrypt policy for S3 uses a kms:ViaService condition for S3.\n\n### Confluence\n\nThe Confluence data source connector is in preview release and subject to change. The secretsmanager:PutSecretValue permission is necessary for Confluence, and it applies only when OAuth 2.0 authentication with a refresh token is used. The Confluence OAuth 2.0 access token has a default expiry of 60 minutes. If the access token expires during a sync job, Amazon Bedrock uses the refresh token to regenerate it, refreshing both the access and refresh tokens. This regeneration happens only when OAuth 2.0 with a refresh token is used, the token has a 60-minute default expiry, and the token expires during a sync job. Amazon Bedrock requires write/put permissions on the secret to keep tokens updated between sync jobs. This requirement holds only when both secretsmanager:PutSecretValue is necessary for Confluence and OAuth 2.0 with a refresh token is used.\n\n### SharePoint, Salesforce, Web Crawler, OneDrive, and Google Drive\n\nThe SharePoint and Salesforce data source connectors are in preview release and subject to change. The policies for SharePoint, Salesforce, Web Crawler, OneDrive, and Google Drive grant secretsmanager:GetSecretValue and kms:Decrypt via Secrets Manager. If the Web Crawler website requires authentication, include permissions to access the Secrets Manager secret that stores the credentials.\n\n## RetrieveAndGenerate policy\n\nThe bedrock:RetrieveAndGenerate policy lets the role use Bedrock models to generate responses from an external source. A policy can allow RetrieveAndGenerate while denying bedrock:Retrieve, which restricts a user to external sources only. A policy can also allow RetrieveAndGenerate on all resources and Retrieve on a specific knowledge base ARN.\n\n## Multimodal content processing\n\nMultimodal content processing requires additional permissions depending on the processing approach.\n\n- If you use Nova Multimodal Embeddings, attach permissions for asynchronous model invocation (bedrock:InvokeModel and bedrock:GetAsyncInvoke).\n- If you use Bedrock Data Automation to process multimodal content, attach the BDA invoke and status permissions.\n- If you use customer-managed KMS keys with BDA, attach additional KMS permissions (GenerateDataKey, Decrypt, DescribeKey, CreateGrant).\n- If you configure a multimodal storage destination bucket, attach an S3 policy granting read, write and delete on that bucket.\n\n## Vector store and index policies\n\n- **Amazon Kendra GenAI index:** If you create an index for the knowledge base, attach a policy granting kendra:Retrieve and kendra:DescribeIndex on the index.\n- **OpenSearch Serverless:** If you create the vector database here, attach a policy granting aoss:APIAccessAll on the collection.\n- **OpenSearch Managed Cluster:** If you create the vector database here, attach a policy granting es:ESHttp* and es:DescribeDomain permissions.\n- **Amazon Aurora:** If you create a DB cluster for the knowledge base, attach a policy granting rds:DescribeDBClusters and rds-data execute permissions on the cluster. The Aurora cluster must reside in the same AWS account as the knowledge base.\n- **Amazon Neptune Analytics:** If you create a graph for the knowledge base, attach a policy granting neptune-graph read, write and delete permissions on the graph.\n- **Amazon S3 Vectors:** If you use S3 Vectors for the knowledge base, attach a policy granting s3vectors permissions on the vector index.\n\n## Secrets Manager and KMS for the vector database\n\nIf the vector database is configured with a Secrets Manager secret, attach a policy granting secretsmanager:GetSecretValue on the secret. If the secret is encrypted with an AWS KMS key, attach permissions to decrypt it to the role. These decrypt permissions apply only when the secret is encrypted with a KMS key.\n\nTo allow creation of a KMS key for transient data storage during ingestion, attach a policy granting kms:GenerateDataKey and kms:Decrypt.\n\n## Cross-account data sources\n\nIf a data source is in another user's AWS account, create a role allowing cross-account access to the S3 bucket in the other account. The knowledge base role requires S3 ListBucket and GetObject permissions for the cross-account bucket. The cross-account bucket requires a bucket policy granting ListBucket and GetObject to the knowledge base account.\n\nIf the cross-account S3 bucket is encrypted with a KMS key, add a kms:Decrypt statement to the knowledge base role for the bucket owner's key. If the bucket is encrypted with a KMS key in that account, the KMS key policy must allow kms:Decrypt for the knowledge base role.",
@@ -6020,6 +6139,11 @@
     "lost": [
      15
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 0.9,
+    "n_probes": 10,
+    "n_correct": 9
    }
   },
   "log": [

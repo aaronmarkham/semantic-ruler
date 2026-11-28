@@ -64,9 +64,31 @@
     ]
    },
    "entailment": {
-    "rate": 0.875,
+    "rate": 1.0,
     "n_probes": 8,
-    "n_correct": 7
+    "n_correct": 8,
+    "n_generated": 8,
+    "expected": [
+     "yes",
+     "no",
+     "no",
+     "yes",
+     "no",
+     "no",
+     "no",
+     "no"
+    ],
+    "replies": [
+     "Yes",
+     "No. AUTO enables direct reads only for functions configured with 512 MB or more of memory, and this function has 256 MB.",
+     "No. The document requires a mount target in each subnet where the function is deployed. The only exception is a subnet i",
+     "Yes. The document says s3files:ClientMount is required to mount the file system, and s3files:ClientWrite is needed only ",
+     "No. The document says that attaching the file system from the console also requires s3files:CreateAccessPoint, and Lambd",
+     "No. Lambda only creates an access point automatically when the file system has none. Since this file system already has ",
+     "No. With DirectS3Read set to DISABLED, all reads are routed through the file system's high-performance storage, so Lambd",
+     "no\n\nThe document says security groups must allow NFS traffic (port 2049) between the Lambda function and the mount targe"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.2835820895522388,
@@ -141,11 +163,16 @@
     ]
    },
    "drift": {
-    "drift": 0.3422108208955224,
+    "drift": 0.3161691542288558,
     "atomic_loss": 0.0,
     "cbr_loss": 0.7388059701492538,
-    "entailment_loss": 0.125,
+    "entailment_loss": 0.0,
     "structural_loss": 0.05
+   },
+   "entailment_before_regrade": {
+    "rate": 0.875,
+    "n_probes": 8,
+    "n_correct": 7
    }
   },
   "regen_doc": "# Using Amazon S3 Files with AWS Lambda\n\nAmazon S3 Files delivers a shared file system that connects any AWS compute resource directly with your data in Amazon S3. It provides access to Amazon S3 objects as files, using standard file system operations such as read and write on the local mount path.\n\n## Prerequisites\n\nTo use Amazon S3 Files with a Lambda function, you need an Amazon S3 file system and mount targets in the available state, both in the same account and AWS Region as the function. The function must be in the same VPC as the mount target, and you must have a mount target in each subnet where your function is deployed. Security groups must allow NFS traffic (port 2049) between the Lambda function and the mount targets.\n\n## Execution role permissions\n\nThe function's execution role must have the s3files:ClientMount permission, which is required to mount the file system. For read-write access, the role must also have s3files:ClientWrite; this permission is not needed for read-only connections. Both s3files:ClientMount and s3files:ClientWrite are included in the AmazonS3FilesClientReadWriteAccess managed policy. The execution role must also have the permissions required to connect to the file system's VPC.\n\n## Permissions for the user configuring the function\n\nWhen you configure a file system in the console, Lambda uses your permissions to verify mount targets and access points. To configure a function to connect to a file system, you need the s3files:ListFileSystems, s3files:ListAccessPoints, s3files:GetFileSystem, and s3files:GetAccessPoint permissions. If you attach the file system to the function from the console, you also need the s3files:CreateAccessPoint permission.\n\n## Connecting the function to a file system\n\nA function connects to a file system over the local network in a VPC. The subnets the function connects to can be the same subnets that contain mount points for the file system, or subnets in the same Availability Zone that can route NFS traffic (port 2049) to the file system.\n\nIn the console, the access point setting is optional. If the file system has no access points, Lambda automatically creates one when you save, with UID/GID 1000:1000, root directory /lambda, and permissions 755. If access points already exist, you must select one.\n\nThe local mount path is the location where the file system is mounted on the Lambda function, and it must start with /mnt/. The file system is attached the next time you invoke your Lambda function after saving.\n\n## Direct reads from Amazon S3\n\nAmazon S3 Files optimizes throughput by streaming eligible read requests directly from the Amazon S3 bucket. Lambda uses direct reads for large reads and when the file system's high-performance storage does not hold the file data. Direct reads are enabled by default for functions configured with 512 MB or more of memory. To read directly from Amazon S3, the function needs the s3:GetObject and s3:GetObjectVersion permissions. More generally, to use direct reads, the function's execution role must have the required permissions.\n\nThe DirectS3Read configuration is part of the FileSystemConfigs for the function and applies only to Amazon S3 file systems. It accepts the following values:\n\n- **AUTO** (default): enables direct reads for functions configured with 512 MB or more of memory.\n- **ENABLED**: enables direct reads for the function, including functions with less than 512 MB of memory.\n- **DISABLED**: routes all reads through the file system's high-performance storage.\n\nIf a direct read fails, Lambda automatically falls back to reading through the file system.",
@@ -1498,9 +1525,31 @@
     ]
    },
    "entailment": {
-    "rate": 0.75,
+    "rate": 1.0,
     "n_probes": 8,
-    "n_correct": 6
+    "n_correct": 8,
+    "n_generated": 8,
+    "expected": [
+     "yes",
+     "no",
+     "no",
+     "yes",
+     "no",
+     "no",
+     "no",
+     "no"
+    ],
+    "replies": [
+     "**Yes**\n\nThe document says `ENABLED` turns on direct reads for the function, including functions with less than 512 MB o",
+     "No. With the default `AUTO` value, direct reads are enabled only for functions configured with 512 MB or more of memory,",
+     "No.\n\nThe document requires a mount target in each subnet where the function is deployed. One subnet has no mount target,",
+     "Yes. The document says `s3files:ClientMount` is required to mount the file system, and `s3files:ClientWrite` is needed o",
+     "No.\n\nThe document says verification holds only when the user has all five permissions: the four listed plus `s3files:Cre",
+     "No. Automatic creation only happens when the file system has no access points. Since one already exists, Lambda won't cr",
+     "No. With `DirectS3Read` set to `DISABLED`, all reads are routed through the file system's high-performance storage, so L",
+     "No. The document requires security groups to allow NFS traffic (port 2049) between the Lambda function and the mount tar"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.7686567164179104,
@@ -1567,10 +1616,10 @@
     ]
    },
    "drift": {
-    "drift": 0.4913083864118897,
+    "drift": 0.4392250530785563,
     "atomic_loss": 0.10828025477707015,
     "cbr_loss": 1.0,
-    "entailment_loss": 0.25,
+    "entailment_loss": 0.0,
     "structural_loss": 0.0
    },
    "regen_doc": "# Configuring Amazon S3 Files with a Lambda function\n\n## Before you begin\n\n- Execution role permissions `s3:GetObject` and `s3:GetObjectVersion`, needed for direct reads from Amazon S3. The steps for granting them are on this page, in the section on direct reads and the permissions they require.\n\n## Overview\n\nAmazon S3 Files delivers a shared file system that connects any AWS compute resource directly with your data in Amazon S3. It provides access to Amazon S3 objects as files using standard file system operations such as read and write on the local mount path. That access works only when the function's execution role has both `s3files:ClientMount` and `s3files:ClientWrite`. The mount permission is always required, and the write permission is what provides read-write access.\n\n## Requirements\n\nUsing Amazon S3 Files with a Lambda function requires an Amazon S3 file system and mount targets in the available state, in the same account and AWS Region as the function. The function must be in the same VPC as the mount target, and you must have a mount target in each subnet where your function is deployed. Security groups must allow NFS traffic (port 2049) between the Lambda function and the mount targets.\n\n## Execution role permissions\n\nThe function's execution role must have `s3files:ClientMount`, which is required to mount the file system. It must also have `s3files:ClientWrite` for read-write access. `s3files:ClientWrite` is not needed for read-only connections. Both permissions are included in the `AmazonS3FilesClientReadWriteAccess` managed policy, so attaching that policy is enough to grant `s3files:ClientMount`. The execution role must also have the permissions required to connect to the file system's VPC.\n\n## Permissions for the user configuring the function\n\nWhen you configure a file system in the console, Lambda uses your permissions to verify mount targets and access points. That verification holds only when you have `s3files:ListFileSystems`, `s3files:ListAccessPoints`, `s3files:GetFileSystem`, and `s3files:GetAccessPoint`, together with `s3files:CreateAccessPoint`, which is needed if you attach the file system to the function from the console.\n\n## Connecting the function to the file system\n\nA function connects to a file system over the local network in a VPC. The subnets the function connects to can be the same subnets that contain mount points for the file system, or subnets in the same Availability Zone that can route NFS traffic (port 2049) to the file system.\n\nThe access point setting in the console is optional, but the two cases are mutually exclusive:\n\n- If the file system has no access points, Lambda automatically creates one when you save, with UID/GID 1000:1000, root directory `/lambda`, and permissions 755.\n- If access points exist, you must select one, so automatic creation does not happen.\n\nThe local mount path is the location where the file system is mounted on the Lambda function, and it must start with `/mnt/`.\n\nLambda must first verify mount targets and access points using your permissions. Only after you save is the file system attached, and the attachment takes place the next time you invoke your Lambda function.\n\n## Direct reads from Amazon S3\n\nAmazon S3 Files optimizes throughput by streaming eligible read requests directly from the Amazon S3 bucket. Lambda uses direct reads for large reads and when the file system's high-performance storage does not hold the file data. This streaming holds only when the function has the `s3:GetObject` and `s3:GetObjectVersion` permissions and the `DirectS3Read` value is `AUTO` (the default, which enables direct reads at 512 MB or more of memory). To use direct reads, the function's execution role must have the required permissions; granting them satisfies the `s3:GetObject` requirement.\n\nThe `DirectS3Read` configuration is part of the `FileSystemConfigs` for the function and applies only to Amazon S3 file systems. It takes one of three values:\n\n- `AUTO` (default) enables direct reads for functions configured with 512 MB or more of memory. Direct reads are enabled by default for those functions.\n- `ENABLED` enables direct reads for the function, including functions with less than 512 MB of memory.\n- `DISABLED` routes all reads through the file system's high-performance storage.\n\nThese values are mutually exclusive, so `ENABLED` and `DISABLED` cannot both apply to the same function.\n\nIf a direct read fails, Lambda automatically falls back to reading through the file system. A direct read is attempted only after the `s3:GetObject` permission is in place, so the fallback applies to reads made with that permission granted.",
@@ -1680,6 +1729,11 @@
      }
     ],
     "detours": []
+   },
+   "entailment_before_regrade": {
+    "rate": 0.75,
+    "n_probes": 8,
+    "n_correct": 6
    }
   },
   "log": [
@@ -1872,9 +1926,31 @@
     ]
    },
    "entailment": {
-    "rate": 0.875,
+    "rate": 1.0,
     "n_probes": 8,
-    "n_correct": 7
+    "n_correct": 8,
+    "n_generated": 8,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "no",
+     "no"
+    ],
+    "replies": [
+     "Yes",
+     "Yes. With the default value (AUTO), direct reads are enabled only for functions configured with 512 MB or more of memory",
+     "Yes. The document says s3files:ClientMount is required to mount the file system, and s3files:ClientWrite is needed only ",
+     "Yes",
+     "Yes. The document says that in the console the access point setting is optional only when the file system has no access ",
+     "yes",
+     "No. The document says the local mount path must start with /mnt/, so /data/files is not valid.",
+     "No. The document says the function must have a mount target in each subnet where it is deployed. It also says the subnet"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.1044776119402985,
@@ -1951,11 +2027,16 @@
     ]
    },
    "drift": {
-    "drift": 0.4199471393034826,
+    "drift": 0.39390547263681597,
     "atomic_loss": 0.0,
     "cbr_loss": 0.9253731343283582,
-    "entailment_loss": 0.125,
+    "entailment_loss": 0.0,
     "structural_loss": 0.05
+   },
+   "entailment_before_regrade": {
+    "rate": 0.875,
+    "n_probes": 8,
+    "n_correct": 7
    }
   },
   "regen_doc": "# Using Amazon S3 Files with Lambda\n\nAmazon S3 Files delivers a shared file system that connects any AWS compute resource directly with your data in Amazon S3. It provides access to Amazon S3 objects as files, using standard file system operations such as read and write on the local mount path.\n\n## Prerequisites\n\nTo use Amazon S3 Files with a Lambda function, you need an Amazon S3 file system and mount targets in the available state, in the same account and AWS Region as the function. The function must be in the same VPC as the mount target, and you must have a mount target in each subnet where your function is deployed. Security groups must allow NFS traffic (port 2049) between the Lambda function and the mount targets.\n\n## Execution role permissions\n\nThe function's execution role must have the s3files:ClientMount permission, which is required to mount the file system. For read-write access, the role must also have s3files:ClientWrite; this permission is not needed for read-only connections. Both s3files:ClientMount and s3files:ClientWrite are included in the AmazonS3FilesClientReadWriteAccess managed policy. The execution role must also have the permissions required to connect to the file system's VPC.\n\n## Permissions for the user configuring the function\n\nWhen you configure a file system in the console, Lambda uses your permissions to verify mount targets and access points. To configure a function to connect to a file system, you need the s3files:ListFileSystems, s3files:ListAccessPoints, s3files:GetFileSystem, and s3files:GetAccessPoint permissions. If you attach the file system to the function from the console, you also need the s3files:CreateAccessPoint permission.\n\n## Connecting the function to the file system\n\nA function connects to a file system over the local network in a VPC. The subnets the function connects to can be the same subnets that contain mount points for the file system, or subnets in the same Availability Zone that can route NFS traffic (port 2049) to the file system.\n\nIn the console, the access point setting is optional. If the file system has no access points, Lambda automatically creates one when you save, with UID/GID 1000:1000, root directory /lambda, and permissions 755. If access points already exist, you must select one.\n\nThe local mount path is the location where the file system is mounted on the Lambda function, and it must start with /mnt/. The file system is attached the next time you invoke your Lambda function after saving.\n\n## Direct reads\n\nAmazon S3 Files optimizes throughput by streaming eligible read requests directly from the Amazon S3 bucket. Lambda uses direct reads for large reads and when the file system's high-performance storage does not hold the file data. Direct reads are enabled by default for functions configured with 512 MB or more of memory. To read directly from Amazon S3, the function needs the s3:GetObject and s3:GetObjectVersion permissions; more generally, to use direct reads, the function's execution role must have the required permissions.\n\nThe DirectS3Read configuration is part of the FileSystemConfigs for the function and applies only to Amazon S3 file systems. It accepts the following values:\n\n- **AUTO** (default): enables direct reads for functions configured with 512 MB or more of memory.\n- **ENABLED**: enables direct reads for the function, including functions with less than 512 MB of memory.\n- **DISABLED**: routes all reads through the file system's high-performance storage.\n\nIf a direct read fails, Lambda automatically falls back to reading through the file system.",
@@ -3391,9 +3472,31 @@
     ]
    },
    "entailment": {
-    "rate": 0.875,
+    "rate": 1.0,
     "n_probes": 8,
-    "n_correct": 7
+    "n_correct": 8,
+    "n_generated": 8,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "no",
+     "no"
+    ],
+    "replies": [
+     "Yes. The document says ENABLED turns on direct reads for the function, including functions with less than 512 MB of memo",
+     "Yes. With the default AUTO value, direct reads are enabled only for functions with 512 MB or more of memory, so a 256 MB",
+     "Yes. The document says s3files:ClientWrite is required only for read-write access and is not needed for read-only connec",
+     "Yes",
+     "Yes",
+     "Yes. The document says DISABLED routes all reads through the file system's high-performance storage, so even a large rea",
+     "No. The document says the local mount path must start with /mnt/, and /data/files does not, so it is not valid.",
+     "No. The document requires a mount target in each subnet where the function is deployed. It also allows subnets other tha"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 1.0,
@@ -3459,10 +3562,10 @@
     ]
    },
    "drift": {
-    "drift": 0.33404384780751917,
+    "drift": 0.30800218114085254,
     "atomic_loss": 0.0999030067895248,
     "cbr_loss": 0.6492537313432836,
-    "entailment_loss": 0.125,
+    "entailment_loss": 0.0,
     "structural_loss": 0.1
    },
    "regen_doc": "# Using Amazon S3 Files with Lambda\n\nAmazon S3 Files delivers a shared file system that connects any AWS compute resource directly with your data in Amazon S3. It provides access to Amazon S3 objects as files using standard file system operations such as read and write on the local mount path. That access works only when the function's execution role has both s3files:ClientMount and s3files:ClientWrite permissions. ClientWrite is required for read-write access and is not needed for read-only connections.\n\n## Prerequisites\n\nUsing Amazon S3 Files with a Lambda function requires an Amazon S3 file system and mount targets in available state in the same account and AWS Region as the Lambda function. The function must be in the same VPC as the mount target, and you must have a mount target in each subnet where your function is deployed. Security groups must allow NFS traffic (port 2049) between the Lambda function and the mount targets.\n\nA function connects to a file system over the local network in a VPC, and this connection works only when all of the preceding requirements hold: the file system and mount targets in the same account and Region, the same VPC, a mount target in each subnet, and security groups allowing NFS traffic. The subnets the function connects to can be the same subnets that contain mount points for the file system, or subnets in the same Availability Zone that can route NFS traffic (port 2049) to the file system.\n\n## Execution role permissions\n\nThe function's execution role must have s3files:ClientMount permission, which is required to mount the file system. It must also have s3files:ClientWrite permission for read-write access; this is not needed for read-only connections. Both permissions are included in the AmazonS3FilesClientReadWriteAccess managed policy, so attaching that policy is enough to grant s3files:ClientMount. The execution role must also have the permissions required to connect to the file system's VPC.\n\n## Direct reads\n\nAmazon S3 Files optimizes throughput by streaming eligible read requests directly from the Amazon S3 bucket. Lambda uses direct reads for large reads and when the file system's high-performance storage does not hold the file data. Direct reads are enabled by default for functions configured with 512 MB or more of memory. This works only when the function has the s3:GetObject and s3:GetObjectVersion permissions and the DirectS3Read value is AUTO. To use direct reads, the function's execution role must have the required permissions, which is enough to supply s3:GetObject and s3:GetObjectVersion. Because the default behavior for 512 MB or more of memory is enabled, that default is enough for the AUTO setting to take effect.\n\nThe DirectS3Read configuration is part of the FileSystemConfigs for the function and applies only to Amazon S3 file systems. It has three values:\n\n- AUTO (default) enables direct reads for functions configured with 512 MB or more of memory.\n- ENABLED enables direct reads for the function, including functions with less than 512 MB of memory.\n- DISABLED routes all reads through the file system's high-performance storage.\n\nENABLED and DISABLED are mutually exclusive, so only one can apply to a function at a time. If a direct read fails, Lambda automatically falls back to reading through the file system. Since a direct read needs the s3:GetObject and s3:GetObjectVersion permissions first, those permissions must be in place before such a fallback can occur.\n\n## Configuring the file system in the console\n\nWhen configuring a file system in the console, Lambda uses the user's permissions to verify mount targets and access points. This verification holds only when the user has s3files:ListFileSystems, s3files:ListAccessPoints, s3files:GetFileSystem, and s3files:GetAccessPoint permissions to configure a function to connect to a file system, and s3files:CreateAccessPoint permission, which is needed if attaching the file system to the function from the console.\n\nThe access point setting in the console is optional. If the file system has no access points, Lambda automatically creates one when you save, with UID/GID 1000:1000, root directory /lambda, and permissions 755. If access points exist, you must select one, so the automatic creation does not occur in that case; the two situations cannot both hold.\n\nThe local mount path is the location where the file system is mounted on the Lambda function and must start with /mnt/. That verification of mount targets and access points must happen before the file system is attached, and the file system is attached the next time you invoke your Lambda function after saving.",
@@ -3615,6 +3718,11 @@
       "automatic": false
      }
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 0.875,
+    "n_probes": 8,
+    "n_correct": 7
    }
   },
   "log": [

@@ -63,9 +63,25 @@
     ]
    },
    "entailment": {
-    "rate": 1.0,
+    "rate": 0.8,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 4,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes. The document creates only one IAM role, AuroraAnalyticsRole, which has the rds.amazonaws.com trust policy and the A",
+     "Yes",
+     "Yes",
+     "unknown",
+     "Yes"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.8632478632478632,
@@ -141,11 +157,16 @@
     ]
    },
    "drift": {
-    "drift": 0.22116728484653012,
+    "drift": 0.2628339515131968,
     "atomic_loss": 0.018867924528301883,
     "cbr_loss": 0.5213675213675213,
-    "entailment_loss": 0.0,
+    "entailment_loss": 0.19999999999999996,
     "structural_loss": 0.0
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "regen_doc": "# Getting Started with Aurora PostgreSQL Analytics\n\nThis tutorial walks through setting up the analytics feature from scratch and running a first analytical query against Parquet data in Amazon S3. By the end, you will have an Aurora PostgreSQL DB cluster querying Amazon S3 data through standard SQL.\n\n## Prerequisites\n\nBefore you begin, you need:\n\n- An AWS account with permissions to create IAM roles, Amazon RDS clusters, and VPC endpoints.\n- The AWS CLI installed and configured.\n- A VPC with at least two subnets in different Availability Zones, a DB subnet group, and a security group for Aurora.\n- Parquet data files in an Amazon S3 bucket.\n\n## Configure IAM\n\nFirst, create an IAM policy that grants the extension read access to the Amazon S3 bucket through the actions s3:ListBucket, s3:GetObject, and s3:GetBucketLocation. Next, create the IAM role AuroraAnalyticsRole with a trust policy that allows the service rds.amazonaws.com to assume it via sts:AssumeRole. Then attach the policy, named AuroraAnalyticsReadAccess, to the AuroraAnalyticsRole role.\n\n## Create the DB cluster\n\nCreate a DB cluster parameter group in the family aurora-postgresql17, and set the parameter aurora_analytics.enabled to true with ApplyMethod immediate. Then create the DB cluster with engine aurora-postgresql, engine version 17.11, and the custom parameter group. Create a DB instance of class db.r8gd.xlarge in the cluster, and wait for the DB instance to become available before continuing.\n\nOnce the instance is available, attach the IAM role to the DB cluster with the feature name AuroraAnalytics. If the Aurora DB cluster is in a private subnet, you should also create an Amazon S3 gateway VPC endpoint.\n\n## Install the extension\n\nConnect to the cluster using psql, then install the extension with CREATE EXTENSION aurora_analytics. The expected installed extension version is 1.0. Installing the extension also creates a foreign server named aurora_analytics_server.\n\n## Query Amazon S3 data\n\nCreate the foreign table ft_orders on the server aurora_analytics_server, specifying the location, format 'parquet', and region options. If you use empty parentheses () in CREATE FOREIGN TABLE, Aurora PostgreSQL automatically infers the schema from the Parquet metadata. You can then query the foreign table, and you can join it with a local PostgreSQL table in a query. To get fast repeated access, materialize query results from Amazon S3 as a local PostgreSQL table using CREATE TABLE AS.\n\n## Verify caching\n\nAfter you run queries, the cache size reported by aurora_analytics_cache_size() should be non-zero. The function aurora_analytics_stat_statements() provides per-query cache hit bytes and remote read bytes. When you run the same query again, the second execution reads from cache instead of Amazon S3.\n\n## Clean up\n\nTo avoid ongoing charges, delete the foreign table, the local tables, the DB instance, the DB cluster, and the IAM role and policy.",
@@ -1425,7 +1446,23 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes. The document describes one role, AuroraAnalyticsRole. It has a trust policy allowing rds.amazonaws.com to assume it",
+     "Yes",
+     "Yes. The document says that if the Aurora DB cluster is in a private subnet, you should also create an Amazon S3 gateway",
+     "Yes. The document says creating the foreign table works only when all three hold: the parameter group setting aurora_ana",
+     "Yes"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 1.0,
@@ -1639,6 +1676,11 @@
       "automatic": false
      }
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "log": [
@@ -1804,9 +1846,25 @@
     ]
    },
    "entailment": {
-    "rate": 0.8,
+    "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 4
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes. The tutorial creates the parameter group in family aurora-postgresql17 and sets aurora_analytics.enabled to true wi",
+     "yes",
+     "Yes",
+     "Yes",
+     "Yes. The document says the cache size from aurora_analytics_cache_size() should be non-zero after queries, that aurora_a"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.8632478632478632,
@@ -1884,11 +1942,16 @@
     ]
    },
    "drift": {
-    "drift": 0.24842830009496678,
+    "drift": 0.20676163342830012,
     "atomic_loss": 0.03703703703703709,
     "cbr_loss": 0.4017094017094017,
-    "entailment_loss": 0.19999999999999996,
+    "entailment_loss": 0.0,
     "structural_loss": 0.19
+   },
+   "entailment_before_regrade": {
+    "rate": 0.8,
+    "n_probes": 5,
+    "n_correct": 4
    }
   },
   "regen_doc": "This tutorial walks through setting up the analytics feature from scratch and running a first analytical query against Parquet data in Amazon S3. By the end, you will have an Aurora PostgreSQL DB cluster querying Amazon S3 data through standard SQL.\n\n**Prerequisites.** You need an AWS account with permissions to create IAM roles, Amazon RDS clusters, and VPC endpoints, and the AWS CLI installed and configured. You also need a VPC with at least two subnets in different Availability Zones, a DB subnet group, and a security group for Aurora. Finally, you need Parquet data files in an Amazon S3 bucket.\n\n**IAM setup.** First, create an IAM policy that grants the extension read access to the Amazon S3 bucket through the actions s3:ListBucket, s3:GetObject, and s3:GetBucketLocation. Next, create the IAM role AuroraAnalyticsRole, whose trust policy allows the service rds.amazonaws.com to assume it via sts:AssumeRole. Then attach the policy, named AuroraAnalyticsReadAccess, to AuroraAnalyticsRole.\n\n**Cluster setup.** Create a DB cluster parameter group in the family aurora-postgresql17, and set the parameter aurora_analytics.enabled to true with ApplyMethod immediate. Create the DB cluster with engine aurora-postgresql, engine version 17.11, and the custom parameter group. Then create a DB instance of class db.r8gd.xlarge in the cluster, and wait for the DB instance to become available before continuing. Once it is available, attach the IAM role to the DB cluster with the feature name AuroraAnalytics. If the Aurora DB cluster is in a private subnet, you should also create an Amazon S3 gateway VPC endpoint.\n\n**Querying.** Connect to the cluster using psql and install the extension with CREATE EXTENSION aurora_analytics. The expected installed extension version is 1.0. Installing the extension creates a foreign server named aurora_analytics_server. Next, create the foreign table ft_orders on server aurora_analytics_server, supplying location, format 'parquet', and region options. If you use empty parentheses () in CREATE FOREIGN TABLE, Aurora PostgreSQL auto-infers the schema from the Parquet metadata. A foreign table can be joined with a local PostgreSQL table in a query. You can also materialize query results from Amazon S3 as a local PostgreSQL table using CREATE TABLE AS, which gives fast repeated access.\n\n**Cache behavior.** After you run queries, the cache size reported by aurora_analytics_cache_size() should be non-zero. The function aurora_analytics_stat_statements() provides per-query cache hit bytes and remote read bytes. When you run the same query again, the second execution reads from cache instead of Amazon S3.\n\n**Cleanup.** To avoid ongoing charges, delete the foreign table, local tables, DB instance, DB cluster, and the IAM role and policy.",
@@ -3222,9 +3285,25 @@
     ]
    },
    "entailment": {
-    "rate": 1.0,
+    "rate": 0.8,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 4,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes. The tutorial creates the parameter group in the family aurora-postgresql17 and sets aurora_analytics.enabled to tru",
+     "Yes",
+     "Yes",
+     "Yes",
+     "Unknown\n\nThe document says that once the cache is populated, a second run reads from cache instead of Amazon S3. It also"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.7307692307692307,
@@ -3300,10 +3379,10 @@
     ]
    },
    "drift": {
-    "drift": 0.2000620347394541,
+    "drift": 0.24172870140612077,
     "atomic_loss": 0.13978494623655924,
     "cbr_loss": 0.41025641025641024,
-    "entailment_loss": 0.0,
+    "entailment_loss": 0.19999999999999996,
     "structural_loss": 0.0
    },
    "regen_doc": "# Tutorial: Query Parquet data in Amazon S3 from Aurora PostgreSQL with the analytics feature\n\nThis tutorial walks through setting up the analytics feature from scratch and running a first analytical query against Parquet data in Amazon S3. By the end, you will have an Aurora PostgreSQL DB cluster querying Amazon S3 data through standard SQL.\n\n## Before you begin\n\nMake sure you have the following in place before starting any step:\n\n- An AWS account with permissions to create IAM roles, Amazon RDS clusters, and VPC endpoints. Your account administrator can grant these permissions through IAM.\n- The AWS CLI installed and configured.\n- A VPC with at least two subnets in different Availability Zones, a DB subnet group, and a security group for Aurora. Create these in the VPC and Amazon RDS consoles, or with the AWS CLI, if they do not already exist.\n- An Amazon S3 bucket containing Parquet data files. If you have none, you can upload a sample Parquet file to a bucket.\n\n## Create the IAM policy and role\n\nFirst, create an IAM policy that grants the extension read access to the Amazon S3 bucket through the actions s3:ListBucket, s3:GetObject, and s3:GetBucketLocation. Then create the IAM role AuroraAnalyticsRole, with a trust policy that allows the service rds.amazonaws.com to assume it via sts:AssumeRole. Attach the policy, AuroraAnalyticsReadAccess, to AuroraAnalyticsRole. The policy must be attached to the role before you can attach the role to the DB cluster later in the tutorial.\n\n## Create the parameter group, cluster, and instance\n\nCreate a DB cluster parameter group in the family aurora-postgresql17, and set the parameter aurora_analytics.enabled to true with ApplyMethod immediate.\n\nNext, create the DB cluster with engine aurora-postgresql, engine version 17.11, and the custom parameter group. Then create a DB instance of class db.r8gd.xlarge in the cluster. Wait for the DB instance to become available before continuing; you cannot connect to the cluster with psql until it is.\n\n## Attach the role to the cluster\n\nOnce the policy is attached to the role and the cluster has been created, attach the IAM role to the DB cluster with the feature name AuroraAnalytics. Both earlier steps must be complete first.\n\nIf the Aurora DB cluster is in a private subnet, create an Amazon S3 gateway VPC endpoint so the cluster can reach Amazon S3.\n\n## Connect and install the extension\n\nAfter the DB instance is available, connect to the cluster using psql. Only once you are connected, install the extension with CREATE EXTENSION aurora_analytics. The expected installed extension version is 1.0. Installing the extension creates a foreign server named aurora_analytics_server.\n\n## Create a foreign table and query it\n\nUsing empty parentheses () in CREATE FOREIGN TABLE lets Aurora PostgreSQL auto-infer the schema from the Parquet metadata, which is all you need to define the table. Create the foreign table ft_orders on server aurora_analytics_server with location, format 'parquet', and region options.\n\nThe foreign table can be created and queried successfully only when all three of the following hold: the parameter group setting aurora_analytics.enabled is true, the IAM role is attached to the cluster, and the aurora_analytics extension is installed.\n\nA foreign table can be joined with a local PostgreSQL table in a query. Once ft_orders exists, you can also materialize query results from Amazon S3 as a local PostgreSQL table using CREATE TABLE AS, for fast repeated access. The foreign table must be created before this step.\n\n## Check the cache\n\nAfter queries have run, the cache size reported by aurora_analytics_cache_size() should be non-zero. The function aurora_analytics_stat_statements() provides per-query cache hit bytes and remote read bytes. Once the cache is populated, running the same query again means the second execution reads from cache instead of Amazon S3.\n\n## Clean up\n\nTo avoid ongoing charges, delete the foreign table, the local tables, the DB instance, the DB cluster, and the IAM role and policy.",
@@ -3399,6 +3478,11 @@
      }
     ],
     "detours": []
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "log": [

@@ -46,7 +46,29 @@
    "entailment": {
     "rate": 0.875,
     "n_probes": 8,
-    "n_correct": 7
+    "n_correct": 7,
+    "n_generated": 8,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "no",
+     "no",
+     "yes",
+     "no",
+     "yes"
+    ],
+    "replies": [
+     "Unknown\n\nThe document says a Redshift cluster in a VPC must be publicly accessible with a public IP address, and that Fi",
+     "Yes. The document says that for cross-account OpenSearch Service delivery, the ClusterEndpoint field must be specified i",
+     "Yes",
+     "No. The document states that Firehose does NOT support data delivery to HTTP endpoints in a VPC, so adding the AWS IP ra",
+     "No. With a different security group, the Firehose group must allow outbound HTTPS to the destination's security group, a",
+     "Yes",
+     "No. The document says cross-account delivery from Amazon MSK requires both Multi-VPC connectivity turned on for the clus",
+     "Yes. Both parts are supported by the document: when Amazon MSK is the source, the Kinesis statement in the S3 access pol"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -170,6 +192,11 @@
      17,
      18
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 0.875,
+    "n_probes": 8,
+    "n_correct": 7
    }
   },
   "regen_doc": "# Controlling Access with Amazon Data Firehose\n\n## General access and IAM roles\n\nAccess to and from Amazon Data Firehose resources is managed with AWS Identity and Access Management (IAM). To give an application access to a Firehose stream, a policy can grant individual API operations via the Action section, or grant access to all operations with \"firehose:*\".\n\nAn IAM role is required when creating a Firehose stream. The Firehose service principal must be added to the trust policy of the created role. If you use the console to create a Firehose stream and choose the option to create a new role, AWS attaches the required trust policy to the role. If you use an existing IAM role or a role you created yourself, you must attach the trust policy to that role so that Amazon Data Firehose can assume it.\n\nAn IAM role must also exist before creating a Firehose stream and Apache Iceberg Tables using AWS Glue. The Iceberg role policy gives permission to all databases and tables in the data catalog, but permissions can be limited to specific tables and databases.\n\n## Sources\n\nIf Amazon MSK is chosen as the source for a Firehose stream, you must specify another IAM role that grants Firehose permissions to ingest source data from the specified Amazon MSK cluster. If the source of a Firehose stream is a private Amazon MSK cluster, a policy must be added to the cluster's resource-based policy to grant the Firehose service principal permission to invoke the Amazon MSK CreateVpcConnection API operation.\n\nThe Kinesis Data Streams statement in the S3 access policy can be removed if Kinesis Data Streams is not used as the data source. If Amazon MSK is the source, the Kinesis statement can be substituted with kafka and kafka-cluster permission statements.\n\n## Data-format conversion and the AWS Glue schema registry\n\nIf a Firehose stream performs data-format conversion, Firehose references table definitions stored in AWS Glue. For this, you must add glue:GetTable, glue:GetTableVersion and glue:GetTableVersions permissions to the policy. The recommended policy for getting schemas from the schema registry (glue:GetSchemaVersion) has no resource restrictions.\n\n## Amazon S3 destination\n\nWith an S3 destination, if the S3 bucket is not owned by you, you must add s3:PutObjectAcl to the Amazon S3 actions, which grants the bucket owner full access to delivered objects. If error logging is enabled, Firehose sends data delivery errors to the CloudWatch log group and streams. To use error logging, you must configure log group and log stream names.\n\n## S3 Tables\n\nFor S3 Tables, the permissions required depend on the access control mode used: IAM access control or Lake Formation access control. In IAM access control mode, the Firehose delivery role needs IAM permissions directly on Amazon S3 Tables resources and AWS Glue Data Catalog objects. In Lake Formation access control mode, the Firehose delivery role needs AWS Lake Formation permissions for credential vending in addition to the IAM policy, so the delivery role must be granted the required permissions in AWS Lake Formation in addition to the IAM policy. The Kinesis, Lambda and KMS statements in the S3 Tables policies can be removed if those resources are not used.\n\n## Amazon Redshift destination\n\nWith an Amazon Redshift destination, Firehose delivers data to an S3 bucket as an intermediate location and then loads it into the Redshift cluster or Serverless workgroup. Firehose uses the specified Amazon Redshift user name and password to access the cluster or workgroup, and an IAM role to access the bucket, key, and CloudWatch log group and streams.\n\nIf an Amazon Redshift provisioned cluster or Serverless workgroup is in a VPC, it must be publicly accessible with a public IP address. Firehose access to a Redshift cluster in a VPC also requires unblocking the Firehose IP addresses. Firehose currently uses one CIDR block for each available Region for Redshift.\n\n## OpenSearch Service destination\n\nWith an OpenSearch Service destination, Firehose delivers data to the cluster and concurrently backs up failed or all documents to the S3 bucket. If an OpenSearch Service domain is in a VPC, Firehose needs the permissions for the public destination plus EC2 permissions (ec2:DescribeVpcs, DescribeVpcAttribute, DescribeSubnets, DescribeSecurityGroups, DescribeNetworkInterfaces, CreateNetworkInterface, CreateNetworkInterfacePermission, DeleteNetworkInterface).\n\nYou must not revoke these EC2 VPC permissions after the Firehose stream is created. If you do, the Firehose stream will be degraded or stop delivering data whenever the service attempts to query or update ENIs.\n\nWhen specifying subnets for delivery in a private VPC, make sure the chosen subnets have enough free IP addresses. If there is no free IP address in a specified subnet, Firehose cannot create or add ENIs, and delivery will be degraded or fail.\n\nIf you specify a different security group for Firehose, it must allow outbound HTTPS traffic to the destination's security group, and the destination's security group must allow HTTPS traffic from the security group specified for the Firehose stream. If you use the same security group for both the Firehose stream and the destination, its inbound rule must allow HTTPS traffic.\n\n## OpenSearch Serverless destination\n\nFor an OpenSearch Serverless destination, Firehose must have minimum permissions (aoss:WriteDocument, aoss:UpdateIndex, aoss:CreateIndex) assigned in a data access policy in addition to the IAM policy. If an OpenSearch Serverless collection is in a VPC, Firehose needs the same EC2 VPC permissions in addition to the public destination permissions.\n\n## Splunk destination\n\nWith a Splunk destination, Firehose delivers data to the Splunk HTTP Event Collector (HEC) endpoint and backs up that data to an S3 bucket. If you use an AWS load balancer with Splunk, it must be a Classic Load Balancer or an Application Load Balancer. Duration-based sticky sessions must be enabled, with cookie expiration disabled for a Classic Load Balancer and expiration set to the maximum (7 days) for an Application Load Balancer.\n\nFirehose doesn't use IAM to access Splunk; it uses the HEC token. If the Splunk platform is in a VPC, it must be publicly accessible with a public IP address, and access to Splunk in a VPC requires unblocking the Firehose IP addresses.\n\n## Public Snowflake clusters and HTTP endpoints\n\nThere is no subset of AWS IP address ranges specific to Firehose when the destination is an HTTP endpoint or Snowflake public clusters. To add Firehose to an allow list for public Snowflake clusters or public HTTP/HTTPS endpoints, you must add all current AWS IP address ranges to your ingress rules, including the AWS IP address range for all Regions.\n\n## Snowflake\n\nFirehose doesn't use IAM to access Snowflake; it uses the Snowflake account URL and, for a private cluster, the PrivateLink VPCE ID. If a Snowflake cluster is private link enabled, Firehose uses VPC endpoints to deliver data without going through the public internet. For a private link Snowflake cluster, you must create Snowflake network rules to allow ingress from the listed AwsVpceIds for the cluster's AWS Region.\n\n## Third-party HTTP endpoint destinations\n\nFirehose doesn't use IAM to access HTTP endpoint destinations owned by supported third-party providers such as Datadog, Dynatrace, LogicMonitor, MongoDB, New Relic, Splunk, or Sumo Logic. For these destinations, you must obtain the API key or access key from the service provider. Firehose does NOT support data delivery to HTTP endpoints in a VPC.\n\n## Cross-account delivery\n\n**Amazon MSK.** For cross-account delivery from Amazon MSK, Multi-VPC connectivity must be turned on for the cluster in Account A, and a cluster policy must be configured in Account A granting Account B's role permissions. In Account B, an IAM role must grant the Firehose stream read access to the cross-account Amazon MSK cluster for the configured topic. Once a Firehose stream is created, the Apache Kafka topic cannot be updated.\n\n**Amazon S3.** For cross-account S3 delivery, s3:PutObjectAcl must be added to the access policy in account A; this permission is required for cross-account delivery. Firehose sets the \"x-amz-acl\" header on the request to \"bucket-owner-full-control\". An S3 bucket policy must also be created in account B allowing access from the IAM role in account A.\n\n**OpenSearch Service.** For cross-account OpenSearch Service delivery, an OpenSearch Service policy must be created in account B allowing the IAM role from account A. The ClusterEndpoint field must be specified instead of DomainARN. Cross-account OpenSearch Service delivery must be created using the AWS CLI or Firehose APIs and can't be created using the AWS Management Console.\n\n## Tag-based access control\n\nFor CreateDeliveryStream, tag-based access control uses the aws:RequestTag condition key. For TagDeliveryStream and UntagDeliveryStream, it uses the aws:TagKeys condition key. You can't use tag-based access control with ListDeliveryStreams. For other operations, the firehose:ResourceTag condition key controls access based on tags on the Firehose stream.",
@@ -3062,9 +3089,31 @@
     ]
    },
    "entailment": {
-    "rate": 0.75,
+    "rate": 0.875,
     "n_probes": 8,
-    "n_correct": 6
+    "n_correct": 7,
+    "n_generated": 8,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "no",
+     "no",
+     "yes",
+     "no",
+     "yes"
+    ],
+    "replies": [
+     "**Unknown**\n\nThe document says a Redshift cluster in a VPC must be publicly accessible with a public IP address and that",
+     "Yes. The document says that for cross-account OpenSearch Service delivery, you specify the ClusterEndpoint field instead",
+     "Yes",
+     "No. The document says Firehose does not support data delivery to HTTP endpoints in a VPC. The allow-list guidance applie",
+     "No. The document says that if you specify a different security group for Firehose, it must allow outbound HTTPS to the d",
+     "Yes",
+     "No. According to the document, both conditions must hold: Multi-VPC connectivity must be turned on for the cluster in Ac",
+     "Yes. The document says that if Amazon MSK is the source, you can substitute kafka and kafka-cluster permission statement"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -3100,10 +3149,10 @@
     ]
    },
    "drift": {
-    "drift": 0.3282966420288008,
+    "drift": 0.3022549753621342,
     "atomic_loss": 0.041162227602905554,
     "cbr_loss": 0.5894736842105264,
-    "entailment_loss": 0.25,
+    "entailment_loss": 0.125,
     "structural_loss": 0.13214285714285717
    },
    "regen_doc": "# Controlling access to Amazon Data Firehose\n\n## Before you begin\n\n- **Amazon S3 table bucket and tables:** Firehose writes to these through the AWS Glue Data Catalog integration. No steps are given here.\n- **S3 bucket for error delivery:** The inline policy references this bucket. No steps are given here.\n- **AWS Glue Data Catalog table definitions and resources:** The policy references these by ARN. No steps are given here.\n- **CloudWatch log group and log stream names:** These are needed only if error logging is enabled. Steps: https://docs.aws.amazon.com/firehose/latest/dev/monitoring-with-cloudwatch-logs.html\n- **Lake Formation permissions on the tables:** These must be granted to the Firehose delivery role, and are needed only in Lake Formation access control mode. Steps: https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-tables-integrating-aws.html\n- **Trust policy on the IAM role:** It must allow the Firehose service principal to assume the role. Steps are on the linked page.\n- **Optional resources referenced in the policy:** A Kinesis data stream source, a Lambda function, and a KMS key. No steps are given here.\n\n## IAM basics and roles\n\nAccess to and from Amazon Data Firehose resources is managed with AWS Identity and Access Management (IAM). To give an application access to a Firehose stream, a policy can grant individual API operations in the Action section, or grant all operations with \"firehose:*\".\n\nAn IAM role is required when you create a Firehose stream. It must exist before you create a stream, including before you create a stream and Apache Iceberg Tables using AWS Glue. The Firehose service principal must be added to the trust policy of the role you create.\n\nIf you create the stream in the console and choose to create a new role, AWS attaches the required trust policy to the role. That is enough to satisfy the trust requirement. If you use an existing IAM role or a role you created yourself, you must attach the trust policy to it so that Amazon Data Firehose can assume it.\n\n## Sources and data-format conversion\n\nIf you choose Amazon MSK as the source, you must specify another IAM role that grants Firehose permissions to ingest source data from the specified cluster. If the source is a private Amazon MSK cluster, you must also add a policy to the cluster's resource-based policy. It grants the Firehose service principal permission to invoke the Amazon MSK CreateVpcConnection API operation.\n\nIf a stream performs data-format conversion, Firehose references table definitions stored in AWS Glue. In that case, add glue:GetTable, glue:GetTableVersion and glue:GetTableVersions to the policy. The recommended policy for getting schemas from the schema registry (glue:GetSchemaVersion) has no resource restrictions.\n\n## S3 destinations and error logging\n\nWith an S3 destination, if the bucket is not owned by you, add s3:PutObjectAcl to the Amazon S3 actions. This grants the bucket owner full access to delivered objects.\n\nIf error logging is enabled, Firehose sends data delivery errors to the CloudWatch log group and streams. This happens only when error logging is enabled and the log group and log stream names are configured.\n\nThe Kinesis Data Streams statement in the S3 access policy can be removed if Kinesis Data Streams is not your data source. If Amazon MSK is the source, you can substitute kafka and kafka-cluster permission statements for the Kinesis statement.\n\n## S3 Tables and Apache Iceberg\n\nFor S3 Tables, the required permissions depend on the access control mode: IAM access control or Lake Formation access control.\n\n- **IAM access control mode:** The Firehose delivery role needs IAM permissions directly on Amazon S3 Tables resources and AWS Glue Data Catalog objects.\n- **Lake Formation access control mode:** The delivery role needs AWS Lake Formation permissions for credential vending in addition to the IAM policy. Because of this, the role must also be granted the required permissions in AWS Lake Formation, not only in the IAM policy.\n\nThe Kinesis, Lambda and KMS statements in the S3 Tables policies can be removed if those resources are not used.\n\nThe Iceberg role policy gives permission to all databases and tables in the data catalog. You can limit the permissions to specific tables and databases.\n\n## Amazon Redshift destinations\n\nWith an Amazon Redshift destination, Firehose delivers data to an S3 bucket as an intermediate location. It then loads the data into the Redshift cluster or Serverless workgroup. Firehose uses the specified Redshift user name and password to access the cluster or workgroup. It uses an IAM role to access the bucket, key, and CloudWatch log group and streams.\n\nIf the provisioned cluster or Serverless workgroup is in a VPC, it must be publicly accessible with a public IP address. Firehose access to a Redshift cluster in a VPC requires unblocking the Firehose IP addresses. Firehose currently uses one CIDR block for each available Region for Redshift.\n\n## OpenSearch Service and OpenSearch Serverless destinations\n\nWith an OpenSearch Service destination, Firehose delivers data to the cluster and concurrently backs up failed or all documents to the S3 bucket.\n\nIf the domain is in a VPC, Firehose needs the permissions for the public destination plus these EC2 permissions:\n\n- ec2:DescribeVpcs\n- DescribeVpcAttribute\n- DescribeSubnets\n- DescribeSecurityGroups\n- DescribeNetworkInterfaces\n- CreateNetworkInterface\n- CreateNetworkInterfacePermission\n- DeleteNetworkInterface\n\nThis VPC access works only when the security group rules below also hold. If you specify a different security group for Firehose, it must allow outbound HTTPS traffic to the destination's security group. The destination's security group must allow HTTPS traffic from the security group specified for the stream. If you use the same security group for both the stream and the destination, its inbound rule must allow HTTPS traffic.\n\nDo not revoke the EC2 VPC permissions after the stream is created. If they are revoked, the stream will be degraded or stop delivering data whenever the service attempts to query or update ENIs. When you specify subnets for delivery in a private VPC, they must have enough free IP addresses. If a specified subnet has no free IP address, Firehose cannot create or add ENIs, and delivery will be degraded or fail.\n\nFor an OpenSearch Serverless destination, Firehose must have the minimum permissions aoss:WriteDocument, aoss:UpdateIndex and aoss:CreateIndex. These are assigned in a data access policy in addition to the IAM policy. If the collection is in a VPC, Firehose needs the same EC2 VPC permissions in addition to the public destination permissions.\n\n## Splunk destinations\n\nWith a Splunk destination, Firehose delivers data to the Splunk HTTP Event Collector (HEC) endpoint and backs up that data to an S3 bucket. Firehose doesn't use IAM to access Splunk, so delivery to the HEC endpoint relies on the HEC token instead.\n\nIf you use an AWS load balancer with Splunk, it must be a Classic Load Balancer or an Application Load Balancer. Enable duration-based sticky sessions. For a Classic Load Balancer, disable cookie expiration. For an Application Load Balancer, set expiration to the maximum (7 days).\n\nIf the Splunk platform is in a VPC, it must be publicly accessible with a public IP address. Access to Splunk in a VPC requires unblocking the Firehose IP addresses.\n\n## Snowflake and HTTP endpoint destinations\n\nThere is no subset of AWS IP address ranges specific to Firehose when the destination is an HTTP endpoint or a Snowflake public cluster. To add Firehose to an allow list for public Snowflake clusters or public HTTP/HTTPS endpoints, add all current AWS IP address ranges to your ingress rules. This must include the AWS IP address range for all Regions. This guidance applies to public endpoints only, because Firehose does NOT support data delivery to HTTP endpoints in a VPC. The two statements therefore cannot both apply to the same endpoint.\n\nFirehose doesn't use IAM to access Snowflake. It uses the Snowflake account URL, plus the PrivateLink VPCE ID for a private cluster. If a Snowflake cluster is private link enabled, Firehose uses VPC endpoints to deliver data without going through the public internet. For such a cluster, create Snowflake network rules that allow ingress from the listed AwsVpceIds for the cluster's AWS Region.\n\nFirehose also doesn't use IAM to access HTTP endpoint destinations owned by supported third-party providers such as Datadog, Dynatrace, LogicMonitor, MongoDB, New Relic, Splunk, or Sumo Logic. For these destinations, obtain the API key or access key from the service provider.\n\n## Cross-account delivery\n\n**Amazon MSK.** Multi-VPC connectivity must be turned on for the cluster in Account A. A cluster policy must be configured in Account A granting Account B's role permissions. Only when both of these hold can an IAM role in Account B grant the Firehose stream read access to the cross-account cluster for the configured topic. Once the stream is created, the Apache Kafka topic cannot be updated.\n\n**Amazon S3.** Add s3:PutObjectAcl to the access policy in account A. This permission is required for cross-account delivery, and Firehose sets the \"x-amz-acl\" header on the request to \"bucket-owner-full-control\". Because of this, you must also create an S3 bucket policy in account B allowing access from the IAM role in account A.\n\n**OpenSearch Service.** Create the S3 bucket policy in account B first. After that, create an OpenSearch Service policy in account B allowing the IAM role from account A. Specify the ClusterEndpoint field instead of DomainARN. You must create cross-account OpenSearch Service delivery with the AWS CLI or Firehose APIs. It can't be created in the AWS Management Console.\n\n## Tag-based access control\n\nFor CreateDeliveryStream, tag-based access control uses the aws:RequestTag condition key. For TagDeliveryStream and UntagDeliveryStream, it uses the aws:TagKeys condition key. You can't use tag-based access control with ListDeliveryStreams. For the other operations, the firehose:ResourceTag condition key controls access based on tags on the Firehose stream.",
@@ -3558,6 +3607,11 @@
      1,
      20
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 0.75,
+    "n_probes": 8,
+    "n_correct": 6
    }
   },
   "log": [
@@ -3725,7 +3779,29 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 8,
-    "n_correct": 8
+    "n_correct": 8,
+    "n_generated": 8,
+    "expected": [
+     "yes",
+     "no",
+     "yes",
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes",
+     "No. The document states that Firehose does NOT support data delivery to HTTP endpoints in a VPC, so allowing all AWS IP ",
+     "Yes",
+     "Yes. The document says cross-account S3 delivery requires adding s3:PutObjectAcl to the access policy in account A, and ",
+     "yes",
+     "No. The document says cross-account OpenSearch Service delivery must be created using the AWS CLI or Firehose APIs and c",
+     "Yes. The document says that if an Amazon Redshift provisioned cluster or Serverless workgroup is in a VPC, it must be pu",
+     "Yes"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -3856,6 +3932,11 @@
      19,
      20
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 8,
+    "n_correct": 8
    }
   },
   "regen_doc": "# Controlling Access with Amazon Data Firehose\n\n## General IAM access\n\nAccess to and from Amazon Data Firehose resources is managed with AWS Identity and Access Management (IAM). To give an application access to a Firehose stream, a policy can grant individual API operations through the Action section, or grant access to all operations with \"firehose:*\".\n\nAn IAM role is required when creating a Firehose stream. If you use the console to create a Firehose stream and choose the option to create a new role, AWS attaches the required trust policy to the role. If you use an existing IAM role or a role you created yourself, you must attach the trust policy to that role so that Amazon Data Firehose can assume it. The Firehose service principal must be added to the trust policy of the created role.\n\nIf you choose Amazon MSK as the source for a Firehose stream, you must specify another IAM role that grants Firehose permissions to ingest source data from the specified Amazon MSK cluster. If the source of a Firehose stream is a private Amazon MSK cluster, you must also add a policy to the cluster's resource-based policy that grants the Firehose service principal permission to invoke the Amazon MSK CreateVpcConnection API operation.\n\nIf a Firehose stream performs data-format conversion, Firehose references table definitions stored in AWS Glue. In that case, you need to add the glue:GetTable, glue:GetTableVersion and glue:GetTableVersions permissions to the policy. The recommended policy for getting schemas from the schema registry (glue:GetSchemaVersion) has no resource restrictions.\n\n## Amazon S3 destination\n\nWith an S3 destination, if the S3 bucket is not owned by you, you must add s3:PutObjectAcl to the Amazon S3 actions, which grants the bucket owner full access to the objects delivered. If error logging is enabled, Firehose sends data delivery errors to the CloudWatch log group and streams. To use error logging, you must configure log group and log stream names.\n\nThe S3 access policy's Kinesis Data Streams statement can be removed if Kinesis Data Streams is not used as the data source. If Amazon MSK is the source, the Kinesis statement can be substituted with kafka and kafka-cluster permission statements.\n\n## S3 Tables\n\nFor S3 Tables, the permissions required depend on the access control mode you use: IAM access control or Lake Formation access control. In IAM access control mode, the Firehose delivery role needs IAM permissions directly on Amazon S3 Tables resources and AWS Glue Data Catalog objects. In Lake Formation access control mode, the Firehose delivery role needs AWS Lake Formation permissions for credential vending in addition to the IAM policy; the delivery role must be granted the required permissions in AWS Lake Formation in addition to the IAM policy. The Kinesis, Lambda and KMS statements in the S3 Tables policies can be removed if those resources are not used.\n\n## Apache Iceberg Tables\n\nAn IAM role must exist before you create a Firehose stream and Apache Iceberg Tables using AWS Glue. The Iceberg role policy gives permission to all databases and tables in the data catalog, but you can limit permissions to specific tables and databases.\n\n## Amazon Redshift destination\n\nWith an Amazon Redshift destination, Firehose delivers data to an S3 bucket as an intermediate location and then loads it into the Redshift cluster or Serverless workgroup. Firehose uses the specified Amazon Redshift user name and password to access the cluster or workgroup, and uses an IAM role to access the bucket, key, and CloudWatch log group and streams.\n\nIf an Amazon Redshift provisioned cluster or Serverless workgroup is in a VPC, it must be publicly accessible with a public IP address. Firehose access to a Redshift cluster in a VPC also requires unblocking the Firehose IP addresses. Firehose currently uses one CIDR block for each available Region for Redshift.\n\n## OpenSearch Service destination\n\nWith an OpenSearch Service destination, Firehose delivers data to the cluster and concurrently backs up failed or all documents to the S3 bucket. If an OpenSearch Service domain is in a VPC, Firehose needs the permissions for the public destination plus the following EC2 permissions: ec2:DescribeVpcs, DescribeVpcAttribute, DescribeSubnets, DescribeSecurityGroups, DescribeNetworkInterfaces, CreateNetworkInterface, CreateNetworkInterfacePermission, and DeleteNetworkInterface.\n\nDo not revoke the EC2 VPC permissions after the Firehose stream is created. If they are revoked, the Firehose stream will be degraded or stop delivering data whenever the service attempts to query or update ENIs.\n\nWhen you specify subnets for delivery in a private VPC, the chosen subnets must have enough free IP addresses. If there is no free IP address in a specified subnet, Firehose cannot create or add ENIs, and delivery will be degraded or fail.\n\nIf you specify a different security group for Firehose, it must allow outbound HTTPS traffic to the destination's security group, and the destination's security group must allow HTTPS traffic from the security group specified for the Firehose stream. If you use the same security group for both the Firehose stream and the destination, its inbound rule must allow HTTPS traffic.\n\n## OpenSearch Serverless destination\n\nFor an OpenSearch Serverless destination, Firehose must have minimum permissions (aoss:WriteDocument, aoss:UpdateIndex, aoss:CreateIndex) assigned in a data access policy in addition to the IAM policy. If an OpenSearch Serverless collection is in a VPC, Firehose needs the same EC2 VPC permissions in addition to the public destination permissions.\n\n## Splunk destination\n\nWith a Splunk destination, Firehose delivers data to the Splunk HTTP Event Collector (HEC) endpoint and backs up that data to an S3 bucket. If you use an AWS load balancer with Splunk, it must be a Classic Load Balancer or an Application Load Balancer. Duration-based sticky sessions must be enabled, with cookie expiration disabled for a Classic Load Balancer and expiration set to the maximum (7 days) for an Application Load Balancer.\n\nFirehose doesn't use IAM to access Splunk; it uses the HEC token. If the Splunk platform is in a VPC, it must be publicly accessible with a public IP address, and access to Splunk in a VPC requires unblocking the Firehose IP addresses.\n\n## HTTP endpoints and Snowflake\n\nThere is no subset of AWS IP address ranges specific to Firehose when the destination is an HTTP endpoint or Snowflake public clusters. To add Firehose to an allow list for public Snowflake clusters or public HTTP/HTTPS endpoints, you must add all current AWS IP address ranges to your ingress rules, including the AWS IP address range for all Regions.\n\nFirehose doesn't use IAM to access Snowflake; it uses the Snowflake account URL and, for a private cluster, the PrivateLink VPCE ID. If a Snowflake cluster is private link enabled, Firehose uses VPC endpoints to deliver data without going through the public internet. For a private link Snowflake cluster, you must create Snowflake network rules to allow ingress from the listed AwsVpceIds for the cluster's AWS Region.\n\nFirehose doesn't use IAM to access HTTP endpoint destinations owned by supported third-party providers such as Datadog, Dynatrace, LogicMonitor, MongoDB, New Relic, Splunk, or Sumo Logic. For these destinations, you must obtain the API key or access key from the service provider. Firehose does NOT support data delivery to HTTP endpoints in a VPC.\n\n## Cross-account delivery\n\n**Amazon MSK.** For cross-account delivery from Amazon MSK, Multi-VPC connectivity must be turned on for the cluster in Account A, and a cluster policy must be configured in Account A granting Account B's role permissions. In Account B, an IAM role must grant the Firehose stream read access to the cross-account Amazon MSK cluster for the configured topic. Once a Firehose stream is created, the Apache Kafka topic cannot be updated.\n\n**Amazon S3.** For cross-account S3 delivery, you must add s3:PutObjectAcl to the access policy in account A; this permission is required for cross-account delivery. Firehose sets the \"x-amz-acl\" header on the request to \"bucket-owner-full-control\". You must also create an S3 bucket policy in account B allowing access from the IAM role in account A.\n\n**OpenSearch Service.** For cross-account OpenSearch Service delivery, you must create an OpenSearch Service policy in account B allowing the IAM role from account A. You must specify the ClusterEndpoint field instead of DomainARN. Cross-account OpenSearch Service delivery must be created using the AWS CLI or Firehose APIs; it can't be created using the AWS Management Console.\n\n## Tag-based access control\n\nFor CreateDeliveryStream, tag-based access control uses the aws:RequestTag condition key. For TagDeliveryStream and UntagDeliveryStream, it uses the aws:TagKeys condition key. You can't use tag-based access control with ListDeliveryStreams. For other operations, the firehose:ResourceTag condition key controls access based on tags on the Firehose stream.",
@@ -6806,7 +6887,29 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 8,
-    "n_correct": 8
+    "n_correct": 8,
+    "n_generated": 8,
+    "expected": [
+     "yes",
+     "no",
+     "yes",
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes. According to the document, if the Splunk platform is in a VPC, it must be publicly accessible with a public IP addr",
+     "No. The document says the allow-list guidance applies only to public endpoints, because Firehose does not support data d",
+     "Yes",
+     "Yes",
+     "Yes",
+     "**No.** Cross-account OpenSearch Service delivery requires the ClusterEndpoint field instead of DomainARN. Because of th",
+     "Yes. The document says Firehose delivery to Redshift (a cluster or Serverless workgroup) in a VPC works only when the wo",
+     "Yes. The document says that when Amazon MSK is the source, the Kinesis statement in the S3 access policy can be substitu"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -7244,6 +7347,11 @@
      17,
      20
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 8,
+    "n_correct": 8
    }
   },
   "log": [

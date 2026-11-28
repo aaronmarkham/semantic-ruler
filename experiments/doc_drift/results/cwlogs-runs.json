@@ -39,7 +39,23 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "no",
+     "yes",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes",
+     "No. The document states that exporting to buckets encrypted with DSSE-KMS is not supported, regardless of Region.",
+     "Yes",
+     "Yes",
+     "Yes"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -119,6 +135,11 @@
      8,
      9
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "regen_doc": "# Exporting Log Data to Amazon S3\n\n## Overview\n\nAn export task can export all data from a CloudWatch Logs log group named `my-log-group` to an Amazon S3 bucket named `amzn-s3-demo-bucket`. Exporting log data to S3 buckets that are encrypted by AWS KMS is supported, but exporting to buckets encrypted with DSSE-KMS is not supported. The details of how you set up the export depend on whether the Amazon S3 bucket is in the same account as the logs being exported or in a different account.\n\n## Bucket requirements\n\nAWS recommends using a bucket that was created specifically for CloudWatch Logs. If you want to use an existing bucket, you can skip the bucket creation procedure. The S3 bucket must reside in the same Region as the log data to export. CloudWatch Logs doesn't support exporting data to S3 buckets in a different Region.\n\n## Access permissions\n\nCreating an export task requires signing in with sufficient permissions. To create the export task, you must be signed on with the AmazonS3ReadOnlyAccess IAM role and with the permissions `logs:CreateExportTask`, `logs:CancelExportTask`, `logs:DescribeExportTasks`, `logs:DescribeLogStreams`, and `logs:DescribeLogGroups`.\n\n## Setting permissions on the S3 bucket (same account)\n\nBy default, all S3 buckets and objects are private. Only the resource owner, the account that created the bucket, can access the bucket and any objects it contains by default. The resource owner can grant access permissions to other resources and users by writing an access policy.\n\nAWS now requires you to specify the list of source accounts that are allowed to export log data to your S3 bucket. The account IDs in the `aws:SourceAccount` key are the accounts from which a user can export log data to your S3 bucket. The `aws:SourceArn` key is the resource for which the action is being taken and may be restricted to a specific log group or use a wildcard. AWS recommends including the account ID of the account where the S3 bucket is created, to allow export within the same account.\n\nCreate the bucket policy file with a text editor, not the IAM console. The `put-bucket-policy` command then sets the access policy that enables CloudWatch Logs to export log data to your S3 bucket. The bucket owner will have full permissions on all of the exported objects.\n\nIf the existing bucket already has policies attached, you should add the CloudWatch Logs access statements to those policies. AWS recommends evaluating the resulting set of permissions to be sure they are appropriate for the users who will access the bucket.\n\n## Exporting to a bucket encrypted with SSE-KMS\n\nThe SSE-KMS procedure is necessary only if you are exporting to an S3 bucket that uses server-side encryption with AWS KMS keys. The KMS key policy must allow the CloudWatch Logs service principal `logs.Region.amazonaws.com` to use `kms:GenerateDataKey` and `kms:Decrypt`. The `aws kms create-key` command with `key_policy.json` creates the KMS key. The `aws s3api put-bucket-encryption` command applies the `bucketencryption.json` configuration to the bucket using the `aws:kms` SSE algorithm with `BucketKeyEnabled` set to `true`. If the `put-bucket-encryption` command doesn't return an error, the process is successful.\n\n## Creating the export task\n\nThe `create-export-task` command creates the export task and returns a `taskId`. After you create an export task, it might take anywhere from a few seconds to a few hours to complete, depending on the size of the data to export.\n\n## Cross-account export\n\nFor cross-account export, you must first create a new IAM policy enabling CloudWatch Logs to have the `s3:PutObject` action for the destination bucket in the destination account. This policy has two conditional additions:\n\n- If the destination bucket uses KMS encryption, the policy must add the `kms:GenerateDataKey` and `kms:Decrypt` actions for the key resource.\n- If ACLs are enabled on the destination bucket, the policy must add the `s3:PutObjectAcl` action.\n\nTo create an export task in a cross-account export, you must be signed in with an IAM role that has the AmazonS3ReadOnlyAccess managed policy attached, the IAM policy you created, and the logs permissions described above.\n\nThe cross-account bucket policy includes a statement allowing an IAM role in the exporting account to perform `s3:PutObject` with the `s3:x-amz-acl` condition `bucket-owner-full-control`. For cross-account SSE-KMS export, the KMS key policy must also allow the IAM role used for creating the export task to use `kms:GenerateDataKey` and `kms:Decrypt`.",
@@ -1736,7 +1757,23 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "no",
+     "yes",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes",
+     "No",
+     "Yes",
+     "Yes",
+     "Yes"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -1905,6 +1942,11 @@
      8,
      9
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   }
  },
@@ -1948,9 +1990,25 @@
     ]
    },
    "entailment": {
-    "rate": 0.8,
+    "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 4
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "no",
+     "yes",
+     "no",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "No. The document says the S3 bucket must reside in the same Region as the log data, and CloudWatch Logs doesn't support ",
+     "Yes",
+     "No. The document states that exporting to buckets encrypted with DSSE-KMS is not supported, so the key policy permission",
+     "Yes",
+     "Yes. The document says AWS recommends including the account ID of the account where the S3 bucket is created, to allow e"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -1981,10 +2039,10 @@
     ]
    },
    "drift": {
-    "drift": 0.3507527108116645,
+    "drift": 0.30908604414499774,
     "atomic_loss": 0.01449275362318847,
     "cbr_loss": 0.5593220338983051,
-    "entailment_loss": 0.19999999999999996,
+    "entailment_loss": 0.0,
     "structural_loss": 0.4380952380952381
    },
    "text_bridge": {
@@ -2032,6 +2090,11 @@
      8,
      9
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 0.8,
+    "n_probes": 5,
+    "n_correct": 4
    }
   },
   "regen_doc": "# Exporting CloudWatch Logs Data to Amazon S3\n\nAn export task can export all data from a CloudWatch Logs log group named my-log-group to an Amazon S3 bucket named amzn-s3-demo-bucket. Exporting log data to S3 buckets that are encrypted by AWS KMS is supported, but exporting to buckets encrypted with DSSE-KMS is not. The details of how you set up the export depend on whether the S3 bucket is in the same account as the logs being exported or in a different account.\n\n## Prerequisites and permissions\n\nAWS recommends using a bucket that was created specifically for CloudWatch Logs. If you want to use an existing bucket, you can skip the bucket creation procedure. The S3 bucket must reside in the same Region as the log data to export; CloudWatch Logs doesn't support exporting data to S3 buckets in a different Region.\n\nTo create the export task, you must be signed on with the AmazonS3ReadOnlyAccess IAM role and with the permissions logs:CreateExportTask, logs:CancelExportTask, logs:DescribeExportTasks, logs:DescribeLogStreams, and logs:DescribeLogGroups. Creating an export task requires signing in with sufficient permissions as documented in the access permissions section.\n\n## Setting up bucket permissions (same account)\n\nBy default, all S3 buckets and objects are private. Only the resource owner, the account that created the bucket, can access the bucket and any objects it contains by default. The resource owner can grant access permissions to other resources and users by writing an access policy.\n\nAWS now requires you to specify the list of source accounts that are allowed to export log data to your S3 bucket. The account IDs in the aws:SourceAccount key are the accounts from which a user can export log data to your S3 bucket. The aws:SourceArn key is the resource for which the action is being taken and may be restricted to a specific log group or use a wildcard. AWS recommends including the account ID of the account where the S3 bucket is created, to allow export within the same account.\n\nThe bucket policy file should be created with a text editor, not the IAM console. The put-bucket-policy command sets the access policy that enables CloudWatch Logs to export log data to your S3 bucket. The bucket owner will have full permissions on all of the exported objects. If the existing bucket already has policies attached, you should add the CloudWatch Logs access statements to those policies. AWS recommends evaluating the resulting set of permissions to be sure they are appropriate for the users who will access the bucket.\n\n## SSE-KMS encryption (optional)\n\nThe SSE-KMS procedure is necessary only if you are exporting to an S3 bucket that uses server-side encryption with AWS KMS keys. The KMS key policy must allow the CloudWatch Logs service principal logs.Region.amazonaws.com to use kms:GenerateDataKey and kms:Decrypt. The aws kms create-key command with key_policy.json creates the KMS key. The aws s3api put-bucket-encryption command applies the bucketencryption.json configuration to the bucket using the aws:kms SSE algorithm with BucketKeyEnabled set to true. If the put-bucket-encryption command doesn't return an error, the process is successful.\n\n## Creating the export task\n\nThe create-export-task command creates the export task and returns a taskId. After you create an export task, it might take anywhere from a few seconds to a few hours, depending on the size of the data to export.\n\n## Cross-account export\n\nFor cross-account export, you must first create a new IAM policy enabling CloudWatch Logs to have the s3:PutObject action for the destination bucket in the destination account. The policy must be extended in two cases:\n\n- If the destination bucket uses KMS encryption, the cross-account IAM policy must add the kms:GenerateDataKey and kms:Decrypt actions for the key resource.\n- If ACLs are enabled on the destination bucket, the cross-account IAM policy must add the s3:PutObjectAcl action.\n\nTo create an export task in a cross-account export, you must be signed in with an IAM role that has the AmazonS3ReadOnlyAccess managed policy attached, the created IAM policy, and the logs permissions.\n\nThe cross-account bucket policy includes a statement allowing an IAM role in the exporting account to perform s3:PutObject with the s3:x-amz-acl condition bucket-owner-full-control. For cross-account SSE-KMS export, the KMS key policy must also allow the IAM role used for creating the export task to use kms:GenerateDataKey and kms:Decrypt.",
@@ -3651,7 +3714,23 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "no",
+     "yes",
+     "no",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "No. The document says the S3 bucket must reside in the same Region as the log data, and CloudWatch Logs doesn't support ",
+     "Yes. The document says the cross-account IAM policy must enable the s3:PutObject action on the destination bucket, and i",
+     "No. The document says exporting to buckets encrypted with DSSE-KMS is not supported, so the key policy permissions don't",
+     "Yes",
+     "Yes. The document says AWS recommends including the account ID of the account where the bucket is created in the aws:Sou"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -3819,6 +3898,11 @@
      8,
      9
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   }
  },
@@ -3865,7 +3949,23 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "no"
+    ],
+    "replies": [
+     "Yes. The document says the S3 bucket must be in the same Region as the log data, because CloudWatch Logs doesn't support",
+     "Yes",
+     "Yes",
+     "Yes. The document says the resource owner (the account that created the bucket) can grant access by writing an access po",
+     "No. The document states that exporting to S3 buckets encrypted with AWS KMS is supported, but exporting to buckets encry"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -3938,6 +4038,11 @@
      8,
      9
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "regen_doc": "# Exporting Log Data to Amazon S3\n\n## Overview\n\nAn export task can export all data from a CloudWatch Logs log group named my-log-group to an Amazon S3 bucket named amzn-s3-demo-bucket. Exporting log data to S3 buckets that are encrypted by AWS KMS is supported, but exporting to buckets encrypted with DSSE-KMS is not. The details of how you set up the export depend on whether the Amazon S3 bucket is in the same account as the logs being exported or in a different account.\n\n## Bucket requirements\n\nAWS recommends using a bucket that was created specifically for CloudWatch Logs. If you want to use an existing bucket, you can skip the bucket creation procedure. The S3 bucket must reside in the same Region as the log data to export, because CloudWatch Logs doesn't support exporting data to S3 buckets in a different Region.\n\n## Required permissions\n\nTo create the export task, you must be signed on with the AmazonS3ReadOnlyAccess IAM role and with the permissions logs:CreateExportTask, logs:CancelExportTask, logs:DescribeExportTasks, logs:DescribeLogStreams, and logs:DescribeLogGroups. Creating an export task requires signing in with sufficient permissions as documented in the access permissions section.\n\n## Setting access permissions on the bucket (same-account export)\n\nBy default, all S3 buckets and objects are private. Only the resource owner, the account that created the bucket, can access the bucket and any objects it contains by default. The resource owner can grant access permissions to other resources and users by writing an access policy.\n\nAWS now requires you to specify the list of source accounts that are allowed to export log data to your S3 bucket. The account IDs in the aws:SourceAccount key are the accounts from which a user can export log data to your S3 bucket. The aws:SourceArn key is the resource for which the action is being taken and may be restricted to a specific log group or use a wildcard. AWS recommends including the account ID of the account where the S3 bucket is created, to allow export within the same account.\n\nCreate the bucket policy file with a text editor, not the IAM console. The put-bucket-policy command then sets the access policy that enables CloudWatch Logs to export log data to your S3 bucket. The bucket owner will have full permissions on all of the exported objects.\n\nIf the existing bucket already has policies attached, you should add the CloudWatch Logs access statements to those policies. AWS recommends evaluating the resulting set of permissions to be sure they are appropriate for the users who will access the bucket.\n\n## Exporting to a bucket encrypted with SSE-KMS\n\nThe SSE-KMS procedure is necessary only if you are exporting to an S3 bucket that uses server-side encryption with AWS KMS keys. The KMS key policy must allow the CloudWatch Logs service principal logs.Region.amazonaws.com to use kms:GenerateDataKey and kms:Decrypt.\n\nThe aws kms create-key command with key_policy.json creates the KMS key. The aws s3api put-bucket-encryption command then applies the bucketencryption.json configuration to the bucket using the aws:kms SSE algorithm with BucketKeyEnabled set to true. If the put-bucket-encryption command doesn't return an error, the process is successful.\n\n## Cross-account export\n\nFor cross-account export, you must first create a new IAM policy enabling CloudWatch Logs to have the s3:PutObject action for the destination bucket in the destination account. This policy has two conditional additions:\n\n- If the destination bucket uses KMS encryption, the policy must add the kms:GenerateDataKey and kms:Decrypt actions for the key resource.\n- If ACLs are enabled on the destination bucket, the policy must add the s3:PutObjectAcl action.\n\nTo create an export task for a cross-account export, you must be signed in with an IAM role that has the AmazonS3ReadOnlyAccess managed policy attached, the IAM policy you created, and the logs permissions.\n\nThe cross-account bucket policy includes a statement allowing an IAM role in the exporting account to perform s3:PutObject with the s3:x-amz-acl condition bucket-owner-full-control. For cross-account SSE-KMS export, the KMS key policy must also allow the IAM role used for creating the export task to use kms:GenerateDataKey and kms:Decrypt.\n\n## Creating the export task\n\nThe create-export-task command creates the export task and returns a taskId. After you create an export task, it might take anywhere from a few seconds to a few hours, depending on the size of the data to export.",
@@ -5315,9 +5420,25 @@
     ]
    },
    "entailment": {
-    "rate": 0.8,
+    "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 4
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "no"
+    ],
+    "replies": [
+     "Yes. The document says the S3 bucket must reside in the same Region as the log data, and CloudWatch Logs doesn't support",
+     "Yes. The document says exporting log data to S3 buckets encrypted with AWS KMS is supported (only DSSE-KMS is not). For ",
+     "Yes. The document says the cross-account IAM policy must enable s3:PutObject for the destination bucket. If the bucket u",
+     "**Yes.** The document says the resource owner (the account that created the bucket) can grant access by writing an acces",
+     "No. The document says exporting to S3 buckets encrypted with DSSE-KMS is not supported, so the KMS key policy and Region"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -5339,10 +5460,10 @@
     ]
    },
    "drift": {
-    "drift": 0.2762974668423244,
+    "drift": 0.2346308001756578,
     "atomic_loss": 0.0414820781312929,
     "cbr_loss": 0.5423728813559322,
-    "entailment_loss": 0.19999999999999996,
+    "entailment_loss": 0.0,
     "structural_loss": 0.0
    },
    "regen_doc": "# Exporting CloudWatch Logs data to Amazon S3\n\n## Before you begin\n\n- A CloudWatch Logs log group to export. This guide uses a log group named my-log-group. No steps are given here for creating it.\n\n## Overview\n\nAn export task can export all data from the CloudWatch Logs log group named my-log-group to an Amazon S3 bucket named amzn-s3-demo-bucket. Exporting log data to S3 buckets that are encrypted by AWS KMS is supported, but exporting to buckets encrypted with DSSE-KMS is not. The details of how you set up the export depend on whether the Amazon S3 bucket is in the same account as the logs being exported or in a different account.\n\n## The bucket and Region\n\nAWS recommends using a bucket that was created specifically for CloudWatch Logs. If you want to use an existing bucket, you can skip the bucket creation procedure. The S3 bucket must reside in the same Region as the log data to export. Because of this, CloudWatch Logs doesn't support exporting data to S3 buckets in a different Region.\n\n## Permissions to create the export task\n\nTo create the export task, you must be signed on with the AmazonS3ReadOnlyAccess IAM role and with the permissions logs:CreateExportTask, logs:CancelExportTask, logs:DescribeExportTasks, logs:DescribeLogStreams, and logs:DescribeLogGroups. Creating an export task requires signing in with sufficient permissions as documented in this access permissions section, and this must happen before you run the command that creates the task.\n\n## Setting the bucket access policy\n\nBy default, all S3 buckets and objects are private. Only the resource owner, the account that created the bucket, can access the bucket and any objects it contains by default. Because they are private, the resource owner can grant access permissions to other resources and users by writing an access policy.\n\nAWS now requires you to specify the list of source accounts that are allowed to export log data to your S3 bucket. The account IDs in the aws:SourceAccount key are the accounts from which a user can export log data to your S3 bucket. The aws:SourceArn key is the resource for which the action is being taken and may be restricted to a specific log group or use a wildcard. AWS recommends including the account ID of the account where the S3 bucket is created, to allow export within the same account.\n\nCreate the bucket policy file with a text editor, not the IAM console. The put-bucket-policy command sets the access policy that enables CloudWatch Logs to export log data to your S3 bucket. It works only when the access policy has been written (the resource owner granting access) and the list of source accounts has been specified. The bucket owner will have full permissions on all of the exported objects.\n\nIf the existing bucket already has policies attached, you should add the CloudWatch Logs access statements to those policies. AWS recommends evaluating the resulting set of permissions to be sure they are appropriate for the users who will access the bucket.\n\n## SSE-KMS encryption (optional)\n\nBecause exporting to KMS-encrypted buckets is supported, an SSE-KMS procedure is available. It is necessary only if you are exporting to an S3 bucket that uses server-side encryption with AWS KMS keys. In that case, the KMS key policy must allow the CloudWatch Logs service principal logs.Region.amazonaws.com to use kms:GenerateDataKey and kms:Decrypt.\n\nThe aws kms create-key command with key_policy.json creates the KMS key. The aws s3api put-bucket-encryption command applies the bucketencryption.json configuration to the bucket using the aws:kms SSE algorithm with BucketKeyEnabled set to true. If the put-bucket-encryption command doesn't return an error, the process is successful.\n\n## Cross-account export\n\nFor cross-account export, you must first create a new IAM policy enabling CloudWatch Logs to have the s3:PutObject action for the destination bucket in the destination account. If the destination bucket uses KMS encryption, this IAM policy must add the kms:GenerateDataKey and kms:Decrypt actions for the key resource. If ACLs are enabled on the destination bucket, it must add the s3:PutObjectAcl action.\n\nTo create an export task in this case, you must be signed in with an IAM role that has the AmazonS3ReadOnlyAccess managed policy attached, the IAM policy you created, and the logs permissions.\n\nThe cross-account bucket policy includes a statement allowing an IAM role in the exporting account to perform s3:PutObject with the s3:x-amz-acl condition bucket-owner-full-control. For cross-account SSE-KMS export, the KMS key policy must also allow the IAM role used for creating the export task to use kms:GenerateDataKey and kms:Decrypt.\n\n## Creating the export task\n\nThe create-export-task command creates the export task and returns a taskId. For a cross-account export, it succeeds only when both the new IAM policy enabling CloudWatch Logs to perform s3:PutObject (with the additional actions above where they apply) has been created and you are signed in with the role that has the AmazonS3ReadOnlyAccess managed policy, that IAM policy, and the logs permissions. After you create an export task, it might take anywhere from a few seconds to a few hours, depending on the size of the data to export.",
@@ -5493,6 +5614,11 @@
      5,
      9
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 0.8,
+    "n_probes": 5,
+    "n_correct": 4
    }
   }
  }

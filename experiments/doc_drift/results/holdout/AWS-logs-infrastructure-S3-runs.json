@@ -1879,7 +1879,49 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 18,
-    "n_correct": 18
+    "n_correct": 18,
+    "n_generated": 18,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "no",
+     "no",
+     "yes",
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "yes",
+     "no",
+     "no",
+     "no",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes",
+     "Yes",
+     "Yes",
+     "**No.** For the first-time setup of log delivery to an S3 bucket, the user needs logs:CreateLogDelivery, S3:GetBucketPol",
+     "Yes",
+     "No. The document says SSE-KMS requires a customer managed key, and using an AWS managed key is not supported for this sc",
+     "No. The document says SSE-S3 requires no additional configuration. A customer managed KMS key is required only for SSE-K",
+     "yes",
+     "Yes. The document says that to avoid these AccessDenied errors in CloudTrail, you must grant s3:ListBucket to delivery.l",
+     "Yes",
+     "No",
+     "Yes",
+     "Yes. The document says SSE-KMS requires a customer managed key, since an AWS managed key is not supported for this scena",
+     "No",
+     "No. The document says that if the bucket policy contains a NotAction or NotPrincipal element, adding the log delivery pe",
+     "No. The document says that setting up log delivery to S3 for the first time requires logs:CreateLogDelivery, S3:GetBucke",
+     "Yes. The document says aws:SourceAccount \"specifies the list of account IDs for which logs are being delivered to this b",
+     "Yes"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.490566037735849,
@@ -1950,6 +1992,11 @@
     "cbr_loss": 0.5471698113207547,
     "entailment_loss": 0.0,
     "structural_loss": 0.16000000000000003
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 18,
+    "n_correct": 18
    }
   },
   "regen_doc": "# Sending logs to Amazon S3\n\nLogs published directly to Amazon S3 go to an existing bucket that you specify. One or more log files are created every five minutes in that bucket. When you set logs to be sent to Amazon S3, AWS creates or changes the resource policies associated with the receiving bucket, if needed.\n\nThe first time you deliver logs to an S3 bucket, the service that delivers logs records the bucket's owner. This ensures that logs are delivered only to a bucket belonging to this account. To change the bucket owner later, you must re-create or update the log subscription in the originating service.\n\nCloudFront uses a different permissions model than the other services that send vended logs to S3. If you use the same S3 bucket for CloudFront access logs and for another log source, enabling ACL on the bucket for CloudFront also grants permission to all other log sources that use that bucket.\n\n## Required user permissions\n\nTo set up sending logs to Amazon S3 for the first time, you must be logged into an account with the logs:CreateLogDelivery, S3:GetBucketPolicy, and S3:PutBucketPolicy permissions. If any of these types of logs is already being sent to an S3 bucket, then to set up another of these log types to the same bucket you only need the logs:CreateLogDelivery permission.\n\n## Bucket resource policy\n\nThe S3 bucket receiving the logs must have a resource policy that includes certain permissions. The policy is handled differently depending on its current state, and on whether the user setting up logging has the S3:GetBucketPolicy and S3:PutBucketPolicy permissions for the bucket:\n\n- If the bucket has no resource policy and the user has those permissions, AWS automatically creates the log delivery policy when you begin sending logs to S3.\n- If the bucket has a resource policy that doesn't contain the log delivery statement and the user has those permissions, the statement is appended to the bucket's resource policy.\n\nIf the bucket policy contains a NotAction or NotPrincipal element, adding the log delivery permissions automatically and creating a log subscription will fail. In that case, to create the log subscription successfully, you must first manually add the log delivery permissions to the bucket policy, and then create the log subscription.\n\nIn the policy, aws:SourceAccount specifies the list of account IDs for which logs are being delivered to this bucket. aws:SourceArn specifies the list of ARNs of the resource that generates the logs, in the form arn:aws:logs:source-region:source-account-id:*.\n\nAccessDenied errors may appear in AWS CloudTrail if the s3:ListBucket permission has not been granted to delivery.logs.amazonaws.com. To avoid these errors, you must grant s3:ListBucket to delivery.logs.amazonaws.com and include the Condition parameters shown with the s3:GetBucketAcl permission.\n\n## Encrypting the bucket\n\nYou can protect the data in your S3 bucket by enabling either SSE-S3 or SSE-KMS.\n\n- **SSE-S3:** No additional configuration is required.\n- **SSE-KMS:** You must use a customer managed key, because using an AWS managed key is not supported for this scenario. If you set up encryption using an AWS managed key, the logs will be delivered in an unreadable format.\n\nWhen using a customer managed KMS key, you must add the required statement to the key policy for your customer managed key, not to the bucket policy for your S3 bucket, so that the log delivery account can write to your S3 bucket. In other words, if the bucket has server-side encryption using a customer managed AWS KMS key, you must also add the key policy for that key.\n\nTwo further caveats apply to customer managed keys. If the destination bucket has SSE-KMS and a Bucket Key enabled, the attached customer managed KMS key policy no longer works as expected for all requests. And if you're using vended logs and S3 encryption with a customer managed AWS KMS key, you must use a fully qualified AWS KMS key ARN instead of a key ID when you configure the bucket.",
@@ -3154,7 +3201,49 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 18,
-    "n_correct": 18
+    "n_correct": 18,
+    "n_generated": 18,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "no",
+     "no",
+     "yes",
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "yes",
+     "no",
+     "no",
+     "no",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes",
+     "Yes",
+     "Yes. The document says that with a customer managed KMS key, you must add the required statement to the key policy of th",
+     "No.\n\nFor first-time delivery to a bucket, the document says the user needs logs:CreateLogDelivery, S3:GetBucketPolicy, a",
+     "yes",
+     "No. The document says SSE-KMS requires a customer managed key, and an AWS managed key is not supported for this scenario",
+     "No. The document says that if you choose SSE-S3, no additional configuration is required. A customer managed KMS key is ",
+     "Yes",
+     "Yes",
+     "Yes",
+     "No. The document says that when using vended logs and S3 encryption with a customer managed AWS KMS key, you must use a ",
+     "Yes",
+     "Yes. The document says that if encryption is set up using an AWS managed key, the logs are delivered in an unreadable fo",
+     "No. The document says that when the destination bucket has SSE-KMS and a Bucket Key enabled, the attached customer manag",
+     "No",
+     "No. First-time setup requires all three permissions: logs:CreateLogDelivery, S3:GetBucketPolicy, and S3:PutBucketPolicy.",
+     "Yes. The document says aws:SourceAccount specifies the list of account IDs for which logs are being delivered to this bu",
+     "Yes"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.8113207547169812,
@@ -3331,6 +3420,11 @@
       "automatic": false
      }
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 18,
+    "n_correct": 18
    }
   },
   "log": [

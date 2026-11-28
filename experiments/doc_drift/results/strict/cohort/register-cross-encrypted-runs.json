@@ -68,9 +68,25 @@
     ]
    },
    "entailment": {
-    "rate": 1.0,
+    "rate": 0.8,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 4,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "no"
+    ],
+    "replies": [
+     "Yes",
+     "Unknown\n\nThe document says the bucket owner is charged when the registering role belongs to the same account as the buck",
+     "No. The document says you can't use the Lake Formation service-linked role to register a location in another account, so",
+     "Yes",
+     "No. The document says principals accessing the underlying data through ETL jobs or integrated services such as Athena do"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -97,10 +113,10 @@
     ]
    },
    "drift": {
-    "drift": 0.34938802619453757,
+    "drift": 0.39105469286120426,
     "atomic_loss": 0.04817363684489151,
     "cbr_loss": 0.7420634920634921,
-    "entailment_loss": 0.0,
+    "entailment_loss": 0.19999999999999996,
     "structural_loss": 0.18095238095238092
    },
    "text_bridge": {
@@ -154,6 +170,11 @@
      13,
      15
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "regen_doc": "Lake Formation integrates with AWS KMS so that integrated services can encrypt and decrypt data in Amazon S3 locations. Both customer managed keys and AWS managed keys are supported. Client-side encryption and decryption is not supported.\n\nYou should avoid registering an Amazon S3 bucket that has Requester pays enabled. For buckets registered with Lake Formation, the role used to register the bucket is always viewed as the requester. When another AWS account accesses the bucket, the bucket owner is charged for the data access if the role used to register the bucket belongs to the same account as the bucket owner.\n\nConsider registering an AWS KMS-encrypted S3 bucket in account B using an IAM role in account A. You can't use the Lake Formation service-linked role to register a location in another account, so you must use a user-defined role for a cross-account location. That role must meet the requirements for roles used to register locations, including a policy that grants Amazon S3 permissions on the location. The role in account A must grant permissions on the bucket in account B, and the bucket policy in account B must grant access permissions to the role in account A. You add this bucket policy, which grants the required S3 permissions to the role, on the Amazon S3 console.\n\nIf the KMS key is in account B, the key policy must grant access to the role in account A, and the role in account A must grant permissions on the KMS key. Because the KMS key is not in the same account as the Data Catalog, you must add an inline policy granting the required KMS key permissions to the role. The role must also be added as a user of the KMS key in AWS KMS, by adding the role's ARN to the Allow use of the key object in the key policy. If that object is missing from the key policy, you must add it with the permissions shown in the example.\n\nLake Formation assumes the registered role when accessing underlying data in Amazon S3. Because the assumed role has the required permissions on the KMS key, you don't have to grant KMS key permissions to principals accessing the underlying data with ETL jobs or integrated services such as Amazon Athena.\n\nTo register the location, the user signs into the Data Catalog account as the data lake administrator. The S3 path must be typed manually in the format s3://<bucket>/<prefix>, because cross-account buckets do not appear in the list when you choose Browse. The role chosen for registration is the role from Step 2.",
@@ -1719,7 +1740,23 @@
    "entailment": {
     "rate": 0.8,
     "n_probes": 5,
-    "n_correct": 4
+    "n_correct": 4,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "no"
+    ],
+    "replies": [
+     "Yes",
+     "No.\n\nThe document says the bucket owner is charged for data access when another AWS account accesses the bucket, but onl",
+     "No. The document says you can't use the Lake Formation service-linked role to register a location in another account, an",
+     "Yes. The document says an inline policy with the required KMS key permissions must be added to the role when the KMS key",
+     "**No.** Principals running ETL jobs or Athena queries don't need separate KMS key permissions, because Lake Formation as"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -1980,6 +2017,11 @@
     "lost": [
      1
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 0.8,
+    "n_probes": 5,
+    "n_correct": 4
    }
   },
   "log": [
@@ -2137,7 +2179,23 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "no",
+     "yes",
+     "yes",
+     "no"
+    ],
+    "replies": [
+     "Yes\n\nThe document lists both as required permissions: the KMS key is in account B, so its key policy must grant access t",
+     "No. The document says you can't use the Lake Formation service-linked role to register a location in another account. Yo",
+     "Yes. The document says the role used to register the bucket is always viewed as the requester, and it advises avoiding r",
+     "Yes. The document says to add the role's ARN to the Allow use of the key object in the key policy, and that if the objec",
+     "No. Cross-account buckets do not appear in the Browse list, so you must type the S3 path manually in the format `s3://<b"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -2223,6 +2281,11 @@
      14,
      15
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "regen_doc": "# Lake Formation and AWS KMS encryption\n\nLake Formation integrates with AWS KMS so that integrated services can encrypt and decrypt data in Amazon S3 locations. Both customer managed keys and AWS managed keys are supported. Client-side encryption and decryption is not supported.\n\n## Requester pays buckets\n\nAvoid registering an Amazon S3 bucket that has Requester pays enabled. For buckets registered with Lake Formation, the role used to register the bucket is always viewed as the requester. The bucket owner is charged for data access when another AWS account accesses the bucket. The role used to register the bucket belongs to the same account as the bucket owner.\n\n## Accessing encrypted data\n\nLake Formation assumes the registered role when it accesses underlying data in Amazon S3. Because the assumed role has the required permissions on the KMS key, you don't have to grant KMS key permissions to principals that access the underlying data with ETL jobs or integrated services such as Amazon Athena.\n\n## Registering a cross-account, KMS-encrypted bucket\n\nThis scenario registers an AWS KMS-encrypted S3 bucket in account B using an IAM role in account A. You can't use the Lake Formation service-linked role to register a location in another account. You must use a user-defined role, and that role must meet the requirements for roles used to register locations, including a policy that grants Amazon S3 permissions on the location.\n\nThe following permissions must be in place:\n\n- The role in account A must grant permissions on the bucket in account B.\n- The bucket policy in account B must grant access permissions to the role in account A.\n- The KMS key is in account B, so the key policy must grant access to the role in account A.\n- The role in account A must grant permissions on the KMS key.\n\nBecause the KMS key is not in the same account as the Data Catalog, you must take these steps:\n\n1. Add an inline policy granting the required KMS key permissions to the role.\n2. On the Amazon S3 console, add a bucket policy granting the required S3 permissions to the role.\n3. In AWS KMS, add the role as a user of the KMS key. To do this, add the ARN of the role to the Allow use of the key object in the key policy. If the Allow use of the key object is missing from the key policy, add it with the permissions shown in the example.\n\n## Completing the registration\n\nThe user registering the location signs into the Data Catalog account as the data lake administrator. Cross-account buckets do not appear in the list when you choose Browse, so you must type the S3 path manually in the format `s3://<bucket>/<prefix>`. The role you choose for registration is the role from Step 2.",
@@ -3830,9 +3893,25 @@
     ]
    },
    "entailment": {
-    "rate": 0.8,
+    "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 4
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "no",
+     "yes",
+     "yes",
+     "no"
+    ],
+    "replies": [
+     "Yes",
+     "No. The document says you can't use the Lake Formation service-linked role to register a location in another account. Yo",
+     "Yes. The document says that for buckets registered with Lake Formation, the registration role is always viewed as the re",
+     "Yes. The document says to add the role as a user of the KMS key by adding its ARN to the Allow use of the key object in ",
+     "No. Cross-account buckets do not appear in the Browse list, so you must type the S3 path manually in the format s3://<bu"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -3858,10 +3937,10 @@
     ]
    },
    "drift": {
-    "drift": 0.35507541318673574,
+    "drift": 0.31340874652006906,
     "atomic_loss": 0.08658420551855373,
     "cbr_loss": 0.6746031746031746,
-    "entailment_loss": 0.19999999999999996,
+    "entailment_loss": 0.0,
     "structural_loss": 0.08571428571428574
    },
    "regen_doc": "# Registering an encrypted Amazon S3 location with Lake Formation\n\n## Before you begin\n\n- An existing AWS KMS key that encrypts the S3 location. Find it in AWS KMS, and note its key policy, because you will edit it later.\n\n## Encryption support\n\nLake Formation integrates with AWS KMS to let integrated services encrypt and decrypt data in Amazon S3 locations. Both customer managed keys and AWS managed keys are supported. Client-side encryption and decryption is not supported.\n\n## Requester pays buckets\n\nAvoid registering an Amazon S3 bucket that has Requester pays enabled. For buckets registered with Lake Formation, the role used to register the bucket is always viewed as the requester. The bucket owner is charged for data access when another AWS account accesses the bucket. The role used to register the bucket belongs to the same account as the bucket owner, and this holds only when the bucket owner is charged for data access by another AWS account's access.\n\n## Cross-account registration of a KMS-encrypted bucket\n\nThe scenario here is registering an AWS KMS-encrypted S3 bucket in account B using an IAM role in account A. The role in account A must grant permissions on the bucket in account B, and the bucket policy in account B must grant access permissions to the role in account A.\n\nThe KMS key is in account B. Because the registration is being done and the key is in account B, the key policy must grant access to the role in account A, and the role in account A must grant permissions on the KMS key. Each of these holds only when both conditions are met: the registration in account B using the role in account A, and the key being in account B.\n\nLake Formation assumes the registered role when accessing underlying data in Amazon S3. Because the assumed role has the required permissions on the KMS key, you don't have to grant KMS key permissions to principals accessing underlying data with ETL jobs or integrated services such as Amazon Athena.\n\n## Step 2: Prepare the role\n\nYou can't use the Lake Formation service-linked role to register a location in another account. You must use a user-defined role, and it must meet the requirements for roles used to register locations. The role must include a policy that grants Amazon S3 permissions on the location. Complete this before you choose the role for registration.\n\nBecause the KMS key is not in the same account as the Data Catalog, an inline policy granting the required KMS key permissions must be added to the role.\n\n## Update the bucket and key permissions\n\nAdd a bucket policy granting the required S3 permissions to the role on the Amazon S3 console. In AWS KMS, add the role as a user of the KMS key by adding the ARN of the role to the Allow use of the key object in the key policy. If the Allow use of the key object is missing from the key policy, add it with the permissions shown in the example. Both the bucket policy and the KMS key user addition must be completed before the user registering the location signs in as described below.\n\n## Register the location\n\nThe user registering the location signs into the Data Catalog account as the data lake administrator. Type the S3 path manually in the format s3://<bucket>/<prefix>, because cross-account buckets do not appear in the list when you choose Browse. The role chosen for registration is the role from Step 2.",
@@ -4038,6 +4117,11 @@
      9,
      11
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 0.8,
+    "n_probes": 5,
+    "n_correct": 4
    }
   },
   "log": [

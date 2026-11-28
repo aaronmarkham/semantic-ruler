@@ -64,9 +64,27 @@
     ]
    },
    "entailment": {
-    "rate": 1.0,
+    "rate": 0.8333333333333334,
     "n_probes": 6,
-    "n_correct": 6
+    "n_correct": 5,
+    "n_generated": 6,
+    "expected": [
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "no",
+     "yes"
+    ],
+    "replies": [
+     "Yes",
+     "yes",
+     "**No.** The document says the resource policy chooses which permissions to include, and that s3:GetDataAccess is what le",
+     "Yes",
+     "**Yes.** An identity in the second account can call ListCallerAccessGrants with instanceScope set to ALL to list grants ",
+     "Yes. The document says the S3 Access Grants instance returns temporary credentials only if a grant gives the second acco"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.09333333333333332,
@@ -146,11 +164,16 @@
     ]
    },
    "drift": {
-    "drift": 0.37892156862745097,
+    "drift": 0.4136437908496732,
     "atomic_loss": 0.05882352941176461,
     "cbr_loss": 0.6399999999999999,
-    "entailment_loss": 0.0,
+    "entailment_loss": 0.16666666666666663,
     "structural_loss": 0.6000000000000001
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 6,
+    "n_correct": 6
    }
   },
   "regen_doc": "# Granting cross-account access with S3 Access Grants\n\nWith S3 Access Grants, you can grant Amazon S3 data access to IAM identities within your account, to IAM identities in other AWS accounts, and to directory users or groups in your AWS IAM Identity Center instance. Access to S3 data (buckets, prefixes, or objects) is granted by using grants.\n\n## Prerequisites\n\nYou must have an S3 Access Grants instance in your account to manage access to your S3 data. You must create an S3 Access Grants instance in each AWS Region where the S3 data that you want to share is stored. If you are sharing data in more than one AWS Region, you must repeat each of the configuration steps for each AWS Region.\n\n## How cross-account access works\n\nCross-account access is configured by granting access to your S3 Access Grants instance, either by sharing it through AWS RAM or by using a resource policy. After cross-account access is configured, the other account can request temporary access credentials to your S3 data from S3 Access Grants. The S3 Access Grants instance in account A returns temporary credentials if there is a grant that gives the second account access to the S3 data. Users or applications in the second account then use the S3 Access Grants-vended credentials to access the S3 data in account A.\n\n## The instance resource policy\n\nThe S3 Access Grants instance itself supports resource-based policies. The resource policy is a normal resource-based policy and supports everything the IAM policy language supports. Cross-account access only grants these permissions: s3:GetAccessGrantsInstanceForPrefix, s3:ListAccessGrants, s3:ListAccessLocations, s3:ListCallerAccessGrants, and s3:GetDataAccess. You can choose which of these permissions to include in the resource policy. Of these, s3:GetDataAccess lets the user, role, or app request temporary credentials based on the access granted through S3 Access Grants.\n\nYou do not have to grant access to specific IAM identities in your own account in the resource policy, because you can create grants for individual IAM identities within the S3 Access Grants instance.\n\n## Adding the resource policy\n\nIf you already use AWS RAM, you can use it to share your s3:AccessGrants resources with other accounts or within your organization. AWS recommends using the AWS RAM Console to do this. If you don't use AWS RAM, you can add the resource policy by using the S3 Access Grants API operations or the AWS CLI. With the CLI, you can add the resource policy by using the put-access-grants-instance-resource-policy command. In the instance resource policy, you specify the ARN of the S3 Access Grants instance as the Resource and the second account as the Principal. You can also use the CLI to get or delete the resource policy for an S3 Access Grants instance.\n\n## Configuring the second account\n\nAfter the data owner configures the cross-account policy, the owner of the second account must create an identity-based policy for its IAM users or roles giving them access to the S3 Access Grants instance. Following the AWS cross-account access pattern, IAM users or roles in the second account must explicitly have one or more of the permitted actions. The identity-based policy should include one or more of these actions, depending on what is granted in the instance resource policy and the permissions you want to grant. Granting s3:GetDataAccess lets the IAM user or role in the second account call the S3 Access Grants instance to request credentials.\n\n## Creating a grant for the second account\n\nYou can create a grant in the S3 Access Grants instance that gives the IAM identity in the second account access to some of the S3 data, using the S3 Console, CLI, API, and SDKs. In the grant, you specify the ARN of the IAM identity from the second account and the location in your S3 data that you are granting access to. The location must already be registered with your S3 Access Grants instance. You can optionally specify a subprefix in a grant using the S3SubPrefix field to limit access further.\n\n## Discovering shared instances and grants\n\nThe user or role in the second account can call ListAccessGrantsInstances to list the S3 Access Grants instances shared with it through AWS RAM. It can also call ListCallerAccessGrants with instanceScope set to ALL to list the grants it has access to across its own instance and all instances shared with it through AWS RAM. Likewise, with instanceScope set to ALL on GetDataAccess, the second account's identity can request credentials for a path in any instance shared with it. With instanceScope set to ALL, the account ID in the request no longer needs to be the account that owns the data.",
@@ -1372,9 +1395,27 @@
     ]
    },
    "entailment": {
-    "rate": 0.6666666666666666,
+    "rate": 0.8333333333333334,
     "n_probes": 6,
-    "n_correct": 4
+    "n_correct": 5,
+    "n_generated": 6,
+    "expected": [
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "no",
+     "yes"
+    ],
+    "replies": [
+     "Yes\n\nThe document says the three conditions are access granted to the instance (via AWS RAM or a resource policy), an id",
+     "yes",
+     "**No.** The document says cross-account access works only when you have granted access to your instance (through AWS RAM",
+     "Yes. The document says that if you don't use AWS RAM, you can add the resource policy with the S3 Access Grants API oper",
+     "Yes, it can, and no, the account ID doesn't have to be the data owner's.\n\nAn identity in the second account can call Lis",
+     "Yes."
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 1.0,
@@ -1438,10 +1479,10 @@
     ]
    },
    "drift": {
-    "drift": 0.36530995777983727,
+    "drift": 0.330587735557615,
     "atomic_loss": 0.16682113067655224,
     "cbr_loss": 0.5733333333333333,
-    "entailment_loss": 0.33333333333333337,
+    "entailment_loss": 0.16666666666666663,
     "structural_loss": 0.13333333333333333
    },
    "regen_doc": "# Sharing S3 data with S3 Access Grants\n\n## Before you begin\n\n- **An S3 Access Grants instance in the data-owning account.** You need one in each AWS Region where the S3 data you want to share is stored. Steps: https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-grants-instance.html\n- **The AWS CLI installed.** This is needed only if you add the resource policy with the CLI method. Steps: https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html\n\n## Overview\n\nWith S3 Access Grants, you can grant Amazon S3 data access to IAM identities within your account, to IAM identities in other AWS accounts, and to directory users or groups in your AWS IAM Identity Center instance. Access to S3 data (buckets, prefixes, or objects) is granted by using grants.\n\nYou must have an S3 Access Grants instance in your account to manage access to your S3 data, and you must create one in each AWS Region where the S3 data that you want to share is stored. If you are sharing data in more than one AWS Region, you must repeat each of the configuration steps for each AWS Region.\n\n## How cross-account access works\n\nCross-account access is configured by granting access to your S3 Access Grants instance, either by sharing it through AWS RAM or by using a resource policy. After cross-account access is configured, the other account can request temporary access credentials to your S3 data from S3 Access Grants. This works only when three things hold: you have granted access to your instance (through AWS RAM or a resource policy), the owner of the second account has created an identity-based policy for its users or roles, and a grant in your instance gives the second account's identity access to the data. When there is such a grant, the S3 Access Grants instance in account A returns temporary credentials, and users or applications in the second account use these S3 Access Grants-vended credentials to access the S3 data in account A.\n\n## Step 1: Add a resource policy to the S3 Access Grants instance\n\nOnce your S3 Access Grants instance exists, you can attach a resource-based policy to it, because the instance itself supports resource-based policies. The policy is a normal resource-based policy and supports everything the IAM policy language supports. Cross-account access only grants these permissions: s3:GetAccessGrantsInstanceForPrefix, s3:ListAccessGrants, s3:ListAccessLocations, s3:ListCallerAccessGrants, and s3:GetDataAccess. You can choose which of these permissions to include in the resource policy. Of these, s3:GetDataAccess lets the user, role, or app request temporary credentials based on the access granted through S3 Access Grants.\n\nYou do not have to grant access to specific IAM identities in your own account in the resource policy, because you can create grants for individual IAM identities within the S3 Access Grants instance.\n\nIf you already use AWS RAM, you can use it to share your s3:AccessGrants resources with other accounts or within your organization. AWS recommends using the AWS RAM Console for this. If you don't use AWS RAM, you can add the resource policy by using the S3 Access Grants API operations or the AWS CLI. With the CLI, use the put-access-grants-instance-resource-policy command. You can also use the CLI to get or delete the resource policy for an S3 Access Grants instance.\n\nIn the instance resource policy, you specify the ARN of the S3 Access Grants instance as the Resource and the second account as the Principal. The instance must exist before you do this.\n\n## Step 2: Create an identity-based policy in the second account\n\nAfter the data owner configures the cross-account policy, the owner of the second account must create an identity-based policy for its IAM users or roles giving them access to the S3 Access Grants instance. The policy should include one or more of the permitted actions, depending on what is granted in the instance resource policy and the permissions you want to grant. Following the AWS cross-account access pattern, IAM users or roles in the second account must explicitly have one or more of these permissions, and having them is enough to satisfy this step. Granting s3:GetDataAccess lets the IAM user or role in the second account call the S3 Access Grants instance to request credentials.\n\n## Step 3: Create a grant for the second account's identity\n\nAfter the identity-based policy is in place, you can create a grant in the S3 Access Grants instance that gives the IAM identity in the second account access to some of the S3 data. You can do this using the S3 Console, CLI, API, and SDKs. In the grant, you specify the ARN of the IAM identity from the second account and the location in your S3 data that you are granting access to. The grant can be created only when both are specified and the location is already registered with your S3 Access Grants instance. You can optionally specify a subprefix in a grant using the S3SubPrefix field to limit access further.\n\n## Using shared instances from the second account\n\nIf the instance is shared through AWS RAM, the user or role in the second account can call ListAccessGrantsInstances to list the S3 Access Grants instances shared with it. Using AWS RAM is enough to make this possible.\n\nThe user or role can also call ListCallerAccessGrants with instanceScope set to ALL to list the grants it has access to across its own instance and all instances shared with it through AWS RAM. With instanceScope set to ALL on GetDataAccess, the second account's identity can request credentials for a path in any instance shared with it. With instanceScope set to ALL, the account ID in the request no longer needs to be the account that owns the data.",
@@ -1514,6 +1555,11 @@
       "automatic": false
      }
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 0.6666666666666666,
+    "n_probes": 6,
+    "n_correct": 4
    }
   },
   "log": [
@@ -1690,9 +1736,27 @@
     ]
    },
    "entailment": {
-    "rate": 0.8333333333333334,
+    "rate": 1.0,
     "n_probes": 6,
-    "n_correct": 5
+    "n_correct": 6,
+    "n_generated": 6,
+    "expected": [
+     "yes",
+     "no",
+     "no",
+     "yes",
+     "yes",
+     "no"
+    ],
+    "replies": [
+     "Yes",
+     "No. The document says an S3 Access Grants instance must be created in each AWS Region where the data to be shared is sto",
+     "No. The document says that, following the AWS cross-account access pattern, IAM users or roles in the second account mus",
+     "Yes",
+     "yes",
+     "No. The document says the S3 Access Grants instance in account A returns temporary credentials only if there is a grant "
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.32,
@@ -1769,11 +1833,16 @@
     ]
    },
    "drift": {
-    "drift": 0.46919934640522876,
+    "drift": 0.43447712418300655,
     "atomic_loss": 0.05882352941176461,
     "cbr_loss": 0.8133333333333334,
-    "entailment_loss": 0.16666666666666663,
+    "entailment_loss": 0.0,
     "structural_loss": 0.5
+   },
+   "entailment_before_regrade": {
+    "rate": 0.8333333333333334,
+    "n_probes": 6,
+    "n_correct": 5
    }
   },
   "regen_doc": "# Granting S3 Data Access with S3 Access Grants\n\nWith S3 Access Grants, you can grant Amazon S3 data access to IAM identities within your account, to IAM identities in other AWS accounts, and to directory users or groups in your AWS IAM Identity Center instance. Access to S3 data (buckets, prefixes, or objects) is granted by using grants.\n\n## Prerequisites\n\nYou must have an S3 Access Grants instance in your account to manage access to your S3 data. You must create an S3 Access Grants instance in each AWS Region where the S3 data that you want to share is stored. If you are sharing data in more than one AWS Region, you must repeat each of the configuration steps for each AWS Region.\n\n## How cross-account access works\n\nCross-account access is configured by granting access to your S3 Access Grants instance, either by sharing it through AWS RAM or by using a resource policy. After cross-account access is configured, the other account can request temporary access credentials to your S3 data from S3 Access Grants. The S3 Access Grants instance in account A returns temporary credentials only if there is a grant that gives the second account access to the S3 data. Users or applications in the second account then use the S3 Access Grants-vended credentials to access the S3 data in account A.\n\n## The instance resource policy\n\nThe S3 Access Grants instance itself supports resource-based policies. The resource policy is a normal resource-based policy and supports everything the IAM policy language supports. Cross-account access only grants these permissions: s3:GetAccessGrantsInstanceForPrefix, s3:ListAccessGrants, s3:ListAccessLocations, s3:ListCallerAccessGrants, and s3:GetDataAccess. You can choose which of these permissions to include in the resource policy. Of these, s3:GetDataAccess lets the user, role, or app request temporary credentials based on the access granted through S3 Access Grants.\n\nYou do not have to grant access to specific IAM identities in your own account in the resource policy, because you can create grants for individual IAM identities within the S3 Access Grants instance.\n\n## Adding the resource policy\n\nIf you already use AWS RAM, you can use it to share your s3:AccessGrants resources with other accounts or within your organization. AWS recommends using the AWS RAM Console for this. If you don't use AWS RAM, you can add the resource policy by using the S3 Access Grants API operations or the AWS CLI. For example, you can add the resource policy by using the put-access-grants-instance-resource-policy CLI command. In the instance resource policy, you specify the ARN of the S3 Access Grants instance as the Resource and the second account as the Principal. You can also use the CLI to get or delete the resource policy for an S3 Access Grants instance.\n\n## Configuring the second account\n\nAfter the data owner configures the cross-account policy, the owner of the second account must create an identity-based policy for its IAM users or roles giving them access to the S3 Access Grants instance. Following the AWS cross-account access pattern, IAM users or roles in the second account must explicitly have one or more of the permitted actions. The identity-based policy should include one or more of these actions, depending on what is granted in the instance resource policy and the permissions you want to grant. Granting s3:GetDataAccess lets the IAM user or role in the second account call the S3 Access Grants instance to request credentials.\n\n## Creating a grant for the second account\n\nYou can create a grant in the S3 Access Grants instance that gives the IAM identity in the second account access to some of the S3 data, using the S3 Console, CLI, API, and SDKs. In the grant, you specify the ARN of the IAM identity from the second account and the location in your S3 data that you are granting access to. The location must already be registered with your S3 Access Grants instance. You can optionally specify a subprefix in a grant using the S3SubPrefix field to limit access further.\n\n## Discovering shared instances and grants\n\nThe user or role in the second account can call ListAccessGrantsInstances to list the S3 Access Grants instances shared with it through AWS RAM. It can also call ListCallerAccessGrants with instanceScope set to ALL to list the grants it has access to across its own instance and all instances shared with it through AWS RAM. Likewise, with instanceScope set to ALL on GetDataAccess, the second account's identity can request credentials for a path in any instance shared with it. With instanceScope set to ALL, the account ID in the request no longer needs to be the account that owns the data.",
@@ -2992,7 +3061,25 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 6,
-    "n_correct": 6
+    "n_correct": 6,
+    "n_generated": 6,
+    "expected": [
+     "yes",
+     "no",
+     "no",
+     "yes",
+     "yes",
+     "no"
+    ],
+    "replies": [
+     "Yes",
+     "No. The document says that when sharing data in more than one AWS Region, you must create an S3 Access Grants instance i",
+     "No. The document says that under the AWS cross-account access pattern, IAM users or roles in the second account must exp",
+     "Yes. The document says the grant can be created only when both the IAM identity's ARN and a registered location are prov",
+     "Yes. The document says that if you don't use AWS RAM, you can add the resource policy through the S3 Access Grants API o",
+     "No. The document says the instance returns temporary credentials only if there is a grant giving the second account acce"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.9333333333333333,
@@ -3148,6 +3235,11 @@
       "automatic": false
      }
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 6,
+    "n_correct": 6
    }
   },
   "log": [

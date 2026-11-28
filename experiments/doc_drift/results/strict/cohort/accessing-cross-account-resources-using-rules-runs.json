@@ -70,9 +70,39 @@
     ]
    },
    "entailment": {
-    "rate": 0.9166666666666666,
+    "rate": 1.0,
     "n_probes": 12,
-    "n_correct": 11
+    "n_correct": 12,
+    "n_generated": 12,
+    "expected": [
+     "yes",
+     "no",
+     "yes",
+     "no",
+     "yes",
+     "no",
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "no",
+     "no"
+    ],
+    "replies": [
+     "Yes. The document says the destination Amazon SQS queue does not have to be in the same AWS Region as the AWS IoT rule, ",
+     "No. The document says that for supported destinations other than Amazon SQS, the rule must be defined in the same AWS Re",
+     "Yes\n\nThe document says account A's IAM user needs exactly those two permissions, `iot:CreateTopicRule` on the rule ARN a",
+     "No. The document says account A's tasks must be done using the AWS CLI configured with account A's IAM user, and that th",
+     "Yes",
+     "No. The document says the role has an attached policy that allows access to account B's destination, and that the `roleA",
+     "Yes",
+     "Yes",
+     "No. The document says that for S3 cross-account access to work, the correct Block all public access settings must be in ",
+     "Yes.",
+     "No. The document says a destination supports cross-account access with AWS IoT rules only if it supports resource-based ",
+     "No. The `--source-arn` field restricts triggering to the specified rule, so no other rule, in the same or a different ac"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -106,10 +136,10 @@
     ]
    },
    "drift": {
-    "drift": 0.5426626338006936,
+    "drift": 0.5253015226895824,
     "atomic_loss": 0.10447761194029859,
     "cbr_loss": 1.0,
-    "entailment_loss": 0.08333333333333337,
+    "entailment_loss": 0.0,
     "structural_loss": 0.5212121212121211
    },
    "text_bridge": {
@@ -154,6 +184,11 @@
      7,
      8
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 0.9166666666666666,
+    "n_probes": 12,
+    "n_correct": 11
    }
   },
   "regen_doc": "# Cross-account access with AWS IoT rules\n\nAWS IoT rules can be configured so that MQTT topic data in one account is routed to AWS services in another account. Cross-account rules are configured using resource-based permissions on the destination resource. A destination supports cross-account access with AWS IoT rules only if it supports resource-based permissions. Supported cross-account destinations include Amazon SQS, Amazon SNS, Amazon S3, and AWS Lambda.\n\nFor supported destinations other than Amazon SQS, the rule must be defined in the same AWS Region as the other service's resource. The destination Amazon SQS queue, by contrast, does not have to be in the same AWS Region as the AWS IoT rule.\n\n## Prerequisites\n\nYou should be familiar with AWS IoT rules, understand IAM users, roles, and resource-based permissions, and have the AWS CLI installed.\n\n## Account A tasks\n\nAccount A owns the rule. Do these tasks using the AWS CLI configured with account A's IAM user.\n\nAccount A's IAM user needs two permissions: `iot:CreateTopicRule`, with the rule ARN as a resource, and `iam:PassRole`, with the role ARN as a resource. This user runs the `create-topic-rule` command.\n\nAccount A also creates an IAM role that trusts the AWS IoT rules engine. The role has an attached policy that allows access to account B's destination resource. For SQS, SNS, and S3, the rule action specifies a `roleArn` that grants AWS IoT permissions to the destination.\n\n## Account B tasks\n\nAccount B owns the destination resource. Do these tasks using the AWS CLI configured with account B's IAM user.\n\n- **Amazon SQS:** Account B runs `sqs add-permission` to grant account A `SendMessage` permission on the queue.\n- **Amazon SNS:** Account B runs `sns add-permission` to grant account A `Publish` permission on the topic.\n- **Amazon S3:** Account B creates a bucket policy that trusts account A's principal and attaches it using `put-bucket-policy`. For S3 cross-account access to work, the correct Block all public access settings must be in place.\n- **AWS Lambda:** Account B runs `lambda add-permission` to give AWS IoT rules permission to invoke the function. Account B's IAM user must have the `lambda:AddPermission` permission. In this command:\n  - The `--principal` field gives `iot.amazonaws.com` permission to call the function.\n  - The `--source-arn` field restricts triggering to the specified rule, so no other rule, in the same or a different account, can activate the function.\n  - The `--source-account` field restricts AWS IoT to activating the function only on behalf of account 1111-1111-1111.\n\nIf you see a \"The rule could not be found\" error in the Lambda console under Configuration, you can ignore it.",
@@ -2015,7 +2050,37 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 12,
-    "n_correct": 12
+    "n_correct": 12,
+    "n_generated": 12,
+    "expected": [
+     "yes",
+     "no",
+     "yes",
+     "no",
+     "yes",
+     "no",
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "no",
+     "no"
+    ],
+    "replies": [
+     "Yes. The document says the destination Amazon SQS queue does not have to be in the same AWS Region as the AWS IoT rule, ",
+     "No.\n\nThe document says that for supported destinations other than Amazon SQS, the rule must be in the same AWS Region as",
+     "Yes\n\nThe document says the command works only when the user has `iot:CreateTopicRule` on the rule ARN, has `iam:PassRole",
+     "No. The document says `create-topic-rule` works only when the user has the required permissions and the AWS CLI is confi",
+     "Yes. The document says that for SQS, SNS, and S3, the rule action specifies a `roleArn` that grants AWS IoT permissions ",
+     "No. The document says the `roleArn` approach works only when the role trusts the AWS IoT rules engine and its attached p",
+     "Yes",
+     "Yes.",
+     "No. The document says S3 cross-account routing works only when both conditions hold: the bucket policy is attached first",
+     "Yes. The document says Account B runs `sns add-permission` to grant Account A `Publish` on the topic, and that for desti",
+     "No. The document says cross-account access works only if the destination supports resource-based permissions, and a serv",
+     "No. The document says `--source-arn` restricts triggering to the specified rule, so no other rule in the same or a diffe"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -2255,6 +2320,11 @@
      1,
      5
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 12,
+    "n_correct": 12
    }
   },
   "log": [
@@ -2474,7 +2544,37 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 12,
-    "n_correct": 12
+    "n_correct": 12,
+    "n_generated": 12,
+    "expected": [
+     "yes",
+     "no",
+     "no",
+     "yes",
+     "no",
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "no",
+     "no",
+     "yes"
+    ],
+    "replies": [
+     "Yes",
+     "No. The document says that for supported destinations other than Amazon SQS, the rule must be defined in the same AWS Re",
+     "No. The document says a destination supports cross-account access with AWS IoT rules only if it supports resource-based ",
+     "Yes",
+     "No. The document says account A owns the AWS IoT rule and runs `create-topic-rule` using account A's IAM user, which nee",
+     "Yes",
+     "Yes",
+     "No. For S3, account B creates a bucket policy that trusts account A's principal and attaches it with `put-bucket-policy`",
+     "Yes. The document says `--source-arn` restricts triggering to the specified rule, so no other rule in the same or a diff",
+     "No. The document says account B's tasks are done using the AWS CLI configured with account B's IAM user, and that user m",
+     "No. The document says that for SQS, SNS, and S3 the rule action specifies a `roleArn` granting AWS IoT permissions to th",
+     "Yes"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -2558,6 +2658,11 @@
      7,
      8
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 12,
+    "n_correct": 12
    }
   },
   "regen_doc": "# Cross-account access with AWS IoT rules\n\nYou can configure AWS IoT rules so that MQTT topic data in one account is routed to AWS services in another account. Cross-account rules are configured using resource-based permissions on the destination resource, so a destination supports cross-account access with AWS IoT rules only if it supports resource-based permissions. Supported cross-account destinations include Amazon SQS, Amazon SNS, Amazon S3, and AWS Lambda.\n\nFor supported destinations other than Amazon SQS, the rule must be defined in the same AWS Region as the other service's resource. The destination Amazon SQS queue, by contrast, does not have to be in the same AWS Region as the AWS IoT rule.\n\n## Prerequisites\n\nBefore you begin, you should be familiar with AWS IoT rules, understand IAM users, roles, and resource-based permissions, and have the AWS CLI installed.\n\n## Account A tasks\n\nAccount A owns the AWS IoT rule. Do its tasks using the AWS CLI configured with account A's IAM user.\n\nAccount A's IAM user needs the following permissions:\n\n- `iot:CreateTopicRule`, with the rule ARN as a resource.\n- `iam:PassRole`, with the role ARN as a resource.\n\nThe IAM user then runs the `create-topic-rule` command.\n\nAccount A also creates an IAM role that trusts the AWS IoT rules engine. The role has an attached policy that allows access to account B's destination resource. For SQS, SNS, and S3, the rule action specifies a `roleArn` that grants AWS IoT permissions to the destination.\n\n## Account B tasks\n\nAccount B owns the destination resource. Do its tasks using the AWS CLI configured with account B's IAM user.\n\n**Amazon SQS:** Account B runs `sqs add-permission` to grant account A `SendMessage` permission on the queue.\n\n**Amazon SNS:** Account B runs `sns add-permission` to grant account A `Publish` permission on the topic.\n\n**Amazon S3:** Account B creates a bucket policy that trusts account A's principal and attaches it using `put-bucket-policy`. For S3 cross-account access to work, the correct Block all public access settings must be in place.\n\n**AWS Lambda:** Account B runs `lambda add-permission` to give AWS IoT rules permission to invoke the function. Account B's IAM user must have the `lambda:AddPermission` permission. The command uses these fields:\n\n- `--principal` gives `iot.amazonaws.com` permission to call the function.\n- `--source-arn` restricts triggering to the specified rule, so no other rule in the same or a different account can activate the function.\n- `--source-account` restricts AWS IoT to activating the function only on behalf of account 1111-1111-1111.\n\nIf you see a \"The rule could not be found\" error in the Lambda console under **Configuration**, you can ignore it.",
@@ -4445,9 +4550,39 @@
     ]
    },
    "entailment": {
-    "rate": 0.9166666666666666,
+    "rate": 1.0,
     "n_probes": 12,
-    "n_correct": 11
+    "n_correct": 12,
+    "n_generated": 12,
+    "expected": [
+     "yes",
+     "no",
+     "no",
+     "yes",
+     "no",
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "no",
+     "no",
+     "yes"
+    ],
+    "replies": [
+     "Yes",
+     "No. The document says that for supported destinations other than Amazon SQS, which includes Lambda, the rule must be def",
+     "No. The document says cross-account routing works only when the rule uses resource-based permissions on the destination ",
+     "Yes",
+     "**No.** The document says `create-topic-rule` succeeds only when the CLI is configured with Account A's IAM user, which ",
+     "Yes",
+     "Yes. The document says cross-account routing to S3 works only when the bucket policy is attached with `put-bucket-policy",
+     "No. For S3, Account B creates a bucket policy that trusts Account A's principal and attaches it with `put-bucket-policy`",
+     "Yes",
+     "No. The document says the Lambda `add-permission` command works only when the CLI is configured with Account B's IAM use",
+     "No",
+     "Yes. The document says `--source-account` restricts AWS IoT to activating the function only on behalf of account 1111-11"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -4481,10 +4616,10 @@
     ]
    },
    "drift": {
-    "drift": 0.49547856465071716,
+    "drift": 0.478117453539606,
     "atomic_loss": 0.17025199754148745,
     "cbr_loss": 0.8947368421052632,
-    "entailment_loss": 0.08333333333333337,
+    "entailment_loss": 0.0,
     "structural_loss": 0.419047619047619
    },
    "regen_doc": "# Configuring cross-account AWS IoT rules\n\n## Before you begin\n\nYou need familiarity with AWS IoT rules, and an understanding of IAM users, roles, and resource-based permissions. Complete the following before any step that depends on them.\n\n- **AWS CLI (all scenarios):** Install the AWS CLI and configure it with IAM user credentials for each account. Installation steps are at https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html.\n- **SQS scenario:**\n  - An Account A IAM user with `iot:CreateTopicRule` and `iam:PassRole` permissions.\n  - An IAM role in Account A that trusts the AWS IoT rules engine, with a policy allowing access to Account B's SQS queue. Steps are at https://docs.aws.amazon.com/iot/latest/developerguide/iot-create-role.html.\n  - An existing Amazon SQS queue in Account B (the destination).\n- **SNS scenario:**\n  - An Account A IAM user with `iot:CreateTopicRule` and `iam:PassRole` permissions.\n  - An IAM role in Account A that trusts the AWS IoT rules engine, with a policy allowing access to Account B's SNS topic. Steps are at https://docs.aws.amazon.com/iot/latest/developerguide/iot-create-role.html.\n  - An existing Amazon SNS topic in Account B (the destination).\n- **S3 scenario:**\n  - An Account A IAM user with `iot:CreateTopicRule` and `iam:PassRole` permissions.\n  - An IAM role in Account A that trusts the AWS IoT rules engine, with a policy allowing access to Account B's S3 bucket. Steps are at https://docs.aws.amazon.com/iot/latest/developerguide/iot-create-role.html.\n  - An existing Amazon S3 bucket in Account B (the destination).\n  - Block all public access settings on the Account B bucket configured to permit cross-account access. Steps are at https://docs.aws.amazon.com/AmazonS3/latest/userguide/security-best-practices.html.\n- **Lambda scenario:**\n  - An Account A IAM user with `iot:CreateTopicRule` and `iam:PassRole` permissions.\n  - An existing Lambda function in Account B (the destination).\n  - An Account B IAM user with `lambda:AddPermission` permission.\n\n## Overview\n\nYou can configure AWS IoT rules so that MQTT topic data in one account is routed to AWS services in another account. This works only when two things hold: the rule is configured using resource-based permissions on the destination resource, and the destination supports resource-based permissions with AWS IoT rules. A destination that supports resource-based permissions is enough to qualify for cross-account access. Supported cross-account destinations include Amazon SQS, Amazon SNS, Amazon S3, and AWS Lambda.\n\nFor supported destinations other than Amazon SQS, the rule must be defined in the same AWS Region as the other service's resource. The destination Amazon SQS queue does not have to be in the same AWS Region as the AWS IoT rule.\n\nIn the scenarios below, Account B owns the destination resource and Account A owns the rule. Account B's tasks are done using the AWS CLI configured with Account B's IAM user. Account A's tasks are done using the AWS CLI configured with Account A's IAM user.\n\n## Account A: role and rule creation (SQS, SNS, and S3)\n\nIn Account A, create an IAM role that trusts the AWS IoT rules engine. Attach a policy to the role that allows access to Account B's destination resource. For SQS, SNS, and S3, the rule action then specifies a `roleArn` that grants AWS IoT permissions to the destination. This works only when the role trusting the rules engine exists and its attached policy allows access to Account B's resource.\n\nAccount A's IAM user then runs the `create-topic-rule` command. The command succeeds only when the user has `iot:CreateTopicRule` permission with the rule ARN as a resource, has `iam:PassRole` permission with the role ARN as a resource, and the CLI is configured with Account A's IAM user.\n\n## Account B: granting access\n\n**SQS.** Using the CLI configured with Account B's IAM user, Account B runs `sqs add-permission` to grant Account A `SendMessage` permission on the queue. This works only when the CLI is configured with Account B's IAM user.\n\n**SNS.** Using the CLI configured with Account B's IAM user, Account B runs `sns add-permission` to grant Account A `Publish` permission on the topic. This also works only when the CLI is configured with Account B's IAM user.\n\n**S3.** Account B creates a bucket policy that trusts Account A's principal, then attaches it using `put-bucket-policy`. Cross-account routing to S3 works only when the bucket policy has been attached with `put-bucket-policy` and the Block all public access settings are correctly in place. Without both, S3 cross-account access will not work.\n\n## Lambda\n\nFor Lambda, Account B runs `lambda add-permission` to give AWS IoT rules permission to invoke the function. This works only when the CLI is configured with Account B's IAM user, that user has `lambda:AddPermission` permission, and the command sets the following three fields:\n\n- `--principal` gives `iot.amazonaws.com` permission to call the function.\n- `--source-arn` restricts triggering to the specified rule, so no other rule in the same or a different account can activate the function.\n- `--source-account` restricts AWS IoT to activating the function only on behalf of account 1111-1111-1111.\n\nIf the Lambda console shows a \"The rule could not be found\" error under Configuration, you can ignore it.",
@@ -4649,6 +4784,11 @@
      1,
      5
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 0.9166666666666666,
+    "n_probes": 12,
+    "n_correct": 11
    }
   },
   "log": [

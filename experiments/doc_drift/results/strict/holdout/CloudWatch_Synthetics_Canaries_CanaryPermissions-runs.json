@@ -67,7 +67,23 @@
    "entailment": {
     "rate": 0.8,
     "n_probes": 5,
-    "n_correct": 4
+    "n_correct": 4,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "no",
+     "yes",
+     "yes",
+     "no"
+    ],
+    "replies": [
+     "Yes.\n\nThe document says all canary IAM roles must include the trust policy statement allowing lambda.amazonaws.com to pe",
+     "No. The document says that when CloudWatch Synthetics creates the role, that role already has the permissions needed, so",
+     "**Yes.** The document says the role needs the lambda.amazonaws.com trust policy plus one of the listed policy statements",
+     "**Unknown.**\n\nThe document says the role must be updated with the ec2 network interface permissions when a non-VPC canar",
+     "No. When a user creates the IAM role themselves, as with the AWS CLI or APIs, the role must contain the permissions list"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.3184357541899442,
@@ -149,6 +165,11 @@
     "cbr_loss": 0.7821229050279329,
     "entailment_loss": 0.19999999999999996,
     "structural_loss": 1.0
+   },
+   "entailment_before_regrade": {
+    "rate": 0.8,
+    "n_probes": 5,
+    "n_correct": 4
    }
   },
   "regen_doc": "## IAM role requirements for canaries\n\nEach canary must be associated with an IAM role, and that role must have certain permissions attached. How the role is set up depends on how the canary is created. If a user creates a canary using the CloudWatch console and chooses for CloudWatch Synthetics to create an IAM role for the canary, the role that CloudWatch Synthetics creates has the permissions needed. If instead the user creates the IAM role themselves, which is the case when they create a canary using the AWS CLI or APIs, the role must contain the permissions listed in this section.\n\nAll IAM roles for canaries must include the trust policy statement allowing lambda.amazonaws.com to perform sts:AssumeRole. In addition to the trust policy, the canary's IAM role needs one of the listed policy statements.\n\n### Basic canary policy\n\nA basic canary does not use AWS KMS and does not need Amazon VPC access. The basic canary policy allows the following:\n\n- s3:PutObject and s3:GetObject on the canary results folder.\n- s3:GetBucketLocation on the results bucket.\n- logs:CreateLogStream, logs:PutLogEvents and logs:CreateLogGroup on the canary's cwsyn log group.\n- s3:ListAllMyBuckets and xray:PutTraceSegments on all resources.\n- cloudwatch:PutMetricData, only when the cloudwatch:namespace condition equals CloudWatchSynthetics.\n\n### Canaries that use AWS KMS\n\nIf a canary uses AWS KMS to encrypt canary artifacts, the role needs kms:Decrypt and kms:GenerateDataKey on the KMS key. These kms permissions are conditioned on kms:ViaService being the regional S3 service.\n\n### Canaries that need Amazon VPC access\n\nIf a canary needs Amazon VPC access, the role needs the ec2:CreateNetworkInterface, ec2:DescribeNetworkInterfaces and ec2:DeleteNetworkInterface permissions. If a user updates a non-VPC canary to start using a VPC, the user needs to update the canary's role to include these network interface permissions.\n\n### Environment variable encryption\n\nIf a customer managed key is configured for environment variable encryption at rest, the user must have kms:CreateGrant, kms:Encrypt, kms:Decrypt and kms:DescribeKey permissions on the key.\n\nIf encryption in transit is used, the canary execution role must have kms:Decrypt. The kms:Decrypt statement should be added to whichever base execution role policy is already used: basic, VPC, or artifact KMS.",
@@ -1460,7 +1481,23 @@
    "entailment": {
     "rate": 0.8,
     "n_probes": 5,
-    "n_correct": 4
+    "n_correct": 4,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "no",
+     "yes",
+     "yes",
+     "no"
+    ],
+    "replies": [
+     "Yes. The trust policy statement allowing lambda.amazonaws.com to perform sts:AssumeRole is required for all canary IAM r",
+     "No. The document says that when CloudWatch Synthetics creates the role through the console, the role already has the per",
+     "Yes. The basic canary policy, which applies when there is no KMS and no VPC, allows both s3:GetBucketLocation on the res",
+     "unknown\n\nThe document says the role must be updated with the network interface permissions when a non-VPC canary starts ",
+     "No. When you create the role yourself and create the canary through the CLI or APIs, the role must contain the listed pe"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.9441340782122905,
@@ -1614,6 +1651,11 @@
       "automatic": false
      }
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 0.8,
+    "n_probes": 5,
+    "n_correct": 4
    }
   },
   "log": [
@@ -1781,9 +1823,25 @@
     ]
    },
    "entailment": {
-    "rate": 0.8,
+    "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 4
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes",
+     "Yes. The document says all canary roles must include the trust policy allowing lambda.amazonaws.com to perform sts:Assum",
+     "No. The document says that when a user lets CloudWatch Synthetics create the role in the console, the role it creates ha",
+     "Yes. The document says that when a user updates a non-VPC canary to use a VPC, the role must be updated to include the e",
+     "Yes. The document says the kms:Decrypt statement should be added to whichever base execution role policy is already in u"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.8212290502793297,
@@ -1854,11 +1912,16 @@
     ]
    },
    "drift": {
-    "drift": 0.5376331776414202,
+    "drift": 0.4959665109747535,
     "atomic_loss": 0.016393442622950838,
     "cbr_loss": 0.7821229050279329,
-    "entailment_loss": 0.19999999999999996,
+    "entailment_loss": 0.0,
     "structural_loss": 1.0
+   },
+   "entailment_before_regrade": {
+    "rate": 0.8,
+    "n_probes": 5,
+    "n_correct": 4
    }
   },
   "regen_doc": "Each canary must be associated with an IAM role, and that role must have certain permissions attached. How the role is obtained depends on how the canary is created. If a user creates a canary using the CloudWatch console, they can choose for CloudWatch Synthetics to create an IAM role for the canary, and the role it creates has the permissions needed. Alternatively, the user can create the IAM role themselves. If a user creates a canary using the AWS CLI or APIs, they must create the role themselves, and the role must contain the permissions listed in this section.\n\nAll IAM roles for canaries must include the trust policy statement allowing lambda.amazonaws.com to perform sts:AssumeRole. In addition to the trust policy, the canary's IAM role needs one of the listed policy statements.\n\n**Basic canary.** A basic canary does not use AWS KMS and does not need Amazon VPC access. The basic canary policy allows the following:\n- s3:PutObject and s3:GetObject on the canary results folder.\n- s3:GetBucketLocation on the results bucket.\n- logs:CreateLogStream, logs:PutLogEvents and logs:CreateLogGroup on the canary's cwsyn log group.\n- s3:ListAllMyBuckets and xray:PutTraceSegments on all resources.\n- cloudwatch:PutMetricData, but only when the cloudwatch:namespace condition equals CloudWatchSynthetics.\n\n**Canary that uses AWS KMS for artifacts.** If a canary uses AWS KMS to encrypt canary artifacts, the role needs kms:Decrypt and kms:GenerateDataKey on the KMS key. These kms permissions are conditioned on kms:ViaService being the regional S3 service.\n\n**Canary that needs VPC access.** If a canary needs Amazon VPC access, the role needs the ec2:CreateNetworkInterface, ec2:DescribeNetworkInterfaces and ec2:DeleteNetworkInterface permissions. If a user updates a non-VPC canary to start using a VPC, the user needs to update the canary's role to include these network interface permissions.\n\n**Environment variable encryption.** If a customer managed key is configured for environment variable encryption at rest, the user must have kms:CreateGrant, kms:Encrypt, kms:Decrypt and kms:DescribeKey permissions on the key. If encryption in transit is used, the canary execution role must have kms:Decrypt. This kms:Decrypt statement should be added to whichever base execution role policy is already used (basic, VPC, or artifact KMS).",
@@ -3145,7 +3208,23 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "no",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes. The role is self-created and the canary is made through the CLI, so the listed permissions are required. All canary",
+     "Yes",
+     "No. The document says a role created by CloudWatch Synthetics in the console already has the needed permissions, and the",
+     "Yes. The document says that when a non-VPC canary is updated to use a VPC, the role must be updated to include the netwo",
+     "Yes. The document says to add the kms:Decrypt statement to whichever base execution role policy you already use (basic, "
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.9441340782122905,
@@ -3266,6 +3345,11 @@
      }
     ],
     "detours": []
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "log": [

@@ -81,7 +81,23 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes. The document says the recommended format (bucket-name.s3.region.amazonaws.com) lets CloudFront communicate with the",
+     "Yes. The document says that with OAC, the Lambda function URL AuthType must be AWS_IAM. Without OAC, AuthType can be NON",
+     "Yes. The document says internal Application Load Balancers in private subnets can be used with CloudFront via VPC origin",
+     "Yes",
+     "Yes"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.8520710059171599,
@@ -187,6 +203,11 @@
     "cbr_loss": 0.650887573964497,
     "entailment_loss": 0.0,
     "structural_loss": 1.0
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "regen_doc": "# CloudFront Origins\n\n## Overview\n\nWhen you create a distribution, you specify the origin where CloudFront sends requests for files. CloudFront supports several kinds of origins, including S3 buckets, MediaStore containers, MediaPackage channels, Application Load Balancers, and Lambda function URLs. CloudFront automatically configures most distribution settings based on the content origin type.\n\nAn Application Load Balancer, Network Load Balancer, or EC2 instance in a private subnet can be used as a VPC origin. VPC origins prevent the application from being accessible on the public internet. CloudFront Functions or Lambda@Edge can route requests to different origins based on viewer location, request headers, or query string parameters.\n\nCloudFront uses UTC for signed URLs, signed cookies, logs, and reports.\n\n## Amazon S3 buckets\n\nUsing an existing S3 bucket as a CloudFront origin does not change the bucket. You incur regular Amazon S3 charges for storing objects in the bucket. The bucket name must conform to DNS naming requirements to work with CloudFront.\n\nThe recommended S3 origin format is bucket-name.s3.region.amazonaws.com. With this format, CloudFront can communicate with the bucket using SSL/TLS, origin access control can require viewers to use CloudFront URLs rather than S3 URLs, and you can update bucket content by sending POST and PUT requests to CloudFront. You should not specify the S3 origin using path style or an S3 CNAME.\n\nCloudFront supports S3 origins in any storage class, including S3 Intelligent-Tiering, which does not impact the performance or functionality of a distribution.\n\nCloudFront data transfer costs less than S3 data transfer at higher usage, and downloads are faster with CloudFront than with S3 alone. To respect S3 CORS settings, CloudFront must forward the Origin header to S3.\n\n### Adding CloudFront to an existing bucket\n\nCloudFront can be added to a bucket already served via your own domain name with no disruption. When you add CloudFront to an existing bucket, a distribution is created with the S3 bucket specified as origin server.\n\nFor S3 CNAMEs to work, the DNS provider must have a CNAME record routing the domain to the S3 bucket. That CNAME record must be updated to route queries to the CloudFront distribution domain name. After a CNAME update, propagation can take up to 72 hours, and during propagation some requests go to S3 and others go to CloudFront. Route 53 supports either a CNAME or an alias record set.\n\n### Moving a bucket to a different Region\n\nWhen a bucket moves to a different Region, CloudFront can take up to an hour to update its records. Consider the case where you use a CloudFront origin access identity (OAI) to restrict access to the bucket and the bucket is moved to an S3 Region that requires Signature Version 4. CloudFront uses the Region to calculate the signature when using OAIs, so updating the distribution forces CloudFront to immediately check the bucket's Region.\n\n## S3 Object Lambda Access Points\n\nAmazon S3 automatically generates a unique alias when an Object Lambda Access Point is created. This alias can be used instead of a bucket name as a CloudFront origin. Origin access control must be used when an Object Lambda Access Point is the CloudFront origin. CloudFront treats an Object Lambda Access Point origin the same as a standard S3 bucket origin.\n\nWhen using S3 Object Lambda as an origin, four permissions must be configured: Object Lambda Access Point, S3 Access Point, S3 bucket, and Lambda function.\n\n## S3 Access Points\n\nAmazon S3 automatically generates a unique alias for an S3 Access Point. This alias can be used instead of a bucket name as a CloudFront origin. Origin access control must be used when an S3 Access Point is the CloudFront origin. CloudFront treats an S3 Access Point origin the same as a standard S3 bucket origin.\n\n## S3 Multi-Region Access Points\n\nAn S3 Multi-Region Access Point can be used as a CloudFront origin. S3 Multi-Region Access Points route requests to the closest bucket based on network latency. For a Multi-Region Access Point origin, the origin domain name is the access point hostname.\n\n## S3 website endpoints\n\nAn S3 bucket configured as a website endpoint can be used as a custom origin. For a website endpoint origin, you enter the S3 static website hosting endpoint of the bucket. With the website endpoint format, you can use S3 redirects and S3 custom error documents. When creating a distribution via the API with a website-endpoint bucket, you must use CustomOriginConfig.\n\n## Application Load Balancers\n\nCloudFront can route traffic to both internal and internet-facing Application Load Balancers. An internet-facing load balancer has a publicly resolvable DNS name. Internal ALBs in private subnets can be used with CloudFront via VPC origins.\n\n## Network Load Balancers\n\nCloudFront can be used with both internal and internet-facing Network Load Balancers. Internal NLBs in private subnets can be used with CloudFront via VPC origins.\n\n## EC2 instances\n\nInternal EC2 instances in private subnets can be used with CloudFront via VPC origins.\n\n## Lambda function URLs\n\nA Lambda function URL is a dedicated HTTPS endpoint for a Lambda function. The full domain name of the Lambda function URL is specified as the origin domain. The function URL is invoked directly without API Gateway or an Application Load Balancer. The Lambda function URL must be publicly accessible when used as a CloudFront origin.\n\nIf you use origin access control (OAC) with the Lambda function URL, the function URL AuthType must be AWS_IAM, and the resource-based policy must allow lambda:InvokeFunctionUrl and lambda:InvokeFunction.\n\nIf you do not use OAC with the Lambda function URL, AuthType can be NONE with lambda:InvokeFunctionUrl allowed in a resource-based policy. In that case, a custom origin header plus function code can ensure users access the application only through CloudFront.\n\n## Lambda Web Functions\n\nA Lambda Web Function is a web application on Lambda that provides its own HTTPS endpoint, and it can be used as a CloudFront origin. The hostname of the Lambda Web Function endpoint is specified as the origin domain. Regional endpoints have hostnames ending in .lambda-web.AWS-Region.on.aws, and global endpoints have hostnames ending in .lambda-web.global.on.aws.\n\nYou use OAC with a Lambda Web Function. With OAC, the endpoint auth type must be IamAuth, and the resource-based policy must allow lambda:InvokeWebFunctionEndpoint. CloudFront signs requests to regional endpoints with SigV4 and requests to global endpoints with SigV4a.\n\n## Custom origins\n\nA custom origin is an HTTP(S) web server with a publicly resolvable DNS name. An S3 website endpoint origin is considered a custom origin, and API Gateway can also be used as a custom origin for CloudFront. Most CloudFront features are supported with custom origins except private content. For CloudFront to access a custom origin, the origin must remain publicly accessible. Servers behind a custom origin should serve the same content.\n\n## Origin groups\n\nAn origin group allows configuring origin failover with a primary and a secondary origin. CloudFront automatically switches to the second origin when the primary returns specific HTTP failure status codes.",
@@ -2848,7 +2869,23 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "**Yes.** The document says the recommended format (bucket-name.s3.region.amazonaws.com) is the only one where origin acc",
+     "Yes",
+     "Yes. The document says internal ALBs in private subnets can be used with CloudFront via VPC origins, which prevents the ",
+     "Yes. The document says an S3 bucket configured as a website endpoint is considered a custom origin. It also says that on",
+     "Yes. The document says that during propagation after a CNAME update, which can take up to 72 hours, some requests go to "
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.9230769230769231,
@@ -3026,6 +3063,11 @@
      }
     ],
     "detours": []
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "log": [
@@ -3206,7 +3248,23 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes. The document says an Application Load Balancer in a private subnet can be used as a VPC origin, and that VPC origin",
+     "Yes",
+     "Yes. The document says that if you create a distribution via the API with a website-endpoint bucket, you must use Custom",
+     "Yes. With OAC, the function URL AuthType must be AWS_IAM. Without OAC, AuthType can be NONE.",
+     "Yes"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.9053254437869823,
@@ -3312,6 +3370,11 @@
     "cbr_loss": 0.6627218934911242,
     "entailment_loss": 0.0,
     "structural_loss": 1.0
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "regen_doc": "# Choosing and configuring CloudFront origins\n\n## Overview\n\nWhen you create a distribution, you specify the origin where CloudFront sends requests for files. CloudFront supports several kinds of origins, including S3 buckets, MediaStore containers, MediaPackage channels, Application Load Balancers, and Lambda function URLs. It automatically configures most distribution settings based on the content origin type. API Gateway can also be used as a custom origin.\n\nAn Application Load Balancer, Network Load Balancer, or EC2 instance in a private subnet can be used as a VPC origin. VPC origins prevent the application from being accessible on the public internet. CloudFront Functions or Lambda@Edge can route requests to different origins based on viewer location, request headers, or query string parameters.\n\n## Amazon S3 origins\n\nUsing an existing S3 bucket as a CloudFront origin does not change the bucket, and you continue to incur regular Amazon S3 charges for storing objects in it. The bucket name must conform to DNS naming requirements to work with CloudFront.\n\nThe recommended S3 origin format is `bucket-name.s3.region.amazonaws.com`. With this format:\n- CloudFront can communicate with the bucket using SSL/TLS.\n- Origin access control can require viewers to use CloudFront URLs rather than S3 URLs.\n- You can update bucket content by sending POST and PUT requests to CloudFront.\n\nYou should not specify the S3 origin using path style or an S3 CNAME.\n\nCloudFront supports S3 origins in any storage class, including S3 Intelligent-Tiering, which does not impact the performance or functionality of a distribution. CloudFront data transfer costs less than S3 data transfer at higher usage, and downloads are faster with CloudFront than with S3 alone. To respect S3 CORS settings, CloudFront must forward the Origin header to S3.\n\n### S3 Object Lambda Access Points\n\nAmazon S3 automatically generates a unique alias when an Object Lambda Access Point is created. You can use this alias instead of a bucket name as a CloudFront origin. When an Object Lambda Access Point is the origin, origin access control must be used. CloudFront treats it the same as a standard S3 bucket origin. Four permissions must be configured when using S3 Object Lambda as an origin: Object Lambda Access Point, S3 Access Point, S3 bucket, and Lambda function.\n\n### S3 Access Points\n\nAmazon S3 automatically generates a unique alias for an S3 Access Point. You can use this alias instead of a bucket name as a CloudFront origin. When an S3 Access Point is the origin, origin access control must be used. CloudFront treats it the same as a standard S3 bucket origin.\n\n### S3 Multi-Region Access Points\n\nAn S3 Multi-Region Access Point can be used as a CloudFront origin. These access points route requests to the closest bucket based on network latency. For this origin, the origin domain name is the access point hostname.\n\n### S3 website endpoints\n\nAn S3 bucket configured as a website endpoint can be used as a custom origin. For this origin, you enter the S3 static website hosting endpoint of the bucket. With the website endpoint format, you can use S3 redirects and S3 custom error documents. If you create a distribution via the API with a website-endpoint bucket, you must use CustomOriginConfig.\n\n### Adding CloudFront to an existing bucket\n\nCloudFront can be added to a bucket already served via your own domain name with no disruption. When you add it, a distribution is created with the S3 bucket specified as origin server. For S3 CNAMEs to work, the DNS provider must have a CNAME record routing the domain to the S3 bucket. That record must then be updated to route queries to the CloudFront distribution domain name. After a CNAME update, propagation can take up to 72 hours, and during propagation some requests go to S3 and others go to CloudFront. Route 53 supports either a CNAME or an alias record set.\n\n### Moving a bucket to a different Region\n\nWhen a bucket moves to a different Region, CloudFront can take up to an hour to update its records. This matters if you use a CloudFront origin access identity (OAI) to restrict access to the bucket and the bucket is moved to an S3 Region that requires Signature Version 4. In that case, because CloudFront uses the Region to calculate the signature when using OAIs, updating the distribution forces CloudFront to immediately check the bucket's Region.\n\n## Load balancer and EC2 origins\n\nCloudFront can route traffic to both internal and internet-facing Application Load Balancers. An internet-facing load balancer has a publicly resolvable DNS name. Internal ALBs in private subnets can be used with CloudFront via VPC origins. CloudFront can likewise be used with both internal and internet-facing Network Load Balancers, and internal NLBs in private subnets can be used via VPC origins. Internal EC2 instances in private subnets can also be used via VPC origins.\n\n## Lambda function URL origins\n\nA Lambda function URL is a dedicated HTTPS endpoint for a Lambda function. You specify its full domain name as the origin domain. The function URL must be publicly accessible when used as a CloudFront origin. It is invoked directly, without API Gateway or an Application Load Balancer.\n\n- **With origin access control (OAC):** the function URL AuthType must be AWS_IAM, and the resource-based policy must allow lambda:InvokeFunctionUrl and lambda:InvokeFunction.\n- **Without OAC:** AuthType can be NONE, with lambda:InvokeFunctionUrl allowed in a resource-based policy. A custom origin header plus function code can then ensure users access the application only through CloudFront.\n\n## Lambda Web Function origins\n\nA Lambda Web Function is a web application on Lambda that provides its own HTTPS endpoint, and it can be used as a CloudFront origin. You specify the hostname of the endpoint as the origin domain. Regional endpoints have hostnames ending in `.lambda-web.AWS-Region.on.aws`, and global endpoints have hostnames ending in `.lambda-web.global.on.aws`.\n\nWhen you use OAC with a Lambda Web Function, the endpoint auth type must be IamAuth, and the resource-based policy must allow lambda:InvokeWebFunctionEndpoint. CloudFront signs requests to regional endpoints with SigV4 and requests to global endpoints with SigV4a.\n\n## Custom origins\n\nA custom origin is an HTTP(S) web server with a publicly resolvable DNS name. An S3 website endpoint origin is considered a custom origin. Most CloudFront features are supported with custom origins except private content. For CloudFront to access a custom origin, the origin must remain publicly accessible. Servers behind a custom origin should serve the same content.\n\n## Origin failover and time handling\n\nAn origin group allows configuring origin failover with a primary and a secondary origin. CloudFront automatically switches to the second origin when the primary returns specific HTTP failure status codes. CloudFront uses UTC for signed URLs, signed cookies, logs, and reports.",
@@ -5759,7 +5822,23 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "yes",
+     "yes",
+     "yes",
+     "yes"
+    ],
+    "replies": [
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes",
+     "Yes"
+    ],
+    "regraded": true
    },
    "text_bridge": {
     "rate": 0.8639053254437871,
@@ -6026,6 +6105,11 @@
       "automatic": false
      }
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "log": [

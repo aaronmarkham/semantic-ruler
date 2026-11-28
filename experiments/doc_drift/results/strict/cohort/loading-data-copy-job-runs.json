@@ -68,7 +68,23 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "no",
+     "no",
+     "yes",
+     "no",
+     "yes"
+    ],
+    "replies": [
+     "No. The document says an S3 event integration cannot be created with a source bucket whose name contains a period, and '",
+     "No. The document says the COPY JOB is not automatically dropped when an S3 event integration is deleted. Its status chan",
+     "Yes",
+     "No. The document says snapshot restores on provisioned clusters do not maintain S3 event integrations.",
+     "Yes"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -173,6 +189,11 @@
      16,
      17
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "regen_doc": "# Amazon Redshift auto-copy from Amazon S3\n\n## Overview\n\nAn auto-copy job loads data into Amazon Redshift tables from files stored in Amazon S3. Amazon Redshift detects new S3 files added to the path specified in the COPY command, and a COPY command is run automatically when new files are detected. Redshift keeps track of which files have been loaded and determines the number of files batched per COPY command. A COPY JOB is defined once, and the same parameters are used for future runs. Defining and managing a COPY JOB requires permission.\n\n## Creating the S3 event integration\n\nThe first step in creating an automatic COPY JOB is to create an S3 event integration. The requirements are:\n\n- **Bucket policy:** The S3 bucket must have a bucket policy allowing s3:GetBucketNotification, s3:PutBucketNotification and s3:GetBucketLocation for the redshift.amazonaws.com principal.\n- **Region:** The S3 bucket and the integration must be in the same AWS Region. More generally, the source S3 bucket and the target data warehouse must be in the same AWS Region.\n- **IAM role:** The target cluster or serverless namespace must have permission to the bucket via an associated IAM role. The role's policy must allow s3:GetObject and s3:ListBucket on the bucket and its contents, and the role must have a trust relationship allowing redshift.amazonaws.com to assume it.\n- **Resource policy:** The Redshift data warehouse must have a resource policy that allows the S3 bucket. This policy authorizes redshift:AuthorizeInboundIntegration and redshift:CreateInboundIntegration.\n  - If the target is in the same AWS account as the integration, the console offers a \"Fix it for me\" option to add the resource policy.\n  - If the target is in a different AWS account, the resource policy must be applied to the target manually. The put-resource-policy AWS CLI command can attach a resource policy.\n\nThe integration name is a unique identifier across all integrations owned by the AWS account in the current Region. Up to 50 tag keys can be entered for an integration.\n\n## CLI commands\n\n- create-integration takes integration-name, source-arn and target-arn.\n- delete-integration deletes an S3 event integration.\n- modify-integration changes the name or description of an integration.\n- describe-integrations shows properties of an integration.\n\n## Deleting an integration\n\nWhen an S3 event integration is deleted, the status of the corresponding COPY JOB changes from 1 (active) to 0 (inactive/pending). The COPY JOB is not automatically dropped. Because of this, creating a COPY JOB with the same name as an undropped job might conflict. Amazon Redshift matches the bucket in the COPY JOB CREATE FROM clause to the bucket used in the S3 event integration.\n\n## Limits and considerations\n\n- A maximum of 200 COPY JOBs can be created per cluster or workgroup in an AWS account.\n- A maximum of 50 S3 event integrations can be created per Redshift target.\n- An S3 event integration cannot be created with a source bucket whose name contains a period.\n- Only one S3 event integration can exist between the same source bucket and target.\n- The source bucket cannot have existing S3_OBJECT_CREATED event notifications when the integration is created. After an integration is created, however, the bucket event notification can be updated with a narrower prefix/suffix.\n- Asia Pacific (New Zealand) does not have auto-copy available.\n\n## Restoring snapshots and recovery points\n\nWhen a serverless namespace is restored from a snapshot or recovery point to the same namespace, S3 event integrations and their COPY JOBs are maintained automatically. Restoring a snapshot to a different namespace does not maintain S3 event integrations. Snapshot restores on provisioned clusters likewise do not maintain S3 event integrations.\n\nAfter a restore, Redshift automatically ingests files in S3 that have not yet been loaded and that were uploaded after the snapshot. Files uploaded after the snapshot and deleted before the restore completes are not ingested.\n\nThe outcome depends on what changed after the snapshot was taken:\n\n- If an integration was created after the snapshot was taken, the integration enters the NEEDS_ATTENTION state after the restore.\n- If an integration was deleted after the snapshot was taken, the integration is not restored and the COPY JOB status changes to PENDING. In this case, files added to S3 between the snapshot time and COPY JOB recreation cannot be recovered or re-ingested.\n- If COPY JOBs were changed after the snapshot was taken, the restored namespace uses the COPY JOBs from the snapshot.\n- If the user opts out of maintaining integrations during the restore, the integrations enter the FAILED state after the restore.",
@@ -2187,7 +2208,23 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "no",
+     "no",
+     "yes",
+     "no",
+     "yes"
+    ],
+    "replies": [
+     "No. The bucket name 'sales.data.2024' contains periods, and an S3 event integration cannot be created with a source buck",
+     "No. The document says the COPY JOB is not automatically dropped when an S3 event integration is deleted. Its status just",
+     "Yes",
+     "no",
+     "Yes"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -2402,6 +2439,11 @@
     "lost": [
      17
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "log": [
@@ -2564,9 +2606,25 @@
     ]
    },
    "entailment": {
-    "rate": 0.8,
+    "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 4
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "no",
+     "yes",
+     "yes",
+     "no"
+    ],
+    "replies": [
+     "Yes. The document says that if an integration was deleted after the snapshot was taken, the integration is not restored ",
+     "No. The document says an S3 event integration cannot be created with a source bucket whose name contains a period, and '",
+     "Yes",
+     "Yes. The document says that when an S3 event integration is deleted, the corresponding COPY JOB status changes from 1 (a",
+     "No"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -2598,10 +2656,10 @@
     ]
    },
    "drift": {
-    "drift": 0.33947806641925976,
+    "drift": 0.297811399752593,
     "atomic_loss": 0.008849557522123908,
     "cbr_loss": 0.4903225806451613,
-    "entailment_loss": 0.19999999999999996,
+    "entailment_loss": 0.0,
     "structural_loss": 0.55
    },
    "text_bridge": {
@@ -2664,6 +2722,11 @@
      2,
      17
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 0.8,
+    "n_probes": 5,
+    "n_correct": 4
    }
   },
   "regen_doc": "# Auto-copy from Amazon S3 into Amazon Redshift\n\n## Overview\n\nAn auto-copy job loads data into Amazon Redshift tables from files stored in Amazon S3. Amazon Redshift detects new S3 files added to the path specified in the COPY command, and a COPY command is run automatically when new files are detected. Amazon Redshift keeps track of which files have been loaded, and it determines the number of files batched per COPY command. A COPY JOB is defined once, and the same parameters are used for future runs. Defining and managing a COPY JOB requires permission.\n\n## Creating an automatic COPY JOB\n\nThe first step to create an automatic COPY JOB is to create an S3 event integration. The following requirements apply:\n\n- The S3 bucket must have a bucket policy allowing s3:GetBucketNotification, s3:PutBucketNotification and s3:GetBucketLocation for the redshift.amazonaws.com principal.\n- The source S3 bucket and target data warehouse must be in the same AWS Region, and the S3 bucket and the integration are likewise in the same AWS Region.\n- The target cluster or serverless namespace must have permission to the bucket via an associated IAM role. The IAM role policy must allow s3:GetObject and s3:ListBucket on the bucket and its contents, and the role must have a trust relationship allowing redshift.amazonaws.com to assume it.\n- The Redshift data warehouse must have a resource policy that allows the S3 bucket. This resource policy authorizes redshift:AuthorizeInboundIntegration and redshift:CreateInboundIntegration. If the target is in the same AWS account as the integration, the console offers a Fix it for me option to add the resource policy. If the target is in a different AWS account, the resource policy must be applied to the target manually. The put-resource-policy AWS CLI command can attach a resource policy.\n\nThe integration name is a unique identifier across all integrations owned by the AWS account in the current Region. Up to 50 tag keys can be entered for an integration.\n\n## Managing integrations with the CLI\n\nThe create-integration CLI command takes integration-name, source-arn and target-arn. delete-integration deletes an S3 event integration, modify-integration changes the name or description of an integration, and describe-integrations shows properties of an integration.\n\n## Deleting an integration\n\nWhen an S3 event integration is deleted, the corresponding COPY JOB status changes from 1 (active) to 0 (inactive/pending). The corresponding COPY JOB is not automatically dropped. Creating a COPY JOB with the same name as an undropped job might conflict. Amazon Redshift matches the bucket in the COPY JOB CREATE FROM clause to the bucket used in the S3 event integration.\n\n## Limitations\n\n- A maximum of 200 COPY JOBs can be created per cluster or workgroup in an AWS account.\n- A maximum of 50 S3 event integrations can be created per Redshift target.\n- An S3 event integration cannot be created with a source bucket whose name contains a period.\n- Only one S3 event integration can exist between the same source bucket and target.\n- The source bucket cannot have existing S3_OBJECT_CREATED event notifications when the integration is created. After an integration is created, the bucket event notification can be updated with a narrower prefix/suffix.\n- Asia Pacific (New Zealand) does not have auto-copy available.\n\n## Snapshot restore behavior\n\nWhen a serverless namespace is restored from a snapshot or recovery point to the same namespace, S3 event integrations and their COPY JOBs are maintained automatically. Restoring a snapshot to a different namespace does not maintain S3 event integrations. Snapshot restores on provisioned clusters also do not maintain S3 event integrations.\n\nAfter a restore, Redshift automatically ingests files in S3 not yet loaded that were uploaded after the snapshot. Files uploaded after the snapshot and deleted before restore completes are not ingested.\n\nSeveral cases depend on what changed after the snapshot was taken:\n\n- If an integration was created after the snapshot was taken, the integration enters the NEEDS_ATTENTION state after restore.\n- If an integration was deleted after the snapshot was taken, the integration is not restored and the COPY JOB status changes to PENDING. Files added to S3 between snapshot time and COPY JOB recreation cannot be recovered or re-ingested.\n- If COPY JOBs were changed after the snapshot was taken, the restored namespace uses the COPY JOBs from the snapshot.\n- If the user opts out of maintaining integrations during restore, integrations enter the FAILED state after the restore.",
@@ -4757,7 +4820,23 @@
    "entailment": {
     "rate": 1.0,
     "n_probes": 5,
-    "n_correct": 5
+    "n_correct": 5,
+    "n_generated": 5,
+    "expected": [
+     "yes",
+     "no",
+     "yes",
+     "yes",
+     "no"
+    ],
+    "replies": [
+     "Yes. Per the document, if an integration was deleted after the snapshot was taken, it is not restored and the COPY JOB s",
+     "No. The document says an S3 event integration cannot be created with a source bucket whose name contains a period, and '",
+     "Yes",
+     "yes",
+     "No. According to the document, maintenance of S3 event integrations and their COPY JOBs holds only when a serverless nam"
+    ],
+    "regraded": true
    },
    "structural": {
     "applicable": true,
@@ -4986,6 +5065,11 @@
     "lost": [
      17
     ]
+   },
+   "entailment_before_regrade": {
+    "rate": 1.0,
+    "n_probes": 5,
+    "n_correct": 5
    }
   },
   "log": [
